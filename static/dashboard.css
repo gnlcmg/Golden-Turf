@@ -1,0 +1,164 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f9f9f9;
+    color: #333;
+}
+.sidebar {
+    width: 220px;
+    background-color: #2f6f2f;
+    color: white;
+    height: 100vh;
+    position: fixed;
+    padding-top: 20px;
+}
+.sidebar h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-weight: bold;
+    font-size: 24px;
+    color: #f0a500;
+}
+.sidebar nav a {
+    display: block;
+    color: white;
+    padding: 12px 20px;
+    text-decoration: none;
+    font-size: 18px;
+    transition: background-color 0.3s ease;
+}
+.sidebar nav a:hover {
+    background-color: #1f4d1f;
+}
+
+/* Dropdown container */
+.nav-dropdown {
+    position: relative;
+    display: block;
+}
+
+/* Dropdown button */
+.dropbtn {
+    color: white;
+    padding: 12px 20px;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: bold;
+    display: block;
+}
+
+/* Dropdown content (hidden by default) */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #2f6f2f;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+    color: white;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {
+    background-color: #1f4d1f;
+}
+
+/* Show the dropdown menu on hover */
+.nav-dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* Change the color of the dropdown button when the dropdown content is shown */
+.nav-dropdown:hover .dropbtn {
+    background-color: #1f4d1f;
+}
+
+.main-content {
+    margin-left: 220px;
+    padding: 30px 40px;
+}
+h1 {
+    color: #2f6f2f;
+    margin-bottom: 30px;
+}
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+.kpi-tile {
+    background-color: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 18px;
+    color: #333;
+}
+.kpi-tile.green {
+    background-color: #2f6f2f;
+    color: white;
+}
+.kpi-tile.orange {
+    background-color: #f0a500;
+    color: white;
+}
+.kpi-label {
+    font-size: 14px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+.kpi-value {
+    font-size: 32px;
+}
+.alerts {
+    margin-bottom: 40px;
+}
+.alert-title {
+    font-weight: bold;
+    font-size: 20px;
+    color: #d9534f;
+    margin-bottom: 10px;
+}
+.alert-item {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+.admin-buttons {
+    margin-top: 20px;
+}
+.admin-buttons button {
+    background-color: #2f6f2f;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    margin-right: 15px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.admin-buttons button:hover {
+    background-color: #1f4d1f;
+}
+footer {
+    margin-top: 60px;
+    text-align: center;
+    color: #777;
+    font-size: 14px;
+}

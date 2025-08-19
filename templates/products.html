@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='products.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Golden Turf Logo" height="40">
+        </div>
+        <ul class="nav-links">
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li class="dropdown">
+                <a href="#" class="dropbtn">Menu</a>
+                <div class="dropdown-content">
+                    <a href="/products">Products</a>
+                    <a href="/calendar">Calendar</a>
+                    <a href="/clients">Clients</a>
+                    <a href="/invoice">Invoices</a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+    <div class="container">
+        <h1>Products</h1>
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="messages">
+            {% for message in messages %}
+              <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+        <form method="post" class="product-form">
+            <label>Product Name (required):</label>
+            <input type="text" name="product_name" required><br>
+            <label>Turf Type:</label>
+            <select name="turf_type" required>
+                {% for t in turf_types %}
+                <option value="{{ t }}">{{ t }}</option>
+                {% endfor %}
+            </select><br>
+            <label>Description (optional):</label>
+            <input type="text" name="description"><br>
+            <label>Stock Amount (optional):</label>
+            <input type="number" name="stock" min="0"><br>
+            <button type="submit">Add Product</button>
+        </form>
+        <h2>Product List</h2>
+        <table class="product-table">
+            <tr>
+                <th>Name</th><th>Type</th><th>Description</th><th>Stock</th>
+            </tr>
+            {% for p in products %}
+            <tr>
+                <td>{{ p.product_name }}</td>
+                <td>{{ p.turf_type }}</td>
+                <td>{{ p.description }}</td>
+                <td>{{ p.stock if p.stock is not none else '' }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</body>
+</html>

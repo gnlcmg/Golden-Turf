@@ -1,0 +1,132 @@
+/* Reset and base styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Eastman Grotesque', Arial, sans-serif;
+}
+
+body, html {
+    height: 100%;
+    background: #fff;
+    color: #000;
+}
+
+.container {
+    max-width: 400px;
+    margin: 5rem auto;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    background-color: #f9f9f9;
+}
+
+.logo {
+    font-weight: 700;
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    user-select: none;
+}
+
+.logo .golden {
+    color: #F28F2B; /* orange */
+}
+
+.logo .turf {
+    color: #20723B; /* green */
+}
+
+.message {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: red;
+    font-weight: 600;
+}
+
+.register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.input-group {
+    position: relative;
+    width: 100%;
+}
+
+.input-group .icon {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    color: #999;
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 12px 12px 40px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.input-group input::placeholder {
+    text-transform: uppercase;
+    color: #999;
+}
+
+.input-group input:focus {
+    border-color: #20723B;
+}
+
+.btn-register {
+    background-color: #000;
+    color: #fff;
+    border: none;
+    padding: 14px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background-color 0.3s ease;
+}
+
+.btn-register:hover {
+    background-color: #333;
+}
+
+.login-link {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    text-align: center;
+    color: #555;
+}
+
+.login-link a {
+    color: #20723B;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .container {
+        margin: 2rem 1rem;
+        padding: 1rem;
+    }
+
+    .logo {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+}

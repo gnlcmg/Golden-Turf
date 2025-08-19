@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Client Details - Golden Turf</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
+    </head>
+<body>
+    <div class="sidebar">
+        <div class="logo-section">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Golden Turf Logo" class="logo-img" />
+            <div class="logo-text">GOLDEN<span style="color:#f4a261;">TURF</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="return-dashboard-link">Return to Dashboard</a>
+        </nav>
+    </div>
+    <div class="container">
+        <header>
+            <h1>Client Details Page</h1>
+        </header>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+            <div class="success">{{ success }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('clients') }}">
+            <section class="client-form">
+                <label for="contact_name">Contact Name:</label>
+                <input type="text" id="contact_name" name="contact_name" value="{{ request.form.contact_name or '' }}" required />
+
+                <label for="phone_number">Phone Number:</label>
+                <input type="number" id="phone_number" name="phone_number" value="{{ request.form.phone_number or '' }}" />
+
+                <label for="account_type">Account Type:</label>
+                <select id="account_type" name="account_type" required>
+                    <option value="" disabled selected>Select account type</option>
+                    <option value="Active" {% if request.form.account_type == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="Deactivated" {% if request.form.account_type == 'Deactivated' %}selected{% endif %}>Deactivated</option>
+                </select>
+
+                <label for="company_name">Company Name (optional):</label>
+                <input type="text" id="company_name" name="company_name" value="{{ request.form.company_name or '' }}" />
+
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" value="{{ request.form.email or '' }}" required />
+
+                <label for="actions">Actions / Notes (optional):</label>
+                <textarea id="actions" name="actions">{{ request.form.actions or '' }}</textarea>
+
+                <button type="submit">Save Client</button>
+            </section>
+        </form>
+
+        <section class="client-list">
+            <h2>Existing Clients</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Account ID</th>
+                        <th>Contact Name</th>
+                        <th>Phone Number</th>
+                        <th>Account Type</th>
+                        <th>Company Name</th>
+                        <th>Email</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td>{{ client[0] }}</td>
+                        <td>{{ client[1] }}</td>
+                        <td>{{ client[3] }}</td>
+                        <td>{{ client[4] }}</td>
+                        <td>{{ client[5] or '' }}</td>
+                        <td>{{ client[2] or '' }}</td>
+                        <td>{{ client[6] or '' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7">No clients found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </div>
+</body>
+</html>

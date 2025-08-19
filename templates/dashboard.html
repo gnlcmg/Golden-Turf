@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Golden Turf Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Golden Turf</h2>
+        <nav>
+            <a href="/dashboard">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn">Products</a>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('list_page') }}">Clients & Invoices List</a>
+                    <a href="{{ url_for('invoice') }}">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}">Client Details Form</a>
+                </div>
+            </div>
+            <a href="#">Quotes</a>
+            <a href="#">Client List</a>
+            <a href="#">Payments</a>
+            <a href="#">Reports</a>
+            <a href="{{ url_for('calendar') }}">Calendar</a>
+        </nav>
+    </div>
+    <div class="main-content">
+        <h1>Golden Turf Dashboard</h1>
+        <div class="kpi-grid">
+            <div class="kpi-tile green">
+                <div class="kpi-label">Total Clients</div>
+                <div class="kpi-value">{{ total_clients }}</div>
+            </div>
+            <div class="kpi-tile green">
+                <div class="kpi-label">Yesterday Sales ($)</div>
+                <div class="kpi-value">{{ "{:,.2f}".format(yesterday_sales) }}</div>
+            </div>
+            <div class="kpi-tile orange">
+                <div class="kpi-label">Total Services</div>
+                <div class="kpi-value">{{ total_services }}</div>
+            </div>
+            <div class="kpi-tile green">
+                <div class="kpi-label">Today Sales ($)</div>
+                <div class="kpi-value">{{ "{:,.2f}".format(today_sales) }}</div>
+            </div>
+            <div class="kpi-tile green">
+                <div class="kpi-label">Last 7 Days Sales ($)</div>
+                <div class="kpi-value">{{ "{:,.2f}".format(last_7_days_sales) }}</div>
+            </div>
+            <div class="kpi-tile orange">
+                <div class="kpi-label">Total Sales ($)</div>
+                <div class="kpi-value">{{ "{:,.2f}".format(total_sales) }}</div>
+            </div>
+        </div>
+
+        {% if overdue_jobs %}
+        <div class="alerts">
+            <div class="alert-title">Overdue Jobs:</div>
+            {% for job in overdue_jobs %}
+                <div class="alert-item">{{ job.client_name }} was due on {{ job.job_date }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if user_role == 'admin' or user_role == 'owner' %}
+        <div class="admin-buttons">
+            <button onclick="alert('Add Job clicked')">Add Job</button>
+            <button onclick="alert('Generate Quote clicked')">Generate Quote</button>
+            <button onclick="window.location.href='/calendar';">View Calendar</button>
+        </div>
+        {% endif %}
+
+        <footer>
+            Client information display of sales
+        </footer>
+    </div>
+</body>
+</html>

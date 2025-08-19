@@ -1,0 +1,161 @@
+YPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invoice - Golden Turf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-section">
+            <div class="logo-text">GOLDEN<span style="color:#f4a261;">TURF</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <!-- Removed all links -->
+            <a href="/dashboard" class="return-dashboard-link">Return to Dashboard</a>
+        </nav>
+    </div>
+    <div class="container">
+        <header>
+            <h1>Invoice Details</h1>
+            <div class="invoice-id-date">
+                <span>Invoice ID: <strong>{{ invoice_id or 'INV-0001' }}</strong></span>
+                <span>Invoice Date: <strong>{{ invoice_date or '2024-01-01' }}</strong></span>
+            </div>
+        </header>
+
+            <form method="POST" action="{{ url_for('invoice') }}">
+            <section class="client-info">
+                <h2>Client Information</h2>
+                <label for="client_name">Client Name:</label>
+                <input type="text" id="client_name" name="client_name" value="{{ client_name or '' }}" required />
+
+                <label for="turf_type">Turf Type:</label>
+                <select id="turf_type" name="turf_type" required>
+                    <option value="none" {% if turf_type == 'none' %}selected{% endif %}>None</option>
+                    <option value="Golden Imperial Lush" {% if turf_type == 'Golden Imperial Lush' %}selected{% endif %}>Golden Imperial Lush</option>
+                    <option value="Golden Green Lush" {% if turf_type == 'Golden Green Lush' %}selected{% endif %}>Golden Green Lush</option>
+                    <option value="Golden Natural 40mm" {% if turf_type == 'Golden Natural 40mm' %}selected{% endif %}>Golden Natural 40mm</option>
+                    <option value="Golden Golf Turf" {% if turf_type == 'Golden Golf Turf' %}selected{% endif %}>Golden Golf Turf</option>
+                    <option value="Golden Premium Turf" {% if turf_type == 'Golden Premium Turf' %}selected{% endif %}>Golden Premium Turf</option>
+                </select>
+
+                <label for="area">Area (sq meters):</label>
+                <input type="number" id="area" name="area" min="0.01" step="0.01" value="{{ area or '' }}" required />
+
+                <label for="extra_fee">Extra Fee:</label>
+                <input type="number" id="extra_fee" name="extra_fee" min="0" step="0.01" value="{{ extra_fee or 0 }}" />
+
+                <label for="extras">Extras:</label>
+                <select id="extras" name="extras">
+                    <option value="none" {% if extras == 'none' %}selected{% endif %}>None</option>
+                    <option value="artificial_hedges" {% if extras == 'artificial_hedges' %}selected{% endif %}>Artificial Hedges</option>
+                    <option value="fountain" {% if extras == 'fountain' %}selected{% endif %}>Fountain</option>
+                    <option value="bamboo_products" {% if extras == 'bamboo_products' %}selected{% endif %}>Bamboo Products</option>
+                    <option value="polished_pebbles" {% if extras == 'polished_pebbles' %}selected{% endif %}>Polished/Glowing Pebbles</option>
+                    <option value="pegs" {% if extras == 'pegs' %}selected{% endif %}>Pegs (U-pins/Nails)</option>
+                </select>
+
+                {% set extras_costs = {
+                    'none': 0,
+                    'artificial_hedges': 50,
+                    'fountain': 150,
+                    'bamboo_products': 75,
+                    'polished_pebbles': 40,
+                    'pegs': 20
+                } %}
+
+                <label for="discount">Discount:</label>
+                <input type="number" id="discount" name="discount" min="0" step="0.01" value="{{ discount or 0 }}" />
+
+                <label for="payment_status">Payment Status:</label>
+                <select id="payment_status" name="payment_status" required>
+                    <option value="" disabled selected>Select payment status</option>
+                    <option value="Paid" {% if payment_status == 'Paid' %}selected{% endif %}>Paid</option>
+                    <option value="Unpaid" {% if payment_status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
+                    <option value="Overdue" {% if payment_status == 'Overdue' %}selected{% endif %}>Overdue</option>
+                </select>
+
+                <label for="gst">Apply GST (7%):</label>
+                <input type="checkbox" id="gst" name="gst" value="yes" {% if gst == 'yes' %}checked{% endif %} />
+            </section>
+
+            <section class="invoice-summary">
+                <h2>Invoice Summary</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client Name</th>
+                            <th>Turf Type</th>
+                            <th>Area (sq m)</th>
+                            <th>Extra Fee</th>
+                            <th>Extras</th>
+                            <th>Discount</th>
+                            <th>Total</th>
+                            <th>Payment Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ client_name or '' }}</td>
+                            <td>{{ turf_type or '' }}</td>
+                            <td>{{ area or 0 }}</td>
+                            <td>${{ "%.2f"|format(extra_fee or 0) }}</td>
+                            <td>{{ extras or 'None' }}</td>
+                            <td>${{ "%.2f"|format(discount or 0) }}</td>
+                            <td>
+                                {% set extra_cost = extras_costs.get(extras, 0) %}
+                                {% if area and area > 0 %}
+                                    {% set subtotal = (area or 0) + (extra_fee or 0) + extra_cost - (discount or 0) %}
+                                {% else %}
+                                    {% set subtotal = (extra_fee or 0) + extra_cost - (discount or 0) %}
+                                {% endif %}
+                                {% if subtotal < 0 %}
+                                    <span class="error">Invalid total amount</span>
+                                {% else %}
+                                    {% if gst == 'yes' %}
+                                        {% set gst_amount = subtotal * 0.07 %}
+                                        {% set total = subtotal + gst_amount %}
+                                        ${{ "%.2f"|format(total) }} (incl. GST ${{ "%.2f"|format(gst_amount) }})
+                                    {% else %}
+                                        {% set total = subtotal %}
+                                        ${{ "%.2f"|format(total) }}
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>{{ payment_status or '' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <div class="form-actions">
+                <button type="submit">Submit Invoice</button>
+                <button type="button" onclick="window.print()">Print Invoice</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const turfTypeSelect = document.getElementById('turf_type');
+        const areaInput = document.getElementById('area');
+
+        function toggleAreaRequirement() {
+            if (turfTypeSelect.value === 'none') {
+                areaInput.value = '';
+                areaInput.required = false;
+                areaInput.disabled = true;
+            } else {
+                areaInput.required = true;
+                areaInput.disabled = false;
+            }
+        }
+
+        turfTypeSelect.addEventListener('change', toggleAreaRequirement);
+
+        // Initialize on page load
+        toggleAreaRequirement();
+    </script>
+</body>
+</html>

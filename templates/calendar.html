@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Job Calendar</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
+    ...existing code...
+    </style>
+</head>
+<body>
+    <h2>Job Calendar</h2>
+    <div id="calendar"></div>
+
+    <!-- Job Details Modal -->
+    <div id="jobModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Job Details</h3>
+            <div id="jobDetails"></div>
+            <button onclick="editJob()">Edit</button>
+            <button onclick="deleteJob()" class="btn-danger">Delete</button>
+        </div>
+    </div>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Golden Turf Calendar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="calendar-container">
+            <div class="header">
+                <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Golden Turf Logo">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search">
+                </div>
+            </div>
+            <div class="calendar-header">
+                <a href="{{ url_for('calendar', year=prev_year, month=prev_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;">&lt;</a>
+                {{ current_month_name }} {{ current_year }}
+                <a href="{{ url_for('calendar', year=next_year, month=next_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;">&gt;</a>
+            </div>
+            <div class="calendar-controls">
+                <button class="active">Month</button>
+                <button>Week</button>
+                <button>Day</button>
+            </div>
+            <div class="calendar-grid">
+                <!-- Days of week -->
+                <div class="calendar-day">MON</div>
+                <div class="calendar-day">TUE</div>
+                <div class="calendar-day">WED</div>
+                <div class="calendar-day">THU</div>
+                <div class="calendar-day">FRI</div>
+                <div class="calendar-day">SAT</div>
+                <div class="calendar-day">SUN</div>
+                <!-- Calendar cells: dynamically fill days for the current month -->
+                {% for week in calendar_weeks %}
+                    {% for day in week %}
+                        <div class="calendar-day{% if not day.in_month %} inactive{% endif %}">
+                            {{ day.day if day.day > 0 else '' }}
+                            {% if day.job %}
+                                <div class="job-tile {{ day.job.status }}">{{ day.job.title }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="sidebar">
+            <button class="add-event-btn">+ Add New Event</button>
+            <div class="tasks">
+                <div class="task">
+                    <div class="avatar"></div>
+                    <div class="task-info">
+                        <div class="task-title">Client A Quote</div>
+                        <div class="task-date">Due: Today 07:19 AM</div>
+                        <div class="task-location">56 Davion Mission Suite 157</div>
+                        <div class="task-status red">Not Completed</div>
+                    </div>
+                </div>
+                <div class="task">
+                    <div class="avatar"></div>
+                    <div class="task-info">
+                        <div class="task-title">Supplier Delivery</div>
+                        <div class="task-date">16 October 2019 at 5:00 PM</div>
+                        <div class="task-location">853 Moore Flats Suite 158</div>
+                        <div class="task-status green">Completed</div>
+                    </div>
+                </div>
+                <div class="task">
+                    <div class="avatar"></div>
+                    <div class="task-info">
+                        <div class="task-title">Client B Quote</div>
+                        <div class="task-date">20-22 October 2019 at 8:00 PM</div>
+                        <div class="task-location">646 Walter Road Apt. 571</div>
+                        <div class="task-status orange">In Progress</div>
+                    </div>
+                </div>
+            </div>
+            <button class="see-more">See More</button>
+            <div class="color-key">
+                <span class="red"></span> Not Completed
+                <span class="green"></span> Completed
+                <span class="orange"></span> In Progress
+            </div>
+        </div>
+    </div>
+    <!-- Modal for job details (hidden by default) -->
+    <div class="modal" id="jobModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="document.getElementById('jobModal').style.display='none'">&times;</span>
+            <h2>Job Details</h2>
+            <div id="modalDetails">Client, staff, location, notes...</div>
+        </div>
+    </div>
+</body>
+</html>
+        document.querySelectorAll('.close').forEach(closeBtn => {
+            closeBtn.onclick = function() {
+                this.parentElement.parentElement.style.display = 'none';
+            }
+        });
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('editForm').onsubmit = function(e) {
+            e.preventDefault();
+            // Add update endpoint if needed
+            alert('Update functionality would be implemented here');
+            document.getElementById('editModal').style.display = 'none';
+            calendar.refetchEvents();
+        }
+    </script>
+</body>
+</html>
