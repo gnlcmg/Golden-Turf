@@ -4,73 +4,6 @@ import sqlite3
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Set a secret key for session management
 
-import json
-# ...existing code...
-@app.route('/payments-quote', methods=['GET', 'POST'])
-def payments_quote():
-    error = None
-    total_price = None
-    price_table = {
-        'Golden Imperial Lush': {'Small': 20, 'Medium': 30, 'Large': 40},
-        'Golden Green Lush': {'Small': 18, 'Medium': 28, 'Large': 38},
-        'Golden Natural 40mm': {'Small': 22, 'Medium': 32, 'Large': 42},
-        'Golden Golf Turf': {'Small': 25, 'Medium': 35, 'Large': 45},
-        'Golden Premium Turf': {'Small': 28, 'Medium': 38, 'Large': 48}
-    }
-    if request.method == 'POST':
-        client_name = request.form.get('client_name', '').strip()
-        area_in_sqm = request.form.get('area_in_sqm', type=float)
-        turf_type = request.form.get('turf_type')
-        size_option = request.form.get('size_option')
-        quantity = request.form.get('quantity', type=int)
-        if not client_name:
-            error = 'Please enter your name'
-        elif not area_in_sqm or area_in_sqm <= 0:
-            error = 'Area must be more than zero'
-        elif not turf_type or turf_type not in price_table:
-            error = 'Please select a valid turf type'
-        elif not size_option or size_option not in price_table[turf_type]:
-            error = 'Please select a valid size option'
-        elif not quantity or quantity <= 0:
-            error = 'Quantity must be at least 1'
-        else:
-            price = price_table[turf_type][size_option]
-            total_price = round(area_in_sqm * price * quantity, 2)
-    return render_template('payments_quote.html', error=error, total_price=total_price)
-@app.route('/payments')
-def payments():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    # Fetch invoices with client name and products
-    c.execute('''
-        SELECT invoices.id, clients.client_name, invoices.status, invoices.due_date, invoices.product, invoices.amount, invoices.gst, invoices.total
-        FROM invoices
-        LEFT JOIN clients ON invoices.client_id = clients.id
-    ''')
-    rows = c.fetchall()
-    payments = []
-    current_date = datetime.now().strftime('%Y-%m-%d')
-    for row in rows:
-        payments.append({
-            'id': row[0],
-            'client': row[1],
-            'status': row[2],
-            'due_date': row[3],
-            'products': row[4],
-            'amount': row[5],
-            'gst': row[6],
-            'total': row[7]
-        })
-    conn.close()
-    return render_template('payments.html', payments=payments, current_date=current_date)
-
-## Removed duplicate route definition
-from flask import Flask, render_template, request, redirect, url_for
-import sqlite3
-
-app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Set a secret key for session management
-
 # Create DB and table if not exists
 def init_db():
     conn = sqlite3.connect('users.db')
@@ -124,16 +57,6 @@ def init_db():
             total REAL,
             status TEXT,
             FOREIGN KEY(client_id) REFERENCES clients(id)
-        )
-    ''')
-    # Products table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_name TEXT UNIQUE NOT NULL,
-            turf_type TEXT NOT NULL,
-            description TEXT,
-            stock INTEGER
         )
     ''')
     conn.commit()
@@ -205,21 +128,20 @@ def dashboard():
     jobs = query_all_jobs()
     payments = query_all_payments()
 
-    today = datetime.datetime.now().date()
+    today = datetime.now().date()
     yesterday = today - timedelta(days=1)
     last_7_days = today - timedelta(days=7)
 
     total_clients = len(clients)
     total_services = sum(1 for job in jobs if job[3] == 'Completed')  # status at index 3
 
-    # Use datetime.strptime from the correct import
     total_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid')  # amount index 3, status index 4
-    today_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid' and datetime.strptime(str(payment[3]), '%Y-%m-%d').date() == today)
-    yesterday_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid' and datetime.strptime(str(payment[3]), '%Y-%m-%d').date() == yesterday)
-    last_7_days_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid' and datetime.strptime(str(payment[3]), '%Y-%m-%d').date() >= last_7_days)
+    today_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d').date() == today)
+    yesterday_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d').date() == yesterday)
+    last_7_days_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d').date() >= last_7_days)
 
-    upcoming_jobs = [job for job in jobs if datetime.strptime(str(job[2]), '%Y-%m-%d').date() >= today]
-    overdue_jobs = [job for job in jobs if datetime.strptime(str(job[2]), '%Y-%m-%d').date() < today and job[3] != 'Completed']
+    upcoming_jobs = [job for job in jobs if datetime.strptime(job[2], '%Y-%m-%d').date() >= today]
+    overdue_jobs = [job for job in jobs if datetime.strptime(job[2], '%Y-%m-%d').date() < today and job[3] != 'Completed']
 
     # For each overdue job, get client name
     conn = sqlite3.connect('users.db')
@@ -320,7 +242,7 @@ def clients():
         company_name = request.form.get('company_name', '').strip()
         email = request.form.get('email', '').strip()
         actions = request.form.get('actions', '').strip()
-        created_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        created_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # Validation
         import re
@@ -333,28 +255,11 @@ def clients():
         elif '@' not in email or '.' not in email:
             error = 'Invalid email format.'
 
-        # Find the lowest available unused ID
-        c.execute('SELECT id FROM clients ORDER BY id ASC')
-        existing_ids = [row[0] for row in c.fetchall()]
-        next_id = 1
-        for eid in existing_ids:
-            if eid == next_id:
-                next_id += 1
-            else:
-                break
-
         if not error:
-            # Insert with custom id if there's a gap, else let AUTOINCREMENT handle
-            if next_id not in existing_ids:
-                c.execute('''
-                    INSERT INTO clients (id, client_name, email, phone, account_type, company_name, actions, created_date)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (next_id, contact_name, email, phone_number, account_type, company_name, actions, created_date))
-            else:
-                c.execute('''
-                    INSERT INTO clients (client_name, email, phone, account_type, company_name, actions, created_date)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (contact_name, email, phone_number, account_type, company_name, actions, created_date))
+            c.execute('''
+                INSERT INTO clients (client_name, email, phone, account_type, company_name, actions, created_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (contact_name, email, phone_number, account_type, company_name, actions, created_date))
             conn.commit()
             success = 'Client saved successfully.'
 
@@ -385,15 +290,15 @@ def invoice():
     if 'user_name' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST':
-        client_name = request.form.get('client_name', '')
-        turf_type = request.form.get('turf_type', '')
-        area = request.form.get('area', '0')
-        extra_fee = request.form.get('extra_fee', '0')
-        extras = request.form.get('extras', 'none')
-        discount = request.form.get('discount', '0')
-        payment_status = request.form.get('payment_status', '')
-        gst = request.form.get('gst', 'no')
-        invoice_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    client_name = request.form.get('client_name', '')
+    turf_type = request.form.get('turf_type', '')
+    area = request.form.get('area', '0')
+    extra_fee = request.form.get('extra_fee', '0')
+    extras = request.form.get('extras', 'none')
+    discount = request.form.get('discount', '0')
+    payment_status = request.form.get('payment_status', '')
+    gst = request.form.get('gst', 'no')
+    invoice_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # Convert numeric fields safely
         try:
@@ -409,8 +314,6 @@ def invoice():
         except ValueError:
             discount_percent = 0.0
 
-        discount_val = 0.0  # Always define discount_val
-
         # Insert invoice into DB
         conn = sqlite3.connect('users.db')
         c = conn.cursor()
@@ -419,9 +322,6 @@ def invoice():
         c.execute('SELECT id FROM clients WHERE client_name = ?', (client_name,))
         client = c.fetchone()
         client_id = client[0] if client else None
-
-        error = None
-        success = None
 
         if client_id:
             # Calculate total
@@ -448,7 +348,7 @@ def invoice():
             conn.close()
             success = 'Invoice saved successfully.'
         else:
-            error = 'Client name not found in database. Please select an existing client.'
+            success = None
 
         return render_template('invoice.html',
                                client_name=client_name,
@@ -461,8 +361,7 @@ def invoice():
                                gst=gst,
                                invoice_id='INV-0001',
                                invoice_date=invoice_date,
-                               success=success,
-                               error=error)
+                               success=success)
     else:
         return render_template('invoice.html')
 
@@ -611,8 +510,6 @@ def delete_invoice(invoice_id):
 from calendar import monthrange, Calendar
 import datetime
 
-
-# Calendar main view
 @app.route('/calendar')
 @app.route('/calendar/<int:year>/<int:month>')
 def calendar(year=None, month=None):
@@ -628,7 +525,7 @@ def calendar(year=None, month=None):
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     c.execute('''
-        SELECT j.id, j.client_id, c.client_name, j.job_date, j.status, j.job_date, j.status, j.client_id
+        SELECT j.id, j.client_id, c.client_name, j.job_date, j.status
         FROM jobs j
         JOIN clients c ON j.client_id = c.id
         ORDER BY j.job_date
@@ -636,20 +533,20 @@ def calendar(year=None, month=None):
     jobs = c.fetchall()
     conn.close()
 
+    # Map jobs to dates for demo (static jobs for now)
     job_map = {}
     for job in jobs:
         job_date = job[3]
         try:
             job_dt = datetime.datetime.strptime(job_date, '%Y-%m-%d').date()
             job_map[job_dt] = {
-                'id': job[0],
                 'title': job[2],
-                'status': 'red' if job[4] == 'Not Completed' else ('green' if job[4] == 'Completed' else 'orange'),
-                'client_id': job[7]
+                'status': 'red' if job[4] == 'Not Completed' else ('green' if job[4] == 'Completed' else 'orange')
             }
         except:
             pass
 
+    # Build calendar grid
     cal = Calendar(firstweekday=0) # Monday
     month_days = cal.monthdayscalendar(year, month)
     calendar_weeks = []
@@ -661,9 +558,10 @@ def calendar(year=None, month=None):
             if in_month:
                 date_obj = datetime.date(year, month, day)
                 job = job_map.get(date_obj)
-            week_cells.append({'day': day if in_month else 0, 'in_month': in_month, 'job': job})
+            week_cells.append({'day': day if in_month else '', 'in_month': in_month, 'job': job})
         calendar_weeks.append(week_cells)
 
+    # Month navigation
     prev_month = month - 1
     prev_year = year
     next_month = month + 1
@@ -686,97 +584,6 @@ def calendar(year=None, month=None):
         next_month=next_month,
         next_year=next_year
     )
-
-@app.route('/calendar/tasks', methods=['GET'])
-def calendar_tasks():
-    if 'user_name' not in session:
-        return json.dumps([])
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('''
-        SELECT j.id, c.client_name, j.job_date, j.status, j.client_id
-        FROM jobs j
-        JOIN clients c ON j.client_id = c.id
-        ORDER BY j.job_date
-    ''')
-    jobs = c.fetchall()
-    conn.close()
-    # Map status to color and text
-    def status_map(status):
-        if status == 'Not Completed':
-            return ('red', 'Not Completed')
-        elif status == 'Completed':
-            return ('green', 'Completed')
-        else:
-            return ('orange', 'In Progress')
-    result = []
-    for job in jobs:
-        color, status_text = status_map(job[3])
-        result.append({
-            'id': job[0],
-            'title': job[1],
-            'date': job[2],
-            'location': '',
-            'status': color,
-            'statusText': status_text,
-            'avatar': 'https://randomuser.me/api/portraits/men/32.jpg'
-        })
-    return json.dumps(result)
-@app.route('/calendar/add', methods=['POST'])
-def calendar_add():
-    if 'user_name' not in session:
-        return redirect(url_for('login'))
-        title = request.form.get('title')
-        description = request.form.get('description')
-        date = request.form.get('date')
-        time = request.form.get('time')
-        location = request.form.get('location')
-        status = request.form.get('status', 'Not Completed')
-        client_id = request.form.get('client_id', None)
-        job_date = date
-        conn = sqlite3.connect('users.db')
-        c = conn.cursor()
-        c.execute('''
-            INSERT INTO jobs (client_id, job_date, status)
-            VALUES (?, ?, ?)
-        ''', (client_id, job_date, status))
-        conn.commit()
-        conn.close()
-        return {'success': True}
-
-# Edit event (job)
-@app.route('/calendar/edit/<int:job_id>', methods=['POST'])
-def calendar_edit(job_id):
-    if 'user_name' not in session:
-        return redirect(url_for('login'))
-        title = request.form.get('title')
-        description = request.form.get('description')
-        date = request.form.get('date')
-        time = request.form.get('time')
-        location = request.form.get('location')
-        status = request.form.get('status', 'Not Completed')
-        client_id = request.form.get('client_id', None)
-        job_date = date
-        conn = sqlite3.connect('users.db')
-        c = conn.cursor()
-        c.execute('''
-            UPDATE jobs SET client_id=?, job_date=?, status=? WHERE id=?
-        ''', (client_id, job_date, status, job_id))
-        conn.commit()
-        conn.close()
-        return {'success': True}
-
-# Delete event (job)
-@app.route('/calendar/delete/<int:job_id>', methods=['POST'])
-def calendar_delete(job_id):
-    if 'user_name' not in session:
-        return redirect(url_for('login'))
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('DELETE FROM jobs WHERE id=?', (job_id,))
-    conn.commit()
-    conn.close()
-    return {'success': True}
 
 @app.route('/calendar/events')
 def calendar_events():
@@ -865,12 +672,6 @@ def calendar_job_details(job_id):
     
     return jsonify({"error": "Job not found"}), 404
 
-
-# Products List Page (should be after app initialization and with other routes)
-@app.route('/products-list')
-def products_list():
-    return render_template('products_list.html')
-
 if __name__ == '__main__':
     app.run(debug=True)
 
@@ -891,8 +692,6 @@ products = []
 
 @app.route('/products', methods=['GET', 'POST'])
 def products_page():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
     if request.method == 'POST':
         product_name = request.form.get('product_name', '').strip()
         turf_type = request.form.get('turf_type')
@@ -900,25 +699,21 @@ def products_page():
         stock = request.form.get('stock', '')
 
         # Validation
-        c.execute('SELECT 1 FROM products WHERE LOWER(product_name) = ?', (product_name.lower(),))
-        exists = c.fetchone()
         if not product_name:
             flash("Please enter the product name")
-        elif exists:
+        elif any(p['product_name'].lower() == product_name.lower() for p in products):
             flash("Product name must be unique")
         elif turf_type not in ALLOWED_TURF_TYPES:
             flash("Invalid turf type selected")
         elif stock and (not stock.isdigit() or int(stock) < 0):
             flash("Stock amount must be a non-negative number")
         else:
-            c.execute('''
-                INSERT INTO products (product_name, turf_type, description, stock)
-                VALUES (?, ?, ?, ?)
-            ''', (product_name, turf_type, description, int(stock) if stock else None))
-            conn.commit()
+            products.append({
+                'product_name': product_name,
+                'turf_type': turf_type,
+                'description': description,
+                'stock': int(stock) if stock else None
+            })
             flash("Product added successfully")
             return redirect('/products')
-    c.execute('SELECT product_name, turf_type, description, stock FROM products')
-    products = [dict(product_name=row[0], turf_type=row[1], description=row[2], stock=row[3]) for row in c.fetchall()]
-    conn.close()
     return render_template('products.html', products=products, turf_types=ALLOWED_TURF_TYPES)
