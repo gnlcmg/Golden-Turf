@@ -1,28 +1,36 @@
-YPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Invoice - Golden Turf</title>
+    <title>Invoice Form - Golden Turf</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
 </head>
 <body>
-    <div class="sidebar">
-        <div class="logo-section">
-            <div class="logo-text">GOLDEN<span style="color:#f4a261;">TURF</span></div>
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
-        <nav class="sidebar-nav">
-            <!-- Removed all links -->
-            <a href="/dashboard" class="return-dashboard-link">Return to Dashboard</a>
+        <h2 style="color: orange;">Golden Turf</h2>
+        <nav class="navbar">
+            <a href="/dashboard" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                    <a href="{{ url_for('list_page') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
+                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                </div>
+            </div>
+            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
         </nav>
     </div>
-    <div class="container">
+    <div class="container" style="margin-left: 220px;">
         <header>
-            <h1>Invoice Details</h1>
-            <div class="invoice-id-date">
-                <span>Invoice ID: <strong>{{ invoice_id or 'INV-0001' }}</strong></span>
-                <span>Invoice Date: <strong>{{ invoice_date or '2024-01-01' }}</strong></span>
-            </div>
+            <h1>Invoice Form</h1>
         </header>
 
             <form method="POST" action="{{ url_for('invoice') }}">
@@ -66,9 +74,6 @@ YPE html>
                     'pegs': 20
                 } %}
 
-                <label for="discount">Discount:</label>
-                <input type="number" id="discount" name="discount" min="0" step="0.01" value="{{ discount or 0 }}" />
-
                 <label for="payment_status">Payment Status:</label>
                 <select id="payment_status" name="payment_status" required>
                     <option value="" disabled selected>Select payment status</option>
@@ -77,7 +82,7 @@ YPE html>
                     <option value="Overdue" {% if payment_status == 'Overdue' %}selected{% endif %}>Overdue</option>
                 </select>
 
-                <label for="gst">Apply GST (7%):</label>
+                <label for="gst">Apply GST (10%):</label>
                 <input type="checkbox" id="gst" name="gst" value="yes" {% if gst == 'yes' %}checked{% endif %} />
             </section>
 
@@ -91,7 +96,6 @@ YPE html>
                             <th>Area (sq m)</th>
                             <th>Extra Fee</th>
                             <th>Extras</th>
-                            <th>Discount</th>
                             <th>Total</th>
                             <th>Payment Status</th>
                         </tr>
@@ -103,19 +107,18 @@ YPE html>
                             <td>{{ area or 0 }}</td>
                             <td>${{ "%.2f"|format(extra_fee or 0) }}</td>
                             <td>{{ extras or 'None' }}</td>
-                            <td>${{ "%.2f"|format(discount or 0) }}</td>
                             <td>
                                 {% set extra_cost = extras_costs.get(extras, 0) %}
                                 {% if area and area > 0 %}
-                                    {% set subtotal = (area or 0) + (extra_fee or 0) + extra_cost - (discount or 0) %}
+                                    {% set subtotal = (area or 0) + (extra_fee or 0) + extra_cost %}
                                 {% else %}
-                                    {% set subtotal = (extra_fee or 0) + extra_cost - (discount or 0) %}
+                                    {% set subtotal = (extra_fee or 0) + extra_cost %}
                                 {% endif %}
                                 {% if subtotal < 0 %}
                                     <span class="error">Invalid total amount</span>
                                 {% else %}
                                     {% if gst == 'yes' %}
-                                        {% set gst_amount = subtotal * 0.07 %}
+                                        {% set gst_amount = subtotal * 0.10 %}
                                         {% set total = subtotal + gst_amount %}
                                         ${{ "%.2f"|format(total) }} (incl. GST ${{ "%.2f"|format(gst_amount) }})
                                     {% else %}
@@ -156,6 +159,9 @@ YPE html>
 
         // Initialize on page load
         toggleAreaRequirement();
+
+        // Update GST calculation to 10%
+        const gstRate = 0.10; // 10% GST
     </script>
 </body>
 </html>

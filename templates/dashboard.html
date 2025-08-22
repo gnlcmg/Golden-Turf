@@ -14,14 +14,14 @@
             <div class="nav-dropdown">
                 <a href="#" class="dropbtn">Products</a>
                 <div class="dropdown-content">
+                    <a href="{{ url_for('products_list') }}">Products List</a>
                     <a href="{{ url_for('list_page') }}">Clients & Invoices List</a>
                     <a href="{{ url_for('invoice') }}">Invoice Form</a>
                     <a href="{{ url_for('clients') }}">Client Details Form</a>
                 </div>
             </div>
-            <a href="#">Quotes</a>
-            <a href="#">Client List</a>
-            <a href="#">Payments</a>
+            <a href="{{ url_for('quotes') }}">Quotes</a>
+            <a href="{{ url_for('payments') }}">Payments</a>
             <a href="#">Reports</a>
             <a href="{{ url_for('calendar') }}">Calendar</a>
         </nav>
@@ -73,7 +73,6 @@
         {% endif %}
 
         <footer>
-            Client information display of sales
         </footer>
     </div>
 </body>

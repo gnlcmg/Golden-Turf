@@ -3,70 +3,77 @@ import sqlite3
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Set a secret key for session management
+from flask import Flask, render_template, request, redirect, url_for, session
+import sqlite3
+import json
+from datetime import datetime, timedelta
 
-# Create DB and table if not exists
-def init_db():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        )
-    ''')
-    # New tables for dashboard
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS clients (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_name TEXT NOT NULL,
-            phone TEXT,
-            created_date TEXT,
-            UNIQUE(client_name)
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS jobs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER,
-            job_date TEXT,
-            status TEXT,
-            FOREIGN KEY(client_id) REFERENCES clients(id)
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER,
-            amount REAL,
-            payment_date TEXT,
-            status TEXT,
-            FOREIGN KEY(client_id) REFERENCES clients(id)
-        )
-    ''')
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS invoices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_id INTEGER,
-            product TEXT,
-            quantity INTEGER,
-            price REAL,
-            gst REAL,
-            discount REAL,
-            total REAL,
-            status TEXT,
-            FOREIGN KEY(client_id) REFERENCES clients(id)
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-init_db()
+app = Flask(__name__)
+app.secret_key = 'your_secret_key_here'  # Set a secret key for session management
 
 @app.route('/')
 def home():
     return redirect(url_for('register'))
+# ...existing code...
+@app.route('/payments-quote', methods=['GET', 'POST'])
+def payments_quote():
+    error = None
+    total_price = None
+    price_table = {
+        'Golden Imperial Lush': {'Small': 20, 'Medium': 30, 'Large': 40},
+        'Golden Green Lush': {'Small': 18, 'Medium': 28, 'Large': 38},
+        'Golden Natural 40mm': {'Small': 22, 'Medium': 32, 'Large': 42},
+        'Golden Golf Turf': {'Small': 25, 'Medium': 35, 'Large': 45},
+        'Golden Premium Turf': {'Small': 28, 'Medium': 38, 'Large': 48}
+    }
+    if request.method == 'POST':
+        client_name = request.form.get('client_name', '').strip()
+        area_in_sqm = request.form.get('area_in_sqm', type=float)
+        turf_type = request.form.get('turf_type')
+        size_option = request.form.get('size_option')
+        quantity = request.form.get('quantity', type=int)
+        if not client_name:
+            error = 'Please enter your name'
+        elif not area_in_sqm or area_in_sqm <= 0:
+            error = 'Area must be more than zero'
+        elif not turf_type or turf_type not in price_table:
+            error = 'Please select a valid turf type'
+        elif not size_option or size_option not in price_table[turf_type]:
+            error = 'Please select a valid size option'
+        elif not quantity or quantity <= 0:
+            error = 'Quantity must be at least 1'
+        else:
+            price = price_table[turf_type][size_option]
+            total_price = round(area_in_sqm * price * quantity, 2)
+    return render_template('payments_quote.html', error=error, total_price=total_price)
+@app.route('/payments')
+def payments():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    # Fetch invoices with client name and products
+    c.execute('''
+        SELECT invoices.id, clients.client_name, invoices.status, invoices.due_date, invoices.product, invoices.amount, invoices.gst, invoices.total
+        FROM invoices
+        LEFT JOIN clients ON invoices.client_id = clients.id
+    ''')
+    rows = c.fetchall()
+    payments = []
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    for row in rows:
+        payments.append({
+            'id': row[0],
+            'client': row[1],
+            'status': row[2],
+            'due_date': row[3],
+            'products': row[4],
+            'amount': row[5],
+            'gst': row[6],
+            'total': row[7]
+        })
+    conn.close()
+    return render_template('payments.html', payments=payments, current_date=current_date)
+
+## Removed duplicate route definition
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -290,15 +297,14 @@ def invoice():
     if 'user_name' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST':
-    client_name = request.form.get('client_name', '')
-    turf_type = request.form.get('turf_type', '')
-    area = request.form.get('area', '0')
-    extra_fee = request.form.get('extra_fee', '0')
-    extras = request.form.get('extras', 'none')
-    discount = request.form.get('discount', '0')
-    payment_status = request.form.get('payment_status', '')
-    gst = request.form.get('gst', 'no')
-    invoice_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        client_name = request.form.get('client_name', '')
+        turf_type = request.form.get('turf_type', '')
+        area = request.form.get('area', '0')
+        extra_fee = request.form.get('extra_fee', '0')
+        extras = request.form.get('extras', 'none')
+        payment_status = request.form.get('payment_status', '')
+        gst = request.form.get('gst', 'no')
+        invoice_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # Convert numeric fields safely
         try:
@@ -309,10 +315,6 @@ def invoice():
             extra_fee_val = float(extra_fee)
         except ValueError:
             extra_fee_val = 0.0
-        try:
-            discount_percent = float(discount)
-        except ValueError:
-            discount_percent = 0.0
 
         # Insert invoice into DB
         conn = sqlite3.connect('users.db')
@@ -324,26 +326,44 @@ def invoice():
         client_id = client[0] if client else None
 
         if client_id:
-            # Calculate total
-            extras_costs = {
-                'none': 0,
-                'artificial_hedges': 50,
-                'fountain': 150,
-                'bamboo_products': 75,
-                'polished_pebbles': 40,
-                'pegs': 20
+            # Updated price table for turf types and other products
+            price_table = {
+                'Golden Imperial Lush': 15,
+                'Golden Green Lush': 19,
+                'Golden Natural 40mm': 17,
+                'Golden Golf Turf': 22,
+                'Golden Premium Turf': 20,
+                'Peg (Upins/Nails)': 25 / 100,  # $25 for 100 pieces
+                'Artificial Hedges': 10 / 0.25,  # $10 per 50cmx50cm
+                'Black Pebbles': 18 / 20,  # $18 per 20kg bag
+                'White Pebbles': 15 / 20,  # $15 per 20kg bag
+                'Bamboo Products': {
+                    '2 metres': 40,
+                    '2.4 metres': 38,
+                    '1.8 metres': 38
+                },
+                'Adhesive Joining Tape': 25 / 15  # $25 for 15 metres
             }
-            extra_cost = extras_costs.get(extras, 0)
-            subtotal = area_val + extra_fee_val + extra_cost
-            discount_val = subtotal * (discount_percent / 100)
-            subtotal_after_discount = subtotal - discount_val
-            gst_amount = subtotal_after_discount * 0.07 if gst == 'yes' else 0
-            total = subtotal_after_discount + gst_amount
+
+            # Calculate price based on product type and size
+            if turf_type in price_table:
+                price_per_unit = price_table[turf_type]
+            elif extras in price_table:
+                price_per_unit = price_table[extras]
+            elif extras == 'Fountain':
+                price_per_unit = 0  # Owner manually adds price for fountains
+            else:
+                price_per_unit = 0
+
+            # Calculate subtotal including area and price per unit
+            subtotal = area_val * price_per_unit + extra_fee_val + extra_cost
+            gst_amount = subtotal * 0.10 if gst == 'yes' else 0
+            total = subtotal + gst_amount
 
             c.execute('''
-                INSERT INTO invoices (client_id, product, quantity, price, gst, discount, total, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (client_id, turf_type, area_val, extra_fee_val, gst_amount, discount_val, total, payment_status))
+                INSERT INTO invoices (client_id, product, quantity, price, gst, total, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (client_id, turf_type, area_val, extra_fee_val, gst_amount, total, payment_status))
             conn.commit()
             conn.close()
             success = 'Invoice saved successfully.'
@@ -356,7 +376,6 @@ def invoice():
                                area=area_val,
                                extra_fee=extra_fee_val,
                                extras=extras,
-                               discount=discount_val,
                                payment_status=payment_status,
                                gst=gst,
                                invoice_id='INV-0001',
@@ -380,7 +399,7 @@ def list_page():
     # Fetch invoices with client name
     c.execute('''
         SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
-               invoices.gst, invoices.discount, invoices.total, invoices.status, invoices.id
+               invoices.gst, invoices.total, invoices.status, invoices.id
         FROM invoices
         LEFT JOIN clients ON invoices.client_id = clients.id
     ''')
@@ -459,7 +478,6 @@ def edit_invoice(invoice_id):
         quantity = request.form.get('quantity', '0').strip()
         price = request.form.get('price', '0').strip()
         gst = request.form.get('gst', '0').strip()
-        discount = request.form.get('discount', '0').strip()
         status = request.form.get('status', '').strip()
 
         # Validation
@@ -468,27 +486,26 @@ def edit_invoice(invoice_id):
             quantity_val = int(quantity)
             price_val = float(price)
             gst_val = float(gst)
-            discount_val = float(discount)
         except ValueError:
-            error = 'Quantity, price, GST, and discount must be numeric.'
+            error = 'Quantity, price, GST must be numeric.'
 
         if error:
-            c.execute('SELECT id, client_id, product, quantity, price, gst, discount, total, status FROM invoices WHERE id = ?', (invoice_id,))
+            c.execute('SELECT id, client_id, product, quantity, price, gst, total, status FROM invoices WHERE id = ?', (invoice_id,))
             invoice = c.fetchone()
             return render_template('edit_invoice.html', error=error, invoice=invoice)
 
-        total = quantity_val * price_val + gst_val - discount_val
+        total = quantity_val * price_val + gst_val
 
         c.execute('''
             UPDATE invoices
-            SET product = ?, quantity = ?, price = ?, gst = ?, discount = ?, total = ?, status = ?
+            SET product = ?, quantity = ?, price = ?, gst = ?, total = ?, status = ?
             WHERE id = ?
-        ''', (product, quantity_val, price_val, gst_val, discount_val, total, status, invoice_id))
+        ''', (product, quantity_val, price_val, gst_val, total, status, invoice_id))
         conn.commit()
         conn.close()
         return redirect(url_for('list_page'))
     else:
-        c.execute('SELECT id, client_id, product, quantity, price, gst, discount, total, status FROM invoices WHERE id = ?', (invoice_id,))
+        c.execute('SELECT id, client_id, product, quantity, price, gst, total, status FROM invoices WHERE id = ?', (invoice_id,))
         invoice = c.fetchone()
         conn.close()
         if invoice:
@@ -508,7 +525,6 @@ def delete_invoice(invoice_id):
     return redirect(url_for('list_page'))
 
 from calendar import monthrange, Calendar
-import datetime
 
 @app.route('/calendar')
 @app.route('/calendar/<int:year>/<int:month>')
@@ -516,7 +532,7 @@ def calendar(year=None, month=None):
     if 'user_name' not in session:
         return redirect(url_for('login'))
 
-    today = datetime.date.today()
+    today = datetime.now().date()
     if not year or not month:
         year = today.year
         month = today.month
@@ -538,7 +554,7 @@ def calendar(year=None, month=None):
     for job in jobs:
         job_date = job[3]
         try:
-            job_dt = datetime.datetime.strptime(job_date, '%Y-%m-%d').date()
+            job_dt = datetime.strptime(job_date, '%Y-%m-%d').date()
             job_map[job_dt] = {
                 'title': job[2],
                 'status': 'red' if job[4] == 'Not Completed' else ('green' if job[4] == 'Completed' else 'orange')
@@ -556,7 +572,7 @@ def calendar(year=None, month=None):
             in_month = day != 0
             job = None
             if in_month:
-                date_obj = datetime.date(year, month, day)
+                date_obj = datetime(year, month, day).date()
                 job = job_map.get(date_obj)
             week_cells.append({'day': day if in_month else '', 'in_month': in_month, 'job': job})
         calendar_weeks.append(week_cells)
@@ -573,7 +589,7 @@ def calendar(year=None, month=None):
         next_month = 1
         next_year += 1
 
-    current_month_name = datetime.date(year, month, 1).strftime('%B')
+    current_month_name = datetime(year, month, 1).strftime('%B')
 
     return render_template('calendar.html',
         calendar_weeks=calendar_weeks,
@@ -672,8 +688,11 @@ def calendar_job_details(job_id):
     
     return jsonify({"error": "Job not found"}), 404
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# --- Products List Page Route ---
+@app.route('/products_list', endpoint='products_list')
+def products_list():
+    # For demo, use the in-memory products list
+    return render_template('products_list.html', products=products)
 
 # --- Products Page Route ---
 from flask import flash
@@ -717,3 +736,120 @@ def products_page():
             flash("Product added successfully")
             return redirect('/products')
     return render_template('products.html', products=products, turf_types=ALLOWED_TURF_TYPES)
+
+@app.route('/submit_invoice', methods=['POST'])
+def submit_invoice():
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+
+    # Fetch form data
+    client_id = request.form.get('client_id', '').strip()
+    product = request.form.get('product', '').strip()
+    quantity = request.form.get('quantity', '0').strip()
+    price = request.form.get('price', '0').strip()
+    gst = request.form.get('gst', '0').strip()
+    status = request.form.get('status', '').strip()
+
+    # Validation
+    error = None
+    try:
+        quantity_val = int(quantity)
+        price_val = float(price)
+        gst_val = float(gst)
+    except ValueError:
+        error = 'Quantity, price, and GST must be numeric.'
+
+    if error:
+        return render_template('invoice.html', error=error)
+
+    # Calculate total
+    total = quantity_val * price_val + gst_val
+
+    # Determine invoice ID
+    c.execute('SELECT MAX(id) FROM invoices')
+    max_id = c.fetchone()[0]
+    invoice_id = max_id + 1 if max_id else 1
+
+    # Insert invoice
+    c.execute('''
+        INSERT INTO invoices (client_id, product, quantity, price, gst, total, status, id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (client_id, product, quantity_val, price_val, gst_val, total, status, invoice_id))
+    conn.commit()
+
+    # Fetch updated invoice list after submission
+    c.execute('''
+        SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
+               invoices.gst, invoices.total, invoices.status
+        FROM invoices
+        LEFT JOIN clients ON invoices.client_id = clients.id
+    ''')
+    invoices = c.fetchall()
+
+    conn.close()
+
+    return render_template('list_page.html', invoices=invoices)
+
+@app.route('/quotes', methods=['GET', 'POST'])
+def quotes():
+    if request.method == 'POST':
+        client_name = request.form.get('client_name')
+        turf_type = request.form.get('turf_type')
+        area_in_sqm = float(request.form.get('area_in_sqm', 0))
+        other_product = request.form.get('other_products')
+        custom_price = float(request.form.get('custom_price', 0))
+        other_product_quantity = int(request.form.get('other_product_quantity', 1))
+
+        if not client_name:
+            return "Please enter your name", 400
+
+        if area_in_sqm <= 0:
+            return "Area must be more than zero", 400
+
+        price_per_unit = {
+            'Golden Imperial Lush': 15,
+            'Golden Green Lush': 19,
+            'Golden Natural 40mm': 17,
+            'Golden Golf Turf': 22,
+            'Golden Premium Turf': 20
+        }.get(turf_type, 0)
+
+        other_product_prices = {
+            'Peg': 25,
+            'Artificial Hedges': 10,
+            'Black Pebbles': 18,
+            'White Pebbles': 15,
+            'Bamboo 2m': 40,
+            'Bamboo 2.4m': 38,
+            'Bamboo 1.8m': 38,
+            'Adhesive Tape': 25
+        }
+
+        other_product_price = custom_price if other_product == 'Fountain' else other_product_prices.get(other_product, 0)
+        total_other_product_price = other_product_price * other_product_quantity
+        total_price = (area_in_sqm * price_per_unit) + total_other_product_price
+
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+
+        c.execute('SELECT id FROM clients WHERE client_name = ?', (client_name,))
+        client = c.fetchone()
+        client_id = client[0] if client else None
+
+        if client_id:
+            c.execute('''
+                INSERT INTO invoices (client_id, product, quantity, price, gst, total, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (client_id, turf_type, area_in_sqm, total_other_product_price, 0, total_price, 'Pending'))
+            conn.commit()
+        conn.close()
+
+        return f"Total price is ${total_price:.2f}", 200
+
+    return render_template('quotes.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)

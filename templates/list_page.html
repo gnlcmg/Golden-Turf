@@ -22,16 +22,28 @@
     </script>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="logo-section">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Golden Turf Logo" class="logo-img" />
-            <div class="logo-text">GOLDEN<span style="color:#f4a261;">TURF</span></div>
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
-        <nav class="sidebar-nav">
-            <a href="/dashboard" class="return-dashboard-link">Return to Dashboard</a>
+        <h2 style="color: orange;">Golden Turf</h2>
+        <nav class="navbar">
+            <a href="/dashboard" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                    <a href="{{ url_for('list_page') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
+                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                </div>
+            </div>
+            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
         </nav>
     </div>
-    <div class="container">
+    <div class="container" style="margin-left:220px;">
     <header>
         <h1>Client & Invoices List</h1>
         <label for="view-select">View:</label>
@@ -89,7 +101,6 @@
                         <th>Area (sq m)</th>
                         <th>Extra Fee</th>
                         <th>Extras</th>
-                        <th>Discount</th>
                         <th>Total (incl. GST)</th>
                         <th>Payment Status</th>
                         <th>Invoice Date</th>
@@ -105,7 +116,6 @@
                         <td>{{ invoice[3] or 0 }}</td>
                         <td>${{ "%.2f"|format(invoice[4] or 0) }}</td>
                         <td>{{ invoice[5] or 'None' }}</td>
-                        <td>${{ "%.2f"|format(invoice[6] or 0) }}</td>
                         <td>${{ "%.2f"|format(invoice[7] or 0) }}</td>
                         <td>{{ invoice[8] or '' }}</td>
                         <td>{{ invoice[9] or '' }}</td>
@@ -120,7 +130,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="11">No invoices found.</td>
+                        <td colspan="10">No invoices found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

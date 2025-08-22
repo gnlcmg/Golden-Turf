@@ -7,7 +7,248 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
-    ...existing code...
+    <style>
+        /* Add your custom styles here */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        
+        #calendar {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 10px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        /* Sidebar styles */
+        .sidebar {
+            height: 100%;
+            width: 250px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #fff;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .sidebar nav {
+            flex-grow: 1;
+        }
+        
+        .sidebar a {
+            display: block;
+            padding: 10px;
+            margin: 5px 0;
+            color: #333;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        
+        .sidebar a:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .nav-dropdown {
+            position: relative;
+        }
+        
+        .dropbtn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            color: #333;
+            text-decoration: none;
+            border-radius: 4px;
+            text-align: left;
+        }
+        
+        .dropbtn:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: 100%;
+            background-color: #fff;
+            min-width: 250px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .nav-dropdown:hover .dropdown-content {
+            display: block;
+        }
+        
+        /* Calendar styles */
+        .calendar-container {
+            margin-left: 260px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .calendar-controls button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .calendar-controls button:hover {
+            background-color: #0056b3;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+        }
+        
+        .calendar-day {
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            text-align: center;
+            position: relative;
+        }
+        
+        .calendar-day.inactive {
+            background-color: #f9f9f9;
+            color: #ccc;
+        }
+        
+        .job-tile {
+            padding: 5px;
+            margin-top: 5px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .job-tile.pending {
+            background-color: #f39c12;
+        }
+        
+        .job-tile.completed {
+            background-color: #27ae60;
+        }
+        
+        .job-tile.cancelled {
+            background-color: #e74c3c;
+        }
+        
+        /* Media queries */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+            }
+            
+            .calendar-container {
+                margin-left: 0;
+            }
+            
+            .calendar-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .calendar-controls {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .calendar-controls button {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -74,42 +315,19 @@
             </div>
         </div>
         <div class="sidebar">
-            <button class="add-event-btn">+ Add New Event</button>
-            <div class="tasks">
-                <div class="task">
-                    <div class="avatar"></div>
-                    <div class="task-info">
-                        <div class="task-title">Client A Quote</div>
-                        <div class="task-date">Due: Today 07:19 AM</div>
-                        <div class="task-location">56 Davion Mission Suite 157</div>
-                        <div class="task-status red">Not Completed</div>
+            <h2>Golden Turf</h2>
+            <nav>
+                <a href="/dashboard">Dashboard</a>
+                <div class="nav-dropdown">
+                    <a href="#" class="dropbtn">Products</a>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('products_list') }}">Products List</a>
+                        <a href="{{ url_for('list_page') }}">Clients & Invoices List</a>
+                        <a href="{{ url_for('invoice') }}">Invoice Form</a>
+                        <a href="{{ url_for('clients') }}">Client Details Form</a>
                     </div>
                 </div>
-                <div class="task">
-                    <div class="avatar"></div>
-                    <div class="task-info">
-                        <div class="task-title">Supplier Delivery</div>
-                        <div class="task-date">16 October 2019 at 5:00 PM</div>
-                        <div class="task-location">853 Moore Flats Suite 158</div>
-                        <div class="task-status green">Completed</div>
-                    </div>
-                </div>
-                <div class="task">
-                    <div class="avatar"></div>
-                    <div class="task-info">
-                        <div class="task-title">Client B Quote</div>
-                        <div class="task-date">20-22 October 2019 at 8:00 PM</div>
-                        <div class="task-location">646 Walter Road Apt. 571</div>
-                        <div class="task-status orange">In Progress</div>
-                    </div>
-                </div>
-            </div>
-            <button class="see-more">See More</button>
-            <div class="color-key">
-                <span class="red"></span> Not Completed
-                <span class="green"></span> Completed
-                <span class="orange"></span> In Progress
-            </div>
+            </nav>
         </div>
     </div>
     <!-- Modal for job details (hidden by default) -->

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotes - Golden Turf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <style>
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: 20px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .form-container label {
+            margin: 10px 0 5px;
+            font-weight: bold;
+            text-align: left;
+        }
+        .form-container input, .form-container select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-container button {
+            padding: 10px 20px;
+            background-color: #006400;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .form-container button:hover {
+            background-color: #004d00;
+        }
+        .quote-summary {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            width: 80%;
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .quote-summary h2 {
+            margin-bottom: 10px;
+        }
+        .quote-summary p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+        </div>
+        <h2 style="color: orange;">Golden Turf</h2>
+        <nav class="navbar">
+            <a href="/dashboard" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                    <a href="{{ url_for('list_page') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
+                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                </div>
+            </div>
+            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
+        </nav>
+    </div>
+    <div class="container" style="margin-left: 220px;">
+        <header>
+            <h1>Quotation Form</h1>
+        </header>
+        <div class="form-container">
+            <form method="POST" action="{{ url_for('quotes') }}">
+                <label for="client_name">Name (Client):</label>
+                <input type="text" id="client_name" name="client_name">
+
+                <label for="turf_type">Grass Type:</label>
+                <select id="turf_type" name="turf_type">
+                    <option value="Golden Imperial Lush">Golden Imperial Lush</option>
+                    <option value="Golden Green Lush">Golden Green Lush</option>
+                    <option value="Golden Natural 40mm">Golden Natural 40mm</option>
+                    <option value="Golden Golf Turf">Golden Golf Turf</option>
+                    <option value="Golden Premium Turf">Golden Premium Turf</option>
+                </select>
+
+                <label for="area_in_sqm">Size (sq meters):</label>
+                <input type="number" id="area_in_sqm" name="area_in_sqm" min="0.01" step="0.01">
+
+                <label for="other_products">Other Products:</label>
+                <select id="other_products" name="other_products">
+                    <option value="">None</option>
+                    <option value="Peg">Peg (Upins/Nails)</option>
+                    <option value="Fountain">Fountain</option>
+                    <option value="Artificial Hedges">Artificial Hedges</option>
+                    <option value="Black Pebbles">Black Pebbles</option>
+                    <option value="White Pebbles">White Pebbles</option>
+                    <option value="Bamboo 2m">Bamboo Products (2m)</option>
+                    <option value="Bamboo 2.4m">Bamboo Products (2.4m)</option>
+                    <option value="Bamboo 1.8m">Bamboo Products (1.8m)</option>
+                    <option value="Adhesive Tape">Adhesive Joining Tape</option>
+                </select>
+
+                <div id="custom-price-container" style="display: none;">
+                    <label for="custom_price">Custom Price for Selected Product:</label>
+                    <input type="number" id="custom_price" name="custom_price" min="0.01" step="0.01">
+                </div>
+
+                <div id="other-product-quantity-container" style="display: none;">
+                    <label for="other_product_quantity">Quantity for Selected Product:</label>
+                    <input type="number" id="other_product_quantity" name="other_product_quantity" min="1" step="1">
+                </div>
+
+                <button type="submit">Submit</button>
+            </form>
+
+            <div class="quote-summary" id="quote-summary" style="display: none;">
+                <h2>Quote Summary</h2>
+                <p><strong>Client Name:</strong> <span id="summary-client-name"></span></p>
+                <p><strong>Grass Type:</strong> <span id="summary-turf-type"></span></p>
+                <p><strong>Size:</strong> <span id="summary-size"></span> sq meters</p>
+                <p><strong>Other Product:</strong> <span id="summary-other-product">N/A</span></p>
+                <p><strong>Total Price:</strong> $<span id="summary-total-price"></span></p>
+            </div>
+            <button onclick="printSummary()">Print Summary</button>
+        </div>
+    </div>
+
+    <script>
+        const otherProductsSelect = document.getElementById('other_products');
+        const customPriceContainer = document.getElementById('custom-price-container');
+        const otherProductQuantityContainer = document.getElementById('other-product-quantity-container');
+        const otherProductQuantityInput = document.getElementById('other_product_quantity');
+
+        otherProductsSelect.addEventListener('change', () => {
+            if (otherProductsSelect.value === 'Fountain') {
+                customPriceContainer.style.display = 'block';
+                otherProductQuantityContainer.style.display = 'none';
+            } else if (otherProductsSelect.value) {
+                customPriceContainer.style.display = 'none';
+                otherProductQuantityContainer.style.display = 'block';
+            } else {
+                customPriceContainer.style.display = 'none';
+                otherProductQuantityContainer.style.display = 'none';
+            }
+        });
+
+        const form = document.querySelector('form');
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const clientName = document.getElementById('client_name').value;
+            const turfType = document.getElementById('turf_type').value;
+            const areaInSqm = parseFloat(document.getElementById('area_in_sqm').value || 0);
+            const otherProduct = otherProductsSelect.value || 'N/A';
+            const customPrice = parseFloat(document.getElementById('custom_price').value || 0);
+            const otherProductQuantity = parseInt(otherProductQuantityInput.value) || 0;
+
+            const pricePerUnit = {
+                'Golden Imperial Lush': 15,
+                'Golden Green Lush': 19,
+                'Golden Natural 40mm': 17,
+                'Golden Golf Turf': 22,
+                'Golden Premium Turf': 20
+            }[turfType] || 0;
+
+            const otherProductPrices = {
+                'Peg': 25,
+                'Artificial Hedges': 10,
+                'Black Pebbles': 18,
+                'White Pebbles': 15,
+                'Bamboo 2m': 40,
+                'Bamboo 2.4m': 38,
+                'Bamboo 1.8m': 38,
+                'Adhesive Tape': 25
+            };
+
+            const otherProductPrice = otherProduct === 'Fountain' ? customPrice : (otherProductPrices[otherProduct] || 0) * otherProductQuantity;
+
+            const totalPrice = (areaInSqm * pricePerUnit) + otherProductPrice;
+
+            document.getElementById('summary-client-name').textContent = clientName;
+            document.getElementById('summary-turf-type').textContent = turfType;
+            document.getElementById('summary-size').textContent = areaInSqm;
+            document.getElementById('summary-other-product').textContent = otherProduct;
+            document.getElementById('summary-total-price').textContent = totalPrice.toFixed(2);
+
+            document.getElementById('quote-summary').style.display = 'block';
+        });
+
+        function printSummary() {
+            const summary = document.getElementById('quote-summary');
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write('<html><head><title>Print Summary</title></head><body>');
+            printWindow.document.write(summary.outerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+    </script>
+</body>
+</html>

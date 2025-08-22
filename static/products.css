@@ -1,9 +1,11 @@
 body {
     font-family: Arial, sans-serif;
-    background: #fff;
+    background: linear-gradient(135deg, #2e7d32 60%, #F28F2B 40%); /* Match other product pages */
     margin: 0;
-    padding: 0;
+    padding: 20px;
+    color: #333;
 }
+
 .navbar {
     background: #fff;
     display: flex;
@@ -11,27 +13,33 @@ body {
     padding: 10px 30px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
+
 .logo img {
     height: 40px;
 }
+
 .nav-links {
     list-style: none;
     display: flex;
     margin-left: auto;
 }
+
 .nav-links li {
     margin: 0 15px;
     position: relative;
 }
+
 .nav-links a {
     text-decoration: none;
     color: #333;
     font-weight: bold;
     font-size: 16px;
 }
+
 .dropdown .dropbtn {
     cursor: pointer;
 }
+
 .dropdown-content {
     display: none;
     position: absolute;
@@ -40,36 +48,38 @@ body {
     box-shadow: 0 8px 16px rgba(0,0,0,0.1);
     z-index: 1;
 }
+
 .dropdown-content a {
     color: #333;
     padding: 12px 16px;
     text-decoration: none;
     display: block;
 }
+
 .dropdown-content a:hover {
     background: #e0e0e0;
 }
+
 .dropdown:hover .dropdown-content {
     display: block;
 }
+
 .container {
-    max-width: 800px;
-    margin: 40px auto;
-    background: #fafafa;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    /* Removed styles */
 }
+
 h1 {
     color: #2e7d32;
     font-size: 2.2em;
     margin-bottom: 20px;
 }
+
 .product-form label {
     display: block;
     margin-top: 15px;
     font-weight: 600;
 }
+
 .product-form input, .product-form select {
     width: 100%;
     padding: 8px;
@@ -77,6 +87,7 @@ h1 {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
+
 .product-form button {
     margin-top: 20px;
     background: #2e7d32;
@@ -87,22 +98,27 @@ h1 {
     font-size: 16px;
     cursor: pointer;
 }
+
 .product-form button:hover {
     background: #388e3c;
 }
+
 .product-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 30px;
 }
+
 .product-table th, .product-table td {
     border: 1px solid #ddd;
     padding: 10px;
     text-align: left;
 }
+
 .product-table th {
     background: #e0e0e0;
 }
+
 .messages {
     color: #d32f2f;
     margin-bottom: 20px;
