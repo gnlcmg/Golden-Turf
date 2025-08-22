@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style>
+        /* Remove bold from Products tab in sidebar */
+        .sidebar .dropbtn {
+            font-weight: 400 !important;
+        }
+    </style>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Golden Turf Dashboard</title>
@@ -8,22 +14,34 @@
 </head>
 <body>
     <div class="sidebar">
+        <div class="logo-container">
+            <img src="/static/logo.png" alt="Golden Turf Logo" class="logo" />
+        </div>
+    </div>
+    <div class="sidebar">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+        </div>
         <h2>Golden Turf</h2>
         <nav>
-            <a href="/dashboard">Dashboard</a>
-            <div class="nav-dropdown">
-                <a href="#" class="dropbtn">Products</a>
-                <div class="dropdown-content">
-                    <a href="{{ url_for('list_page') }}">Clients & Invoices List</a>
-                    <a href="{{ url_for('invoice') }}">Invoice Form</a>
-                    <a href="{{ url_for('clients') }}">Client Details Form</a>
+                <a href="/dashboard">Dashboard</a>
+                <div class="nav-dropdown" id="products-sidebar-dropdown">
+                    <a href="#" class="dropbtn">Products</a>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('list_page') }}">Clients & Invoices List</a>
+                        <a href="{{ url_for('invoice') }}">Invoice Form</a>
+                        <a href="{{ url_for('clients') }}">Client Details Form</a>
+                        <!-- Calendar removed from Products dropdown -->
+                        <a class="product-list-label" href="/products-list">Product List</a>
+                        {% for p in products %}
+                            <a class="product-list-item" href="/products-list">{{ p.product_name }}</a>
+                        {% endfor %}
+                    </div>
                 </div>
-            </div>
-            <a href="#">Quotes</a>
-            <a href="#">Client List</a>
-            <a href="#">Payments</a>
-            <a href="#">Reports</a>
-            <a href="{{ url_for('calendar') }}">Calendar</a>
+                <a href="/payments-quote">Quotes</a>
+                <a href="/payments">Payments</a>
+                <a href="#">Reports</a>
+                <a href="/calendar">Calendar</a>
         </nav>
     </div>
     <div class="main-content">
@@ -69,12 +87,30 @@
             <button onclick="alert('Add Job clicked')">Add Job</button>
             <button onclick="alert('Generate Quote clicked')">Generate Quote</button>
             <button onclick="window.location.href='/calendar';">View Calendar</button>
+            <button onclick="window.location.href='/payments';">View Payments</button>
         </div>
         {% endif %}
 
         <footer>
-            Client information display of sales
+            <!-- Removed sales text as requested -->
         </footer>
     </div>
 </body>
+<script>
+// Sidebar dropdown on click
+document.addEventListener('DOMContentLoaded', function() {
+    var dropdown = document.getElementById('products-sidebar-dropdown');
+    var btn = dropdown.querySelector('.dropbtn');
+    var content = dropdown.querySelector('.dropdown-content');
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        content.style.display = (content.style.display === 'block') ? 'none' : 'block';
+    });
+    document.addEventListener('click', function(e) {
+        if (!dropdown.contains(e.target)) {
+            content.style.display = 'none';
+        }
+    });
+});
+</script>
 </html>

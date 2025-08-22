@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payments</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='payments.css') }}">
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="sidebar">
+            <div style="width:100%;text-align:center;margin-bottom:20px;">
+                <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:140px;display:block;margin:0 auto;">
+            </div>
+            <nav>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/products-list">Products</a>
+                <a href="#">Quotes</a>
+                <a href="/clients">Client List</a>
+                <a href="/payments" style="font-weight:bold;background:transparent;">Payments <span style="font-weight:normal;">&gt;</span></a>
+                <a href="#">Reports</a>
+                <a href="/calendar">Calendar</a>
+            </nav>
+        </div>
+        <div class="content" style="flex:1;display:flex;justify-content:center;align-items:flex-start;background:linear-gradient(135deg, #2e7d32 60%, #F28F2B 40%);min-height:100vh;">
+            <div class="payments-container" style="background:#fff;padding:32px 40px;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,0.07);margin-top:40px;">
+                <h2 style="color:#2e7d32;text-align:center;margin-bottom:28px;">Payments List</h2>
+                <table class="payments-table" style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#F28F2B;color:#fff;font-size:1.1em;">
+                            <th style="padding:12px 8px;">Clients</th>
+                            <th style="padding:12px 8px;">Status</th>
+                            <th style="padding:12px 8px;">Due Date</th>
+                            <th style="padding:12px 8px;">Products</th>
+                            <th style="padding:12px 8px;">Amount (+ GST)</th>
+                            <th style="padding:12px 8px;">Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        {% if payment.status == 'Unpaid' and payment.due_date < current_date %}
+                        <tr class="overdue" style="background:#ffeaea;">
+                        {% else %}
+                        <tr>
+                        {% endif %}
+                            <td style="padding:10px 8px;">{{ payment.client }}</td>
+                            <td style="padding:10px 8px;">
+                                {{ payment.status }}
+                                {% if payment.status == 'Unpaid' and payment.due_date < current_date %}
+                                    <span style="color:red;font-weight:bold;margin-left:8px;">OVERDUE</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding:10px 8px;">{{ payment.due_date }}</td>
+                            <td style="padding:10px 8px;">{{ payment.products }}</td>
+                            <td style="padding:10px 8px;">${{ payment.amount }} + ${{ payment.gst }}</td>
+                            <td style="padding:10px 8px;">${{ payment.total }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-YPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -8,28 +8,51 @@ YPE html>
 </head>
 <body>
     <div class="sidebar">
-        <div class="logo-section">
-            <div class="logo-text">GOLDEN<span style="color:#f4a261;">TURF</span></div>
+        <div class="logo-container">
+            <img src="/static/logo.png" alt="Golden Turf Logo" class="logo" />
         </div>
-        <nav class="sidebar-nav">
-            <!-- Removed all links -->
-            <a href="/dashboard" class="return-dashboard-link">Return to Dashboard</a>
+    </div>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <div class="sidebar">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+        </div>
+        <h2>Golden Turf</h2>
+        <nav>
+            <a href="/dashboard">Dashboard</a>
+            <div class="nav-dropdown" id="products-sidebar-dropdown">
+                <a href="#" class="dropbtn">Products</a>
+                <div class="dropdown-content">
+                    <a href="/products-list">Product List</a>
+                    <a href="/clients">Client Details Form</a>
+                    <a href="/invoice">Invoice Form</a>
+                    <a href="/list">Clients & Invoices List</a>
+                </div>
+            </div>
+            <a href="#">Quotes</a>
+            <a href="/payments">Payments</a>
+            <a href="#">Reports</a>
+            <a href="/calendar">Calendar</a>
         </nav>
     </div>
-    <div class="container">
+    <div class="container" style="margin-left:220px;">
         <header>
-            <h1>Invoice Details</h1>
-            <div class="invoice-id-date">
-                <span>Invoice ID: <strong>{{ invoice_id or 'INV-0001' }}</strong></span>
-                <span>Invoice Date: <strong>{{ invoice_date or '2024-01-01' }}</strong></span>
-            </div>
+            <h1>Invoice Form</h1>
         </header>
 
             <form method="POST" action="{{ url_for('invoice') }}">
+            {% if success %}
+                <div class="success" style="background:#44ff44;color:#222;padding:10px 18px;border-radius:8px;margin-bottom:18px;font-weight:600;text-align:center;">{{ success }}</div>
+            {% elif error %}
+                <div class="error" style="background:#ff4444;color:#fff;padding:10px 18px;border-radius:8px;margin-bottom:18px;font-weight:600;text-align:center;">{{ error }}</div>
+            {% endif %}
             <section class="client-info">
                 <h2>Client Information</h2>
                 <label for="client_name">Client Name:</label>
                 <input type="text" id="client_name" name="client_name" value="{{ client_name or '' }}" required />
+
+                <label for="due_date">Due Date:</label>
+                <input type="date" id="due_date" name="due_date" value="{{ due_date or '' }}" required />
 
                 <label for="turf_type">Turf Type:</label>
                 <select id="turf_type" name="turf_type" required>
@@ -82,29 +105,20 @@ YPE html>
             </section>
 
             <section class="invoice-summary">
-                <h2>Invoice Summary</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Client Name</th>
-                            <th>Turf Type</th>
-                            <th>Area (sq m)</th>
-                            <th>Extra Fee</th>
-                            <th>Extras</th>
-                            <th>Discount</th>
-                            <th>Total</th>
-                            <th>Payment Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ client_name or '' }}</td>
-                            <td>{{ turf_type or '' }}</td>
-                            <td>{{ area or 0 }}</td>
-                            <td>${{ "%.2f"|format(extra_fee or 0) }}</td>
-                            <td>{{ extras or 'None' }}</td>
-                            <td>${{ "%.2f"|format(discount or 0) }}</td>
-                            <td>
+                <div style="width:100%;text-align:center;margin-bottom:10px;">
+                    <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+                </div>
+                <h2 style="text-align:center;">Invoice Summary</h2>
+                <div class="invoice-summary-vertical" style="max-width:400px;margin:auto;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <tbody>
+                            <tr><th style="text-align:left;width:50%;padding:8px;border-bottom:1px solid #ccc;">Client Name</th><td style="padding:8px;border-bottom:1px solid #eee;">{{ client_name or '' }}</td></tr>
+                            <tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ccc;">Turf Type</th><td style="padding:8px;border-bottom:1px solid #eee;">{{ turf_type or '' }}</td></tr>
+                            <tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ccc;">Area (sq m)</th><td style="padding:8px;border-bottom:1px solid #eee;">{{ area or 0 }}</td></tr>
+                            <tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ccc;">Extra Fee</th><td style="padding:8px;border-bottom:1px solid #eee;">${{ "%.2f"|format(extra_fee or 0) }}</td></tr>
+                            <tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ccc;">Extras</th><td style="padding:8px;border-bottom:1px solid #eee;">{{ extras or 'None' }}</td></tr>
+                            <tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ccc;">Discount</th><td style="padding:8px;border-bottom:1px solid #eee;">${{ "%.2f"|format(discount or 0) }}</td></tr>
+                            <tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ccc;">Total</th><td style="padding:8px;border-bottom:1px solid #eee;">
                                 {% set extra_cost = extras_costs.get(extras, 0) %}
                                 {% if area and area > 0 %}
                                     {% set subtotal = (area or 0) + (extra_fee or 0) + extra_cost - (discount or 0) %}
@@ -123,16 +137,16 @@ YPE html>
                                         ${{ "%.2f"|format(total) }}
                                     {% endif %}
                                 {% endif %}
-                            </td>
-                            <td>{{ payment_status or '' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </td></tr>
+                            <tr><th style="text-align:left;padding:8px;border-bottom:1px solid #ccc;">Payment Status</th><td style="padding:8px;border-bottom:1px solid #eee;">{{ payment_status or '' }}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <div class="form-actions">
                 <button type="submit">Submit Invoice</button>
-                <button type="button" onclick="window.print()">Print Invoice</button>
+                <button type="button" onclick="printSummaryTable()">Print Invoice</button>
             </div>
         </form>
     </div>
@@ -156,6 +170,19 @@ YPE html>
 
         // Initialize on page load
         toggleAreaRequirement();
+
+        // Print only the invoice summary table
+        function printSummaryTable() {
+            var summarySection = document.querySelector('.invoice-summary');
+            var printWindow = window.open('', '', 'height=600,width=900');
+            printWindow.document.write('<html><head><title>Invoice Summary</title>');
+            printWindow.document.write('<link rel="stylesheet" href="/static/invoice.css">');
+            printWindow.document.write('</head><body >');
+            printWindow.document.write(summarySection.innerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        }
     </script>
-</body>
-</html>

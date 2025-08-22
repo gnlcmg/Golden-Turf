@@ -8,17 +8,36 @@
     </head>
 <body>
     <div class="sidebar">
-        <div class="logo-section">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Golden Turf Logo" class="logo-img" />
-            <div class="logo-text">GOLDEN<span style="color:#f4a261;">TURF</span></div>
+        <div class="logo-container">
+            <img src="/static/logo.png" alt="Golden Turf Logo" class="logo" />
         </div>
-        <nav class="sidebar-nav">
-            <a href="/dashboard" class="return-dashboard-link">Return to Dashboard</a>
+    </div>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <div class="sidebar">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+        </div>
+        <h2>Golden Turf</h2>
+        <nav>
+                <a href="/dashboard">Dashboard</a>
+                <div class="nav-dropdown" id="products-sidebar-dropdown">
+                    <a href="#" class="dropbtn">Products</a>
+                    <div class="dropdown-content">
+                        <a href="/products-list">Product List</a>
+                        <a href="/clients">Client Details Form</a>
+                        <a href="/invoice">Invoice Form</a>
+                        <a href="/list">Clients & Invoices List</a>
+                    </div>
+                </div>
+                <a href="/payments-quote">Quotes</a>
+                <a href="/payments">Payments</a>
+                <a href="#">Reports</a>
+                <a href="/calendar">Calendar</a>
         </nav>
     </div>
-    <div class="container">
+    <div class="container" style="margin-left:220px;">
         <header>
-            <h1>Client Details Page</h1>
+            <h1>Client Details Form</h1>
         </header>
 
         {% if error %}

@@ -1,125 +1,124 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Job Calendar</title>
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
-    ...existing code...
-    </style>
-</head>
-<body>
-    <h2>Job Calendar</h2>
-    <div id="calendar"></div>
-
-    <!-- Job Details Modal -->
-    <div id="jobModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Job Details</h3>
-            <div id="jobDetails"></div>
-            <button onclick="editJob()">Edit</button>
-            <button onclick="deleteJob()" class="btn-danger">Delete</button>
-        </div>
-    </div>
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Golden Turf Calendar</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
-    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="main-wrapper">
-        <div class="calendar-container">
-            <div class="header">
-                <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Golden Turf Logo">
-                <div class="search-bar">
-                    <input type="text" placeholder="Search">
-                </div>
-            </div>
-            <div class="calendar-header">
-                <a href="{{ url_for('calendar', year=prev_year, month=prev_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;">&lt;</a>
-                {{ current_month_name }} {{ current_year }}
-                <a href="{{ url_for('calendar', year=next_year, month=next_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;">&gt;</a>
-            </div>
-            <div class="calendar-controls">
-                <button class="active">Month</button>
-                <button>Week</button>
-                <button>Day</button>
-            </div>
-            <div class="calendar-grid">
-                <!-- Days of week -->
-                <div class="calendar-day">MON</div>
-                <div class="calendar-day">TUE</div>
-                <div class="calendar-day">WED</div>
-                <div class="calendar-day">THU</div>
-                <div class="calendar-day">FRI</div>
-                <div class="calendar-day">SAT</div>
-                <div class="calendar-day">SUN</div>
-                <!-- Calendar cells: dynamically fill days for the current month -->
-                {% for week in calendar_weeks %}
-                    {% for day in week %}
-                        <div class="calendar-day{% if not day.in_month %} inactive{% endif %}">
-                            {{ day.day if day.day > 0 else '' }}
-                            {% if day.job %}
-                                <div class="job-tile {{ day.job.status }}">{{ day.job.title }}</div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-            </div>
-        </div>
+        <!-- Sidebar -->
         <div class="sidebar">
-            <button class="add-event-btn">+ Add New Event</button>
-            <div class="tasks">
-                <div class="task">
-                    <div class="avatar"></div>
-                    <div class="task-info">
-                        <div class="task-title">Client A Quote</div>
-                        <div class="task-date">Due: Today 07:19 AM</div>
-                        <div class="task-location">56 Davion Mission Suite 157</div>
-                        <div class="task-status red">Not Completed</div>
+            <div style="width:100%;text-align:center;margin-bottom:20px;">
+                <img src="/static/logo.png" alt="Golden Turf Logo" style="width:140px;display:block;margin:0 auto;">
+            </div>
+            <div style="display:flex;justify-content:center;gap:12px;margin-bottom:18px;">
+                <img src="/static/user_icon.png" alt="User" style="width:40px;">
+                <img src="/static/settings_icon.png" alt="Settings" style="width:40px;">
+                <img src="/static/power_icon.png" alt="Logout" style="width:40px;">
+            </div>
+            <nav>
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="/products-list">Products</a>
+                    <a href="/payments-quote">Quotes</a>
+                    <a href="/clients">Client List</a>
+                    <a href="/payments">Payments</a>
+                    <a href="#">Reports</a>
+                    <a href="/calendar">Calendar</a>
+            </nav>
+        </div>
+        <!-- Calendar Center -->
+        <div class="calendar-center">
+            <div style="width:100%; max-width:900px; display:flex; flex-direction:column; align-items:center;">
+                <div class="header" style="width:100%; display:flex; align-items:center; justify-content:flex-end; margin-top:24px;">
+                        <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" class="logo" style="margin-bottom:10px; margin-right:auto;">
+                    <div class="search-bar" style="margin-bottom:18px; width:180px;">
+                        <input type="text" id="task-search" placeholder="Search" autocomplete="off" style="width:100%; font-size:16px; padding:6px 10px;">
                     </div>
                 </div>
-                <div class="task">
-                    <div class="avatar"></div>
-                    <div class="task-info">
-                        <div class="task-title">Supplier Delivery</div>
-                        <div class="task-date">16 October 2019 at 5:00 PM</div>
-                        <div class="task-location">853 Moore Flats Suite 158</div>
-                        <div class="task-status green">Completed</div>
+                <div class="calendar-container" style="margin-left:60px;">
+                    <div class="calendar-header" style="display:flex; justify-content:center; align-items:center;">
+                        <button id="prevMonth" class="arrow-btn">&#8592;</button>
+                        <span id="calendarTitle" style="margin:0 18px;">{{ current_month_name }} {{ current_year }}</span>
+                        <button id="nextMonth" class="arrow-btn">&#8594;</button>
                     </div>
-                </div>
-                <div class="task">
-                    <div class="avatar"></div>
-                    <div class="task-info">
-                        <div class="task-title">Client B Quote</div>
-                        <div class="task-date">20-22 October 2019 at 8:00 PM</div>
-                        <div class="task-location">646 Walter Road Apt. 571</div>
-                        <div class="task-status orange">In Progress</div>
+                    <div class="calendar-controls">
+                        <button id="viewDay">Day</button>
+                        <button id="viewWeek">Week</button>
+                        <button id="viewMonth" class="active">Month</button>
+                    </div>
+                    <div class="calendar-grid">
+                        <!-- Days of week -->
+                        <div class="calendar-day">MON</div>
+                        <div class="calendar-day">TUE</div>
+                        <div class="calendar-day">WED</div>
+                        <div class="calendar-day">THU</div>
+                        <div class="calendar-day">FRI</div>
+                        <div class="calendar-day">SAT</div>
+                        <div class="calendar-day">SUN</div>
+                        <!-- Calendar cells: dynamically fill days for the current month -->
+                        {% for week in calendar_weeks %}
+                            {% for day in week %}
+                                <div class="calendar-day{% if not day.in_month %} inactive{% endif %}">
+                                    {{ day.day if day.day > 0 else '' }}
+                                    {% if day.job %}
+                                        <div class="job-tile {{ day.job.status }}" onclick="openJobModal('{{ day.job.id }}')">{{ day.job.title }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                    <div class="color-key">
+                        <span class="red"></span> Not Completed
+                        <span class="green"></span> Completed
+                        <span class="orange"></span> In Progress
                     </div>
                 </div>
             </div>
-            <button class="see-more">See More</button>
-            <div class="color-key">
-                <span class="red"></span> Not Completed
-                <span class="green"></span> Completed
-                <span class="orange"></span> In Progress
+            <!-- Right Panel (copied from products_list.html) -->
+            <div class="calendar-right-panel" style="width:340px;margin-left:40px;background:#fff;border-radius:24px;box-shadow:0 2px 12px rgba(0,0,0,0.07);padding:32px 24px;display:flex;flex-direction:column;align-items:flex-start;">
+                <button class="add-event-btn" onclick="openAddModal()">+ Add New Event</button>
+                <!-- Payments button removed from calendar right panel -->
+                <div class="tasks" id="taskList"></div>
+                <button class="see-more" onclick="showAllTasks()">See More</button>
+                <div class="color-key">
+                    <span class="red"></span> Not Completed
+                    <span class="green"></span> Completed
+                    <span class="orange"></span> In Progress
+                </div>
             </div>
         </div>
     </div>
-    <!-- Modal for job details (hidden by default) -->
-    <div class="modal" id="jobModal">
+    <!-- Modal for job details -->
+    <div class="modal" id="jobModal" style="display:none;">
         <div class="modal-content">
             <span class="modal-close" onclick="document.getElementById('jobModal').style.display='none'">&times;</span>
-            <h2>Job Details</h2>
+            <h2 id="jobModalTitle">Job Details</h2>
             <div id="modalDetails">Client, staff, location, notes...</div>
         </div>
     </div>
+    <!-- Add/Edit Event Modal -->
+    <div id="eventModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeEventModal()">&times;</span>
+            <h3 id="modalTitle">Add/Edit Event</h3>
+            <form id="eventForm" method="post" action="/calendar/add">
+                <input type="hidden" name="event_id" id="event_id" />
+                <label>Title:</label>
+                <input type="text" name="title" id="title" required />
+                <label>Description:</label>
+                <textarea name="description" id="description"></textarea>
+                <label>Date:</label>
+                <input type="date" name="date" id="date" required />
+                <label>Time:</label>
+                <input type="time" name="time" id="time" />
+                <label>Location:</label>
+                <input type="text" name="location" id="location" />
+                <button type="submit" id="saveBtn">Save</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        // ...existing JS logic for calendar, tasks, modals...
+    </script>
 </body>
 </html>
         document.querySelectorAll('.close').forEach(closeBtn => {

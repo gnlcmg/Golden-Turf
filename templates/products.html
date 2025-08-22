@@ -1,29 +1,32 @@
+
 <!DOCTYPE html>
 <html>
 <head>
     <title>Products Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='products.css') }}">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Golden Turf Logo" height="40">
-        </div>
-        <ul class="nav-links">
-            <li><a href="/dashboard">Dashboard</a></li>
-            <li class="dropdown">
-                <a href="#" class="dropbtn">Menu</a>
-                <div class="dropdown-content">
-                    <a href="/products">Products</a>
-                    <a href="/calendar">Calendar</a>
-                    <a href="/clients">Clients</a>
-                    <a href="/invoice">Invoices</a>
+    <div class="sidebar">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Golden Turf Logo" style="display:block;margin:0 auto 20px auto;height:50px;">
+        <nav>
+                <a href="/dashboard">Dashboard</a>
+                <div class="nav-dropdown" id="products-sidebar-dropdown">
+                    <a href="#" class="dropbtn">Products <span style="font-size:14px;">&#9654;</span></a>
+                    <div class="dropdown-content">
+                        <a href="/products-list">Product List</a>
+                        <a href="/products">Add Product</a>
+                    </div>
                 </div>
-            </li>
-        </ul>
-    </nav>
-    <div class="container">
-        <h1>Products</h1>
+                <a href="/payments-quote">Quotes</a>
+                <a href="/clients">Client List</a>
+                <a href="/payments">Payments</a>
+                <a href="#">Reports</a>
+                <a href="/calendar">Calendar</a>
+        </nav>
+    </div>
+    <div class="main-content">
+        <h1 style="text-align:center;color:#2f6f2f;font-size:2.5em;margin-bottom:30px;">Products</h1>
         {% with messages = get_flashed_messages() %}
           {% if messages %}
             <ul class="messages">
@@ -33,9 +36,7 @@
             </ul>
           {% endif %}
         {% endwith %}
-        <form method="post" class="product-form">
-            <label>Product Name (required):</label>
-            <input type="text" name="product_name" required><br>
+        <form method="post" class="product-form" style="max-width:500px;margin:0 auto;">
             <label>Turf Type:</label>
             <select name="turf_type" required>
                 {% for t in turf_types %}
@@ -48,7 +49,7 @@
             <input type="number" name="stock" min="0"><br>
             <button type="submit">Add Product</button>
         </form>
-        <h2>Product List</h2>
+        <h2 style="text-align:center;margin-top:40px;">Product List</h2>
         <table class="product-table">
             <tr>
                 <th>Name</th><th>Type</th><th>Description</th><th>Stock</th>
@@ -63,5 +64,22 @@
             {% endfor %}
         </table>
     </div>
+<script>
+// Sidebar dropdown on click
+document.addEventListener('DOMContentLoaded', function() {
+    var dropdown = document.getElementById('products-sidebar-dropdown');
+    var btn = dropdown.querySelector('.dropbtn');
+    var content = dropdown.querySelector('.dropdown-content');
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        content.style.display = (content.style.display === 'block') ? 'none' : 'block';
+    });
+    document.addEventListener('click', function(e) {
+        if (!dropdown.contains(e.target)) {
+            content.style.display = 'none';
+        }
+    });
+});
+</script>
 </body>
 </html>
