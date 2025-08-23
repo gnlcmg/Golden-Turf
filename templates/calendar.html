@@ -2,273 +2,6 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Job Calendar</title>
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
-    <style>
-        /* Add your custom styles here */
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-        }
-        
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        
-        #calendar {
-            max-width: 900px;
-            margin: 20px auto;
-            padding: 0 10px;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgb(0,0,0);
-            background-color: rgba(0,0,0,0.4);
-            padding-top: 60px;
-        }
-        
-        .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
-            border-radius: 8px;
-        }
-        
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        
-        .btn-danger {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-        
-        /* Sidebar styles */
-        .sidebar {
-            height: 100%;
-            width: 250px;
-            position: fixed;
-            top: 0;
-            left: 0;
-            background-color: #fff;
-            padding: 20px;
-            border-right: 1px solid #ddd;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .sidebar h2 {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        
-        .sidebar nav {
-            flex-grow: 1;
-        }
-        
-        .sidebar a {
-            display: block;
-            padding: 10px;
-            margin: 5px 0;
-            color: #333;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-        
-        .sidebar a:hover {
-            background-color: #f0f0f0;
-        }
-        
-        .nav-dropdown {
-            position: relative;
-        }
-        
-        .dropbtn {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            color: #333;
-            text-decoration: none;
-            border-radius: 4px;
-            text-align: left;
-        }
-        
-        .dropbtn:hover {
-            background-color: #f0f0f0;
-        }
-        
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            left: 0;
-            top: 100%;
-            background-color: #fff;
-            min-width: 250px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
-        
-        .nav-dropdown:hover .dropdown-content {
-            display: block;
-        }
-        
-        /* Calendar styles */
-        .calendar-container {
-            margin-left: 260px;
-            padding: 20px;
-            flex-grow: 1;
-        }
-        
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .calendar-controls {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .calendar-controls button {
-            padding: 10px 15px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
-        .calendar-controls button:hover {
-            background-color: #0056b3;
-        }
-        
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-        }
-        
-        .calendar-day {
-            padding: 10px;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            text-align: center;
-            position: relative;
-        }
-        
-        .calendar-day.inactive {
-            background-color: #f9f9f9;
-            color: #ccc;
-        }
-        
-        .job-tile {
-            padding: 5px;
-            margin-top: 5px;
-            border-radius: 4px;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .job-tile.pending {
-            background-color: #f39c12;
-        }
-        
-        .job-tile.completed {
-            background-color: #27ae60;
-        }
-        
-        .job-tile.cancelled {
-            background-color: #e74c3c;
-        }
-        
-        /* Media queries */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                position: relative;
-            }
-            
-            .calendar-container {
-                margin-left: 0;
-            }
-            
-            .calendar-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .calendar-controls {
-                flex-direction: column;
-                width: 100%;
-            }
-            
-            .calendar-controls button {
-                width: 100%;
-            }
-        }
-    </style>
-</head>
-<body>
-    <h2>Job Calendar</h2>
-    <div id="calendar"></div>
-
-    <!-- Job Details Modal -->
-    <div id="jobModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Job Details</h3>
-            <div id="jobDetails"></div>
-            <button onclick="editJob()">Edit</button>
-            <button onclick="deleteJob()" class="btn-danger">Delete</button>
-        </div>
-    </div>
-
-<!DOCTYPE html>
-<html>
-<head>
     <title>Golden Turf Calendar</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
     <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
@@ -283,9 +16,9 @@
                 </div>
             </div>
             <div class="calendar-header">
-                <a href="{{ url_for('calendar', year=prev_year, month=prev_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;">&lt;</a>
+                <a href="{{ url_for('calendar', year=prev_year, month=prev_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;"><</a>
                 {{ current_month_name }} {{ current_year }}
-                <a href="{{ url_for('calendar', year=next_year, month=next_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;">&gt;</a>
+                <a href="{{ url_for('calendar', year=next_year, month=next_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;">></a>
             </div>
             <div class="calendar-controls">
                 <button class="active">Month</button>
@@ -305,7 +38,7 @@
                 {% for week in calendar_weeks %}
                     {% for day in week %}
                         <div class="calendar-day{% if not day.in_month %} inactive{% endif %}">
-                            {{ day.day if day.day > 0 else '' }}
+                            {{ day.day if day.day != '' and day.day > 0 else '' }}
                             {% if day.job %}
                                 <div class="job-tile {{ day.job.status }}">{{ day.job.title }}</div>
                             {% endif %}
@@ -327,6 +60,9 @@
                         <a href="{{ url_for('clients') }}">Client Details Form</a>
                     </div>
                 </div>
+                <a href="{{ url_for('calendar') }}">Calendar</a>
+                <a href="{{ url_for('quotes') }}">Quotes</a>
+                <a href="{{ url_for('payments') }}">Payments</a>
             </nav>
         </div>
     </div>
@@ -338,9 +74,10 @@
             <div id="modalDetails">Client, staff, location, notes...</div>
         </div>
     </div>
-</body>
-</html>
-        document.querySelectorAll('.close').forEach(closeBtn => {
+
+    <script>
+        // Modal functionality
+        document.querySelectorAll('.modal-close').forEach(closeBtn => {
             closeBtn.onclick = function() {
                 this.parentElement.parentElement.style.display = 'none';
             }
@@ -352,14 +89,49 @@
             }
         }
 
-        // Handle form submission
-        document.getElementById('editForm').onsubmit = function(e) {
-            e.preventDefault();
-            // Add update endpoint if needed
-            alert('Update functionality would be implemented here');
-            document.getElementById('editModal').style.display = 'none';
-            calendar.refetchEvents();
-        }
+        // Calendar controls functionality
+        document.querySelectorAll('.calendar-controls button').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.calendar-controls button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // View switching logic
+                const viewType = this.textContent.toLowerCase();
+                if (viewType === 'month') {
+                    // Show month view
+                    document.querySelector('.calendar-grid').style.display = 'grid';
+                } else if (viewType === 'week') {
+                    // Show week view (placeholder)
+                    alert('Week view functionality coming soon');
+                } else if (viewType === 'day') {
+                    // Show day view (placeholder)
+                    alert('Day view functionality coming soon');
+                }
+            });
+        });
+
+        // Search functionality
+        const searchInput = document.querySelector('.search-bar input');
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const searchTerm = this.value.trim();
+                if (searchTerm) {
+                    alert('Searching for: ' + searchTerm + '\nSearch functionality coming soon');
+                    this.value = '';
+                }
+            }
+        });
+
+        // Job tile click functionality
+        document.querySelectorAll('.job-tile').forEach(jobTile => {
+            jobTile.addEventListener('click', function() {
+                const jobDetails = this.textContent;
+                document.getElementById('modalDetails').textContent = jobDetails;
+                document.getElementById('jobModal').style.display = 'block';
+            });
+        });
     </script>
 </body>
 </html>
