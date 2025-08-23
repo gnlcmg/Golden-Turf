@@ -45,29 +45,41 @@ def payments_quote():
 
 @app.route('/payments')
 def payments():
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    # Fetch invoices with products and amounts
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute(''' 
-        SELECT invoices.id, clients.client_name, invoices.status, invoices.due_date, invoices.product, invoices.amount, invoices.gst, invoices.total 
-        FROM invoices 
-        LEFT JOIN clients ON invoices.client_id = clients.id 
+    c.execute('''
+        SELECT i.id, i.client_id, c.client_name, i.status, i.due_date, i.amount_gst, i.total_amount
+        FROM invoices i
+        JOIN clients c ON i.client_id = c.id
     ''')
-    rows = c.fetchall()
-    payments = []
-    current_date = datetime.now().strftime('%Y-%m-%d')
-    for row in rows:
-        payments.append({
-            'id': row[0],
-            'client': row[1],
-            'status': row[2],
-            'due_date': row[3],
-            'products': row[4],
-            'amount': row[5],
-            'gst': row[6],
-            'total': row[7]
+    invoices_raw = c.fetchall()
+
+    invoices = []
+    for inv in invoices_raw:
+        invoice_id, client_id, client_name, status, due_date, amount_gst, total_amount = inv
+
+        # Fetch products for this invoice
+        c.execute('SELECT name, quantity FROM invoice_products WHERE invoice_id = ?', (invoice_id,))
+        products = [{"name": row[0], "quantity": row[1]} for row in c.fetchall()]
+
+        invoices.append({
+            "id": invoice_id,
+            "client_name": client_name,
+            "status": status,
+            "due_date": due_date,
+            "products": products,
+            "amount_gst": amount_gst,
+            "total_amount": total_amount
         })
+    
     conn.close()
-    return render_template('payments.html', payments=payments, current_date=current_date)
+
+    current_date = datetime.today().strftime("%Y-%m-%d")
+    return render_template('payments.html', invoices=invoices, current_date=current_date)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():

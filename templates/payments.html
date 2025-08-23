@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Golden Turf Payments</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='payments.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="main-wrapper">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div style="width:100%;text-align:center;margin-bottom:20px;">
+                <img src="{{ url_for('static', filename='golden_turf_logo.png') }}" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+            </div>
+            <h2 style="color: orange;">Golden Turf</h2>
+            <nav class="navbar">
+                <a href="/dashboard">Dashboard</a>
+                <div class="nav-dropdown">
+                    <a href="#" class="dropbtn">Products</a>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('products_list') }}">Products List</a>
+                        <a href="{{ url_for('list_page') }}">Clients & Invoices List</a>
+                        <a href="{{ url_for('invoice') }}">Invoice Form</a>
+                        <a href="{{ url_for('clients') }}">Client Details Form</a>
+                    </div>
+                </div>
+                <a href="{{ url_for('calendar') }}">Calendar</a>
+                <a href="{{ url_for('quotes') }}">Quotes</a>
+                <a href="{{ url_for('payments') }}" class="active">Payments</a>
+            </nav>
+        </div>
+
+        <!-- Payments List -->
+        <div class="payments-container">
+            <h1>Payments</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                        <th>Products</th>
+                        <th>Amount (+ GST)</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    {% set is_overdue = invoice.status == 'Unpaid' and invoice.due_date < current_date %}
+                    <tr class="{% if is_overdue %}overdue{% endif %}">
+                        <td>{{ invoice.client_name }}</td>
+                        <td>
+                            {{ invoice.status }}
+                            {% if is_overdue %}
+                                <span class="overdue-label">OVERDUE</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ invoice.due_date }}</td>
+                        <td>
+                            {% for product in invoice.products %}
+                                {{ product.name }} ({{ product.quantity }})<br>
+                            {% endfor %}
+                        </td>
+                        <td>${{ "%.2f"|format(invoice.amount_gst) }}</td>
+                        <td>${{ "%.2f"|format(invoice.total_amount) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
