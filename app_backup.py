@@ -56,7 +56,7 @@ def register():
         
         if len(password) < 6:
             return render_template("register.html", error="Password must be at least 6 characters long.")
-        
+
         conn = sqlite3.connect('users.db')
         c = conn.cursor()
         try:
@@ -64,12 +64,10 @@ def register():
                       (name, email, password))
             conn.commit()
             message = 'Registration successful!'
-            conn.close()
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
             message = 'Email already registered!'
-            conn.close()
-    
+        conn.close()
     return render_template('register.html', message=message)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -326,183 +324,6 @@ def invoice():
     else:
         return render_template('invoice.html')
 
-@app.route('/products_list')
-def products_list():
-    if 'user_name' not in session:
-        return redirect(url_for('login'))
-
-    # Get products from database
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('SELECT product_name, turf_type, description, stock FROM products')
-    products = c.fetchall()
-    conn.close()
-
-    return render_template('products_list.html', products=products)
-
-@app.route('/quotes', methods=['GET', 'POST'])
-def quotes():
-    if 'user_name' not in session:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        # Handle form submission
-        client_name = request.form.get('client_name')
-        turf_type = request.form.get('turf_type')
-        area_in_sqm = request.form.get('area_in_sqm')
-        other_products = request.form.get('other_products')
-        # Process the quote data here
-        return render_template('quotes.html', success=True)
-    
-    return render_template('quotes.html')
-
-@app.route('/payments')
-def payments():
-    if 'user_name' not in session:
-        return redirect(url_for('login'))
-    
-    # Get invoices data for payments
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date, 
-                  invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total
-                  FROM invoices
-                  LEFT JOIN clients ON invoices.client_id = clients.id''')
-    invoices_data = c.fetchall()
-    conn.close()
-    
-    # Format the data for the template
-    invoices = []
-    for invoice in invoices_data:
-        invoices.append({
-            'client_name': invoice[1],
-            'status': invoice[2],
-            'due_date': invoice[3],
-            'products': [{'name': invoice[4], 'quantity': invoice[5]}],
-            'amount_gst': invoice[7],
-            'total_amount': invoice[8]
-        })
-    
-    current_date = datetime.now().strftime('%Y-%m-%d')
-    return render_template('payments.html', invoices=invoices, current_date=current_date)
-
-@app.route('/calendar')
-def calendar():
-    if 'user_name' not in session:
-        return redirect(url_for('login'))
-    
-    # Get current date for calendar navigation
-    today = datetime.now()
-    current_year = request.args.get('year', today.year, type=int)
-    current_month = request.args.get('month', today.month, type=int)
-    current_day = request.args.get('day', today.day, type=int)
-    view = request.args.get('view', 'month')
-    
-    # Create current date object
-    current_date = datetime(current_year, current_month, current_day)
-    
-    # Calculate navigation based on view
-    if view == 'week':
-        # Weekly navigation
-        prev_date = current_date - timedelta(weeks=1)
-        next_date = current_date + timedelta(weeks=1)
-        
-        prev_year = prev_date.year
-        prev_month = prev_date.month
-        prev_day = prev_date.day
-        
-        next_year = next_date.year
-        next_month = next_date.month
-        next_day = next_date.day
-        
-        # Get week range (Monday to Sunday)
-        start_of_week = current_date - timedelta(days=current_date.weekday())
-        end_of_week = start_of_week + timedelta(days=6)
-        
-        # Format header for weekly view with ordinal suffixes and year transitions
-        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December']
-        
-        def get_ordinal_suffix(day):
-            if 11 <= day <= 13:
-                return 'th'
-            else:
-                return {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
-        
-        start_suffix = get_ordinal_suffix(start_of_week.day)
-        end_suffix = get_ordinal_suffix(end_of_week.day)
-        
-        if start_of_week.month == end_of_week.month and start_of_week.year == end_of_week.year:
-            header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix} - {end_of_week.day}{end_suffix}) {start_of_week.year}"
-        elif start_of_week.year == end_of_week.year:
-            header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix}) - {month_names[end_of_week.month - 1]} ({end_of_week.day}{end_suffix}) {start_of_week.year}"
-        else:
-            header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix}) {start_of_week.year} - {month_names[end_of_week.month - 1]} ({end_of_week.day}{end_suffix}) {end_of_week.year}"
-        
-        # Generate week days
-        calendar_weeks = [[(start_of_week + timedelta(days=i)).day for i in range(7)]]
-        
-    elif view == 'day':
-        # Daily navigation
-        prev_date = current_date - timedelta(days=1)
-        next_date = current_date + timedelta(days=1)
-        
-        prev_year = prev_date.year
-        prev_month = prev_date.month
-        prev_day = prev_date.day
-        
-        next_year = next_date.year
-        next_month = next_date.month
-        next_day = next_date.day
-        
-        # Format header for daily view
-        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December']
-        header_text = f"{month_names[current_month - 1]} {current_day}"
-        
-        # Generate single day
-        calendar_weeks = [[current_day]]
-        
-    else:
-        # Monthly navigation
-        prev_month = current_month - 1
-        prev_year = current_year
-        if prev_month < 1:
-            prev_month = 12
-            prev_year = current_year - 1
-            
-        next_month = current_month + 1
-        next_year = current_year
-        if next_month > 12:
-            next_month = 1
-            next_year = current_year + 1
-        
-        prev_day = current_day
-        next_day = current_day
-        
-        # Format header for monthly view
-        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December']
-        header_text = month_names[current_month - 1]
-        
-        # Generate month calendar
-        cal = Calendar()
-        calendar_weeks = cal.monthdayscalendar(current_year, current_month)
-    
-    return render_template('calendar.html', 
-                          current_year=current_year,
-                          current_month=current_month,
-                          current_day=current_day,
-                          current_month_name=header_text,
-                          prev_year=prev_year,
-                          prev_month=prev_month,
-                          prev_day=prev_day,
-                          next_year=next_year,
-                          next_month=next_month,
-                          next_day=next_day,
-                          view=view,
-                          calendar_weeks=calendar_weeks)
-
 @app.route('/list')
 def list_page():
     if 'user_name' not in session:
@@ -533,10 +354,3 @@ def edit_client(client_id):
         account_type = request.form.get('account_type', '').strip()
         company_name = request.form.get('company_name', '').strip()
         email = request.form.get('email', '').strip()
-        # Additional logic for editing client
-        # ...
-        conn.commit()
-    return render_template('edit_client.html')
-
-if __name__ == "__main__":
-    app.run(debug=True)

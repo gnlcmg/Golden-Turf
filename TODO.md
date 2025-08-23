@@ -1,18 +1,30 @@
-# Calendar Page Cleanup Tasks
+# Calendar Enhancement Tasks
 
-## Completed:
-- [x] 1. Clean up duplicate HTML structure in calendar.html
-- [x] 2. Remove conflicting inline CSS styles
-- [x] 3. Properly link calendar.css file
-- [x] 4. Remove unnecessary JavaScript at the end
-- [x] 5. Ensure consistent calendar implementation
-- [x] 6. Fixed TypeError: '>' not supported between instances of 'str' and 'int'
-- [ ] 7. Test the calendar page functionality
+## 1. Automatic Task Display on Calendar
+- [ ] Modify calendar cells to show task indicators
+- [ ] Add visual indicators for days with tasks
 
-## Notes:
-- Removed FullCalendar library and kept custom calendar implementation
-- Using existing calendar.css for styling
-- Removed duplicate HTML structure and conflicting code
-- Added proper modal functionality
-- Cleaned up the file structure
-- Fixed comparison error in template by checking for empty string before numeric comparison
+## 2. Task Click Functionality
+- [ ] Create task detail popup modal
+- [ ] Add edit/delete buttons to task popup
+- [ ] Implement task click handlers
+
+## 3. Hover Functionality for Empty Dates
+- [ ] Add hover effects to calendar cells
+- [ ] Implement "Add Task" button on hover for empty dates
+- [ ] Connect hover functionality to add task modal
+
+## 4. Daily View Task Sorting
+- [ ] Sort tasks by time in daily view
+- [ ] Handle all-day tasks (no specific time)
+- [ ] Implement proper time slot allocation
+
+## 5. Task Detail Popup
+- [ ] Create new modal for task details
+- [ ] Display complete task information
+- [ ] Add edit and delete functionality
+
+## Files to Modify:
+- templates/calendar.html (main implementation)
+- static/calendar.css (styling updates)
+- app.py (backend support if needed)

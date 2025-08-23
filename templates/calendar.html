@@ -5,57 +5,115 @@
     <title>Golden Turf Calendar</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='calendar.css') }}">
     <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
+    <style>
+        /* Task indicators */
+        .task-indicator {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 8px;
+            height: 8px;
+            background: #2563eb;
+            border-radius: 50%;
+        }
+        
+        .task-indicator.multiple {
+            background: #dc2626;
+        }
+        
+        /* Task preview */
+        .task-preview {
+            font-size: 0.7rem;
+            margin-top: 5px;
+            padding: 2px 4px;
+            background: #dbeafe;
+            border-radius: 3px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .task-preview:hover {
+            background: #93c5fd;
+        }
+        
+        /* Hover add button */
+        .add-task-hover {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            width: 20px;
+            height: 20px;
+            background: green;
+            color: black;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .calendar-cell:hover .add-task-hover {
+            display: flex;
+        }
+        
+        /* Task detail modal */
+        .task-detail-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .task-detail-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+        }
+        
+        .task-detail-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+        
+        /* Daily view task items */
+        .daily-task-item {
+            background: #dbeafe;
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        
+        .daily-task-item.all-day {
+            background: #dcfce7;
+        }
+    </style>
 </head>
 <body>
     <div class="main-wrapper">
-        <div class="calendar-container">
-            <div class="header">
-                <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Golden Turf Logo">
-                <div class="search-bar">
-                    <input type="text" placeholder="Search">
-                </div>
-            </div>
-            <div class="calendar-header">
-                <a href="{{ url_for('calendar', year=prev_year, month=prev_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;"><</a>
-                {{ current_month_name }} {{ current_year }}
-                <a href="{{ url_for('calendar', year=next_year, month=next_month) }}" style="text-decoration:none;font-weight:700;font-size:1.3em;">></a>
-            </div>
-            <div class="calendar-controls">
-                <button class="active">Month</button>
-                <button>Week</button>
-                <button>Day</button>
-            </div>
-            <div class="calendar-grid">
-                <!-- Days of week -->
-                <div class="calendar-day">MON</div>
-                <div class="calendar-day">TUE</div>
-                <div class="calendar-day">WED</div>
-                <div class="calendar-day">THU</div>
-                <div class="calendar-day">FRI</div>
-                <div class="calendar-day">SAT</div>
-                <div class="calendar-day">SUN</div>
-                <!-- Calendar cells: dynamically fill days for the current month -->
-                {% for week in calendar_weeks %}
-                    {% for day in week %}
-                        <div class="calendar-day{% if not day.in_month %} inactive{% endif %}">
-                            {{ day.day if day.day != '' and day.day > 0 else '' }}
-                            {% if day.job %}
-                                <div class="job-tile {{ day.job.status }}">{{ day.job.title }}</div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-            </div>
-        </div>
         <div class="sidebar">
             <h2>Golden Turf</h2>
             <nav>
-                <a href="/dashboard">Dashboard</a>
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
                 <div class="nav-dropdown">
                     <a href="#" class="dropbtn">Products</a>
                     <div class="dropdown-content">
                         <a href="{{ url_for('products_list') }}">Products List</a>
-                        <a href="{{ url_for('list_page') }}">Clients & Invoices List</a>
+                        <a href="{{ url_for('clients') }}">Clients & Invoices List</a>
                         <a href="{{ url_for('invoice') }}">Invoice Form</a>
                         <a href="{{ url_for('clients') }}">Client Details Form</a>
                     </div>
@@ -65,73 +123,520 @@
                 <a href="{{ url_for('payments') }}">Payments</a>
             </nav>
         </div>
+
+        <div class="calendar-container">
+            <div class="header">
+                <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Golden Turf Logo">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search">
+                </div>
+            </div>
+
+            <div class="calendar-header">
+                <a href="{{ url_for('calendar', view=view, year=prev_year, month=prev_month, day=prev_day) }}"><</a>
+                {{ current_month_name }} {{ current_year }}
+                <a href="{{ url_for('calendar', view=view, year=next_year, month=next_month, day=next_day) }}">></a>
+            </div>
+
+            <div class="calendar-controls">
+                <a href="{{ url_for('calendar', view='month', year=current_year, month=current_month, day=current_day) }}" {% if view == 'month' %}class="active"{% endif %}>Month</a>
+                <a href="{{ url_for('calendar', view='week', year=current_year, month=current_month, day=current_day) }}" {% if view == 'week' %}class="active"{% endif %}>Week</a>
+                <a href="{{ url_for('calendar', view='day', year=current_year, month=current_month, day=current_day) }}" {% if view == 'day' %}class="active"{% endif %}>Day</a>
+            </div>
+
+            <div class="calendar-grid" id="calendarGrid">
+                {% if view == 'day' %}
+                    <!-- Daily view - single large cell -->
+                    <div class="calendar-cell day-view">
+                        <span class="day-number">{{ current_day }}</span>
+                        <!-- Time slots for daily view with tasks -->
+                        <div class="time-slots">
+                            {% for hour in range(0, 24) %}
+                                <div class="time-slot">
+                                    <span class="time-label">{{ "%02d:00"|format(hour) }}</span>
+                                    <div class="time-content" id="time-{{ hour }}"></div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Week and Month views -->
+                    <div class="calendar-day-header">MON</div>
+                    <div class="calendar-day-header">TUE</div>
+                    <div class="calendar-day-header">WED</div>
+                    <div class="calendar-day-header">THU</div>
+                    <div class="calendar-day-header">FRI</div>
+                    <div class="calendar-day-header">SAT</div>
+                    <div class="calendar-day-header">SUN</div>
+
+                    {% if view == 'week' %}
+                        {% for day in calendar_weeks[0] %}
+                            <div class="calendar-cell{% if day == 0 %} inactive{% endif %}" 
+                                 onmouseover="showAddButton(this)" 
+                                 onmouseout="hideAddButton(this)">
+                                <span class="day-number">{{ day if day != 0 else '' }}</span>
+                                <div class="add-task-hover" onclick="openAddTaskModalForDate({{ current_year }}, {{ current_month }}, {{ day }})">+</div>
+                                <div id="tasks-{{ day }}"></div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        {% for week in calendar_weeks %}
+                            {% for day in week %}
+                                <div class="calendar-cell{% if day == 0 %} inactive{% endif %}" 
+                                     onmouseover="showAddButton(this)" 
+                                     onmouseout="hideAddButton(this)">
+                                    <span class="day-number">{{ day if day != 0 else '' }}</span>
+                                    <div class="add-task-hover" onclick="openAddTaskModalForDate({{ current_year }}, {{ current_month }}, {{ day }})">+</div>
+                                    <div id="tasks-{{ day }}"></div>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h2>Golden Turf</h2>
+            <nav>
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <div class="nav-dropdown">
+                    <a href="#" class="dropbtn">Products</a>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('products_list') }}">Products List</a>
+                        <a href="{{ url_for('clients') }}">Clients & Invoices List</a>
+                        <a href="{{ url_for('invoice') }}">Invoice Form</a>
+                        <a href="{{ url_for('clients') }}">Client Details Form</a>
+                    </div>
+                </div>
+                <a href="{{ url_for('calendar') }}">Calendar</a>
+                <a href="{{ url_for('quotes') }}">Quotes</a>
+                <a href="{{ url_for('payments') }}">Payments</a>
+            </nav>
+        </div>
+
+        <!-- Tasks Sidebar -->
+        <div class="tasks-sidebar">
+            <div class="tasks-header">
+                <h3>Tasks</h3>
+                <button class="add-task-btn" onclick="openAddTaskModal()">Add Tasks</button>
+            </div>
+            
+            <div class="tasks-list" id="tasksList">
+                <!-- Tasks will be populated by JavaScript -->
+            </div>
+            
+            <div class="pagination" id="pagination">
+                <!-- Pagination will be populated by JavaScript -->
+            </div>
+        </div>
     </div>
-    <!-- Modal for job details (hidden by default) -->
-    <div class="modal" id="jobModal">
+
+    <!-- Add Task Modal -->
+    <div id="addTaskModal" class="modal">
         <div class="modal-content">
-            <span class="modal-close" onclick="document.getElementById('jobModal').style.display='none'">&times;</span>
-            <h2>Job Details</h2>
-            <div id="modalDetails">Client, staff, location, notes...</div>
+            <span class="modal-close" onclick="closeAddTaskModal()">&times;</span>
+            <h3>Add New Task</h3>
+            <form id="addTaskForm">
+                <div class="form-group">
+                    <label for="taskTitle">Task Title:</label>
+                    <input type="text" id="taskTitle" name="taskTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="taskDate">Date:</label>
+                    <input type="date" id="taskDate" name="taskDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="taskTime">Time:</label>
+                    <input type="time" id="taskTime" name="taskTime">
+                </div>
+                <div class="form-group">
+                    <label for="taskDescription">Description:</label>
+                    <textarea id="taskDescription" name="taskDescription" rows="3"></textarea>
+                </div>
+                <button type="submit" class="add-task-btn">Add Task</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div id="taskDetailModal" class="task-detail-modal">
+        <div class="task-detail-content">
+            <span class="modal-close" onclick="closeTaskDetailModal()">&times;</span>
+            <h3 id="detailTaskTitle">Task Details</h3>
+            <div class="task-info">
+                <p><strong>Date:</strong> <span id="detailTaskDate"></span></p>
+                <p><strong>Time:</strong> <span id="detailTaskTime"></span></p>
+                <p><strong>Description:</strong> <span id="detailTaskDescription"></span></p>
+            </div>
+            <div class="task-detail-actions">
+                <button class="edit-task-btn" onclick="editCurrentTask()">Edit</button>
+                <button class="delete-task-btn" onclick="deleteCurrentTask()">Delete</button>
+                <button class="add-task-btn" onclick="closeTaskDetailModal()">Close</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Modal functionality
-        document.querySelectorAll('.modal-close').forEach(closeBtn => {
-            closeBtn.onclick = function() {
-                this.parentElement.parentElement.style.display = 'none';
-            }
-        });
+        // Sample tasks data
+        const allTasks = [
+            { id: 1, title: "Meeting with Client A", date: "2025-01-15", time: "14:00", description: "Discuss project requirements" },
+            { id: 2, title: "Project Deadline", date: "2025-01-16", time: "17:00", description: "Final submission deadline" },
+            { id: 3, title: "Team Review", date: "2025-01-17", time: "10:00", description: "Weekly team meeting" },
+            { id: 4, title: "Supplier Meeting", date: "2025-01-18", time: "15:00", description: "Negotiate pricing" },
+            { id: 5, title: "Budget Planning", date: "2025-01-19", time: "09:00", description: "Quarterly budget review" },
+            { id: 6, title: "Client Presentation", date: "2025-01-20", time: "11:00", description: "Present project progress" },
+            { id: 7, title: "Training Session", date: "2025-01-21", time: "13:00", description: "New software training" },
+            { id: 8, title: "Quality Check", date: "2025-01-22", time: "16:00", description: "Product quality assessment" },
+            { id: 9, title: "Marketing Meeting", date: "2025-01-23", time: "10:30", description: "Marketing strategy discussion" },
+            { id: 10, title: "Inventory Audit", date: "2025-01-24", time: "14:00", description: "Monthly inventory check" },
+            { id: 11, title: "Client Follow-up", date: "2025-01-25", time: "15:30", description: "Follow up on previous meeting" },
+            { id: 12, title: "Report Submission", date: "2025-01-26", time: "12:00", description: "Submit monthly reports" }
+        ];
 
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
+        let editingTaskId = null;
+
+        let currentPage = 1;
+        const tasksPerPage = 5;
+
+        // Initialize tasks
+        function initializeTasks() {
+            renderTasks();
+            renderPagination();
+        }
+
+        // Render tasks for current page
+        function renderTasks() {
+            const tasksList = document.getElementById('tasksList');
+            tasksList.innerHTML = '';
+            
+            const startIndex = (currentPage - 1) * tasksPerPage;
+            const endIndex = startIndex + tasksPerPage;
+            const currentTasks = allTasks.slice(startIndex, endIndex);
+            
+            currentTasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item';
+                taskItem.innerHTML = `
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-date">${formatDate(task.date)}${task.time ? ', ' + formatTime(task.time) : ''}</div>
+                    ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                `;
+                tasksList.appendChild(taskItem);
+            });
+        }
+
+        // Render pagination
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            const totalPages = Math.ceil(allTasks.length / tasksPerPage);
+            
+            if (totalPages <= 1) return;
+            
+            // Previous button
+            if (currentPage > 1) {
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'pagination-btn';
+                prevBtn.textContent = '←';
+                prevBtn.onclick = () => goToPage(currentPage - 1);
+                pagination.appendChild(prevBtn);
+            }
+            
+            // Page numbers
+            const maxVisiblePages = 3;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                pagination.appendChild(pageBtn);
+            }
+            
+            // Ellipsis and last page if needed
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'pagination-ellipsis';
+                    ellipsis.textContent = '...';
+                    pagination.appendChild(ellipsis);
+                }
+                
+                const lastPageBtn = document.createElement('button');
+                lastPageBtn.className = 'pagination-btn';
+                lastPageBtn.textContent = totalPages;
+                lastPageBtn.onclick = () => goToPage(totalPages);
+                pagination.appendChild(lastPageBtn);
+            }
+            
+            // Next button
+            if (currentPage < totalPages) {
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'pagination-btn';
+                nextBtn.textContent = '→';
+                nextBtn.onclick = () => goToPage(currentPage + 1);
+                pagination.appendChild(nextBtn);
             }
         }
 
-        // Calendar controls functionality
-        document.querySelectorAll('.calendar-controls button').forEach(button => {
-            button.addEventListener('click', function() {
-                document.querySelectorAll('.calendar-controls button').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                this.classList.add('active');
-                
-                // View switching logic
-                const viewType = this.textContent.toLowerCase();
-                if (viewType === 'month') {
-                    // Show month view
-                    document.querySelector('.calendar-grid').style.display = 'grid';
-                } else if (viewType === 'week') {
-                    // Show week view (placeholder)
-                    alert('Week view functionality coming soon');
-                } else if (viewType === 'day') {
-                    // Show day view (placeholder)
-                    alert('Day view functionality coming soon');
-                }
-            });
+        // Go to specific page
+        function goToPage(page) {
+            currentPage = page;
+            renderTasks();
+            renderPagination();
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            if (date.toDateString() === today.toDateString()) {
+                return 'Today';
+            } else if (date.toDateString() === tomorrow.toDateString()) {
+                return 'Tomorrow';
+            } else {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            }
+        }
+
+        // Format time
+        function formatTime(timeString) {
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const formattedHour = hour % 12 || 12;
+            return `${formattedHour}:${minutes} ${period}`;
+        }
+
+        // Open add task modal with pre-filled date from parameters
+        function openAddTaskModalForDate(year, month, day) {
+            // Format the date as YYYY-MM-DD
+            const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            document.getElementById('taskDate').value = formattedDate;
+            openAddTaskModal();
+        }
+
+        // Modal functions
+        function openAddTaskModal() {
+            document.getElementById('addTaskModal').style.display = 'flex';
+        }
+
+        function closeAddTaskModal() {
+            document.getElementById('addTaskModal').style.display = 'none';
+            document.getElementById('addTaskForm').reset();
+        }
+
+        // Handle form submission
+        document.getElementById('addTaskForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('taskTitle').value;
+            const date = document.getElementById('taskDate').value;
+            const time = document.getElementById('taskTime').value;
+            const description = document.getElementById('taskDescription').value;
+            
+            // Add new task
+            const newTask = {
+                id: allTasks.length + 1,
+                title: title,
+                date: date,
+                time: time,
+                description: description
+            };
+            
+            allTasks.unshift(newTask); // Add to beginning of array
+            currentPage = 1; // Go back to first page
+            renderTasks();
+            renderPagination();
+            closeAddTaskModal();
         });
 
-        // Search functionality
-        const searchInput = document.querySelector('.search-bar input');
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const searchTerm = this.value.trim();
-                if (searchTerm) {
-                    alert('Searching for: ' + searchTerm + '\nSearch functionality coming soon');
-                    this.value = '';
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('addTaskModal');
+            if (event.target === modal) {
+                closeAddTaskModal();
+            }
+        };
+
+        // Function to toggle task details for a specific day
+        function toggleTaskDetails(day) {
+            const taskDetails = document.getElementById(`taskDetails-${day}`);
+            if (taskDetails.style.display === 'none') {
+                taskDetails.style.display = 'block';
+                populateTasksForDay(day);
+            } else {
+                taskDetails.style.display = 'none';
+            }
+        }
+
+        // Populate tasks for a specific day
+        function populateTasksForDay(day) {
+            const tasksForDay = document.getElementById(`tasksForDay-${day}`);
+            tasksForDay.innerHTML = ''; // Clear existing tasks
+            
+            const tasks = allTasks.filter(task => {
+                const taskDate = new Date(task.date);
+                return taskDate.getDate() === parseInt(day);
+            });
+            
+            tasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item';
+                taskItem.innerHTML = `
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-date">${formatDate(task.date)}${task.time ? ', ' + formatTime(task.time) : ''}</div>
+                    ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                `;
+                tasksForDay.appendChild(taskItem);
+            });
+        }
+
+        // Edit task function
+        function editTask(day) {
+            const tasks = allTasks.filter(task => {
+                const taskDate = new Date(task.date);
+                return taskDate.getDate() === parseInt(day);
+            });
+            
+            if (tasks.length > 0) {
+                const task = tasks[0]; // Edit first task for simplicity
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskDate').value = task.date;
+                document.getElementById('taskTime').value = task.time || '';
+                document.getElementById('taskDescription').value = task.description || '';
+                editingTaskId = task.id;
+                openAddTaskModal();
+            }
+        }
+
+        // Delete task function
+        function deleteTask(day) {
+            const tasks = allTasks.filter(task => {
+                const taskDate = new Date(task.date);
+                
+                const lastPageBtn = document.createElement('button');
+                return taskDate.getDate() === parseInt(day);
+            });
+            
+            if (tasks.length > 0 && confirm('Are you sure you want to delete this task?')) {
+                const taskIndex = allTasks.findIndex(t => t.id === tasks[0].id);
+                if (taskIndex !== -1) {
+                    allTasks.splice(taskIndex, 1);
+                    renderTasks();
+                    renderPagination();
+                    // Close the task details
+                    document.getElementById(`taskDetails-${day}`).style.display = 'none';
                 }
             }
-        });
+        }
 
-        // Job tile click functionality
-        document.querySelectorAll('.job-tile').forEach(jobTile => {
-            jobTile.addEventListener('click', function() {
-                const jobDetails = this.textContent;
-                document.getElementById('modalDetails').textContent = jobDetails;
-                document.getElementById('jobModal').style.display = 'block';
-            });
-        });
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeTasks);
     </script>
+
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+        }
+
+        /* Pagination styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination-btn {
+            padding: 0.5rem 0.8rem;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .pagination-btn.active {
+            background: green;
+            color: black;
+            border-color: green;
+        }
+
+        .pagination-btn:hover:not(.active) {
+            background: #f1f5f9;
+        }
+
+        .pagination-ellipsis {
+            padding: 0.5rem;
+        }
+
+        .task-description {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 0.3rem;
+        }
+    </style>
 </body>
 </html>
