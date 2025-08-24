@@ -383,6 +383,9 @@ def quotes():
 
 @app.route('/payments')
 def payments():
+    """Render the blank payments page."""
+    return render_template('payments.html')
+def payments():
     if 'user_name' not in session:
         return redirect(url_for('login'))
     

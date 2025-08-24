@@ -53,7 +53,21 @@ def initialize_database():
         price REAL,
         gst REAL,
         total REAL,
+        due_date TEXT,
         status TEXT,
+        created_date TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (client_id) REFERENCES clients (id)
+    )
+    ''')
+
+    # Create jobs table
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER,
+        job_date TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Scheduled',
+        description TEXT,
         created_date TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (client_id) REFERENCES clients (id)
     )

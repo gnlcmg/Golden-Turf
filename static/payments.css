@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #2e7d32 60%, #F28F2B 40%);
+    background: linear-gradient(135deg, #F28F2B 60%, #2e7d32 40%);
     margin: 0;
     padding: 0;
 }
@@ -38,4 +38,24 @@ body {
     color: red;
     font-weight: bold;
     margin-left: 8px;
+}
+
+/* Sidebar styles for payments page */
+.sidebar {
+    background-color: #2f6f2f !important; /* Change to green */
+    color: #FFFFFF !important; /* Change font color to white */
+    padding: 20px;
+}
+
+.sidebar h2 {
+    color: white;
+}
+
+.sidebar nav a {
+    color: #FFFFFF; /* Ensure font color is white */
+    text-decoration: none;
+}
+
+.sidebar nav a:hover {
+    color: #f0f0f0;
 }
