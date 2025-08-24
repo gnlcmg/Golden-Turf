@@ -142,6 +142,13 @@
                 <a href="{{ url_for('calendar', view='month', year=current_year, month=current_month, day=current_day) }}" {% if view == 'month' %}class="active"{% endif %}>Month</a>
                 <a href="{{ url_for('calendar', view='week', year=current_year, month=current_month, day=current_day) }}" {% if view == 'week' %}class="active"{% endif %}>Week</a>
                 <a href="{{ url_for('calendar', view='day', year=current_year, month=current_month, day=current_day) }}" {% if view == 'day' %}class="active"{% endif %}>Day</a>
+                
+                <!-- Time Format Toggle -->
+                <div class="time-format-toggle">
+                    <button id="timeFormatToggle" class="toggle-btn" onclick="toggleTimeFormat()">
+                        24h
+                    </button>
+                </div>
             </div>
 
             <div class="calendar-grid" id="calendarGrid">
@@ -175,7 +182,7 @@
                                  onmouseover="showAddButton(this)" 
                                  onmouseout="hideAddButton(this)">
                                 <span class="day-number">{{ day if day != 0 else '' }}</span>
-                                <div class="add-task-hover" onclick="openAddTaskModalForDate({{ current_year }}, {{ current_month }}, {{ day }})">+</div>
+                                <div class="add-task-hover" onclick="openAddTaskModalForDate('{{ current_year }}', '{{ current_month }}', '{{ day }}')">+</div>
                                 <div id="tasks-{{ day }}"></div>
                             </div>
                         {% endfor %}
@@ -186,7 +193,7 @@
                                      onmouseover="showAddButton(this)" 
                                      onmouseout="hideAddButton(this)">
                                     <span class="day-number">{{ day if day != 0 else '' }}</span>
-                                    <div class="add-task-hover" onclick="openAddTaskModalForDate({{ current_year }}, {{ current_month }}, {{ day }})">+</div>
+                                    <div class="add-task-hover" onclick="openAddTaskModalForDate('{{ current_year }}', '{{ current_month }}', '{{ day }}')">+</div>
                                     <div id="tasks-{{ day }}"></div>
                                 </div>
                             {% endfor %}
@@ -222,9 +229,27 @@
                 <button class="add-task-btn" onclick="openAddTaskModal()">Add Tasks</button>
             </div>
             
-            <div class="tasks-list" id="tasksList">
-                <!-- Tasks will be populated by JavaScript -->
-            </div>
+    <div class="tasks-list" id="tasksList">
+        <!-- Tasks will be populated by JavaScript -->
+    </div>
+    <script>
+        // Function to render tasks in the task list
+        function renderTasks() {
+            const tasksList = document.getElementById('tasksList');
+            tasksList.innerHTML = ''; // Clear existing tasks
+
+            allTasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item';
+                taskItem.innerHTML = `
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-date">${formatDate(task.date)}${task.time ? ', ' + formatTime(task.time) : ''}</div>
+                    ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                `;
+                tasksList.appendChild(taskItem);
+            });
+        }
+    </script>
             
             <div class="pagination" id="pagination">
                 <!-- Pagination will be populated by JavaScript -->
@@ -254,6 +279,18 @@
                     <label for="taskDescription">Description:</label>
                     <textarea id="taskDescription" name="taskDescription" rows="3"></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="taskLocation">Location (optional):</label>
+                    <input type="text" id="taskLocation" name="taskLocation" placeholder="Enter location">
+                </div>
+                <div class="form-group">
+                    <label for="taskStatus">Status:</label>
+                    <select id="taskStatus" name="taskStatus" required>
+                        <option value="Not completed">Not completed</option>
+                        <option value="In progress">In progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
                 <button type="submit" class="add-task-btn">Add Task</button>
             </form>
         </div>
@@ -268,6 +305,8 @@
                 <p><strong>Date:</strong> <span id="detailTaskDate"></span></p>
                 <p><strong>Time:</strong> <span id="detailTaskTime"></span></p>
                 <p><strong>Description:</strong> <span id="detailTaskDescription"></span></p>
+                <p><strong>Location:</strong> <span id="detailTaskLocation"></span></p>
+                <p><strong>Status:</strong> <span id="detailTaskStatus"></span></p>
             </div>
             <div class="task-detail-actions">
                 <button class="edit-task-btn" onclick="editCurrentTask()">Edit</button>
@@ -278,31 +317,94 @@
     </div>
 
     <script>
-        // Sample tasks data
-        const allTasks = [
-            { id: 1, title: "Meeting with Client A", date: "2025-01-15", time: "14:00", description: "Discuss project requirements" },
-            { id: 2, title: "Project Deadline", date: "2025-01-16", time: "17:00", description: "Final submission deadline" },
-            { id: 3, title: "Team Review", date: "2025-01-17", time: "10:00", description: "Weekly team meeting" },
-            { id: 4, title: "Supplier Meeting", date: "2025-01-18", time: "15:00", description: "Negotiate pricing" },
-            { id: 5, title: "Budget Planning", date: "2025-01-19", time: "09:00", description: "Quarterly budget review" },
-            { id: 6, title: "Client Presentation", date: "2025-01-20", time: "11:00", description: "Present project progress" },
-            { id: 7, title: "Training Session", date: "2025-01-21", time: "13:00", description: "New software training" },
-            { id: 8, title: "Quality Check", date: "2025-01-22", time: "16:00", description: "Product quality assessment" },
-            { id: 9, title: "Marketing Meeting", date: "2025-01-23", time: "10:30", description: "Marketing strategy discussion" },
-            { id: 10, title: "Inventory Audit", date: "2025-01-24", time: "14:00", description: "Monthly inventory check" },
-            { id: 11, title: "Client Follow-up", date: "2025-01-25", time: "15:30", description: "Follow up on previous meeting" },
-            { id: 12, title: "Report Submission", date: "2025-01-26", time: "12:00", description: "Submit monthly reports" }
-        ];
+        // Store current view information from server
+        const currentYear = parseInt('{{ current_year }}', 10);
+        const currentMonth = parseInt('{{ current_month }}', 10);
+        
+        // Global tasks array (will be populated from database)
+        let allTasks = [];
 
         let editingTaskId = null;
 
         let currentPage = 1;
         const tasksPerPage = 5;
 
+        // Fetch tasks from database
+        async function fetchTasks() {
+            try {
+                const response = await fetch('/api/tasks');
+                if (response.ok) {
+                    allTasks = await response.json();
+                    renderTasks();
+                    renderPagination();
+                    renderTasksOnCalendar();
+                } else {
+                    console.error('Failed to fetch tasks:', response.status);
+                }
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+            }
+        }
+
+        // Add new task to database
+        async function addTaskToDatabase(taskData) {
+            try {
+                const response = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    return result.id;
+                } else {
+                    console.error('Failed to add task:', response.status);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error adding task:', error);
+                return null;
+            }
+        }
+
+        // Update task in database
+        async function updateTaskInDatabase(taskId, taskData) {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                return response.ok;
+            } catch (error) {
+                console.error('Error updating task:', error);
+                return false;
+            }
+        }
+
+        // Delete task from database
+        async function deleteTaskFromDatabase(taskId) {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}`, {
+                    method: 'DELETE'
+                });
+                
+                return response.ok;
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                return false;
+            }
+        }
+
         // Initialize tasks
         function initializeTasks() {
-            renderTasks();
-            renderPagination();
+            fetchTasks();
         }
 
         // Render tasks for current page
@@ -317,8 +419,9 @@
             currentTasks.forEach(task => {
                 const taskItem = document.createElement('div');
                 taskItem.className = 'task-item';
+                taskItem.setAttribute('data-task-id', task.id);
                 taskItem.innerHTML = `
-                    <div class="task-title">${task.title}</div>
+                    <div class="task-title" onclick="showTaskDetails(${task.id})">${task.title}</div>
                     <div class="task-date">${formatDate(task.date)}${task.time ? ', ' + formatTime(task.time) : ''}</div>
                     ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
                 `;
@@ -394,37 +497,233 @@
             renderPagination();
         }
 
-        // Format date
+        // Function to get ordinal suffix
+        function getOrdinalSuffix(day) {
+            if (day > 3 && day < 21) return 'th'; // Catch 11th-13th
+            switch (day % 10) {
+                case 1: return 'st';
+                case 2: return 'nd';
+                case 3: return 'rd';
+                default: return 'th';
+            }
+        }
+
         function formatDate(dateString) {
             const date = new Date(dateString);
             const today = new Date();
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
             
+            const day = date.getDate();
+            const suffix = getOrdinalSuffix(day); // Get the ordinal suffix
+
             if (date.toDateString() === today.toDateString()) {
                 return 'Today';
             } else if (date.toDateString() === tomorrow.toDateString()) {
                 return 'Tomorrow';
             } else {
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                return formattedDate + suffix;
             }
         }
 
-        // Format time
+        // Format time based on the current format setting
         function formatTime(timeString) {
             const [hours, minutes] = timeString.split(':');
             const hour = parseInt(hours);
-            const period = hour >= 12 ? 'PM' : 'AM';
-            const formattedHour = hour % 12 || 12;
-            return `${formattedHour}:${minutes} ${period}`;
+            if (is24HourFormat) {
+                return `${hour < 10 ? '0' : ''}${hour}:${minutes}`; // Return 24-hour format
+            } else {
+                const period = hour >= 12 ? 'PM' : 'AM';
+                const formattedHour = hour % 12 || 12; // Convert to 12-hour format
+                return `${formattedHour}:${minutes} ${period}`;
+            }
         }
 
+        // Render tasks on calendar
+        function renderTasksOnCalendar() {
+            // Clear existing task indicators
+            document.querySelectorAll('.task-indicator, .task-preview, .daily-task-block').forEach(el => el.remove());
+            
+            allTasks.forEach(task => {
+                const taskDate = new Date(task.date);
+                const day = taskDate.getDate();
+                const month = taskDate.getMonth() + 1;
+                const year = taskDate.getFullYear();
+                
+                // Check if this task is in the current view
+                if (year === currentYear && month === currentMonth) {
+                    // Find the day cell by checking day numbers
+                    const dayCells = document.querySelectorAll('.calendar-cell:not(.inactive)');
+                    let targetCell = null;
+                    
+                    dayCells.forEach(cell => {
+                        const dayNumber = cell.querySelector('.day-number');
+                        if (dayNumber && dayNumber.textContent.trim() == day) {
+                            targetCell = cell;
+                        }
+                    });
+                    
+                    if (targetCell) {
+                        // Add task indicator
+                        const indicator = document.createElement('div');
+                        indicator.className = 'task-indicator';
+                        indicator.setAttribute('data-task-id', task.id);
+                        indicator.onclick = function() { showTaskDetails(task.id); };
+                        targetCell.appendChild(indicator);
+                        
+                        // Add task preview
+                        const preview = document.createElement('div');
+                        preview.className = 'task-preview';
+                        preview.setAttribute('data-task-id', task.id);
+                        preview.innerHTML = task.title;
+                        preview.onclick = function() { showTaskDetails(task.id); };
+                        targetCell.appendChild(preview);
+                    }
+                }
+            });
+            
+            // Render tasks in daily view
+            renderDailyViewTasks();
+        }
+        
+        // Render tasks in daily view
+        function renderDailyViewTasks() {
+            // Clear existing daily view tasks
+            document.querySelectorAll('.daily-task-block').forEach(el => el.remove());
+            
+            // Group tasks by hour for the current day
+            const tasksByHour = {};
+            
+            allTasks.forEach(task => {
+                const taskDate = new Date(task.date);
+                const day = taskDate.getDate();
+                const month = taskDate.getMonth() + 1;
+                const year = taskDate.getFullYear();
+                
+                // Check if this task is for the current day in daily view
+                if (year === currentYear && month === currentMonth && day === parseInt('{{ current_day }}')) {
+                    let hour = 0; // Default to midnight for all-day tasks
+                    
+                    if (task.time) {
+                        const [taskHour] = task.time.split(':');
+                        hour = parseInt(taskHour);
+                    }
+                    
+                    if (!tasksByHour[hour]) {
+                        tasksByHour[hour] = [];
+                    }
+                    
+                    tasksByHour[hour].push(task);
+                }
+            });
+            
+            // Render tasks in their respective time slots
+            Object.entries(tasksByHour).forEach(([hour, tasks]) => {
+                const timeContent = document.getElementById(`time-${hour}`);
+                if (timeContent) {
+                    // Clear existing content
+                    timeContent.innerHTML = '';
+                    
+                    // Create container for task blocks
+                    const tasksContainer = document.createElement('div');
+                    tasksContainer.className = 'daily-tasks-container';
+                    tasksContainer.style.display = 'flex';
+                    tasksContainer.style.gap = '2px';
+                    tasksContainer.style.height = '100%';
+                    
+                    // Create task blocks
+                    tasks.forEach((task, index) => {
+                        const taskBlock = document.createElement('div');
+                        taskBlock.className = 'daily-task-block';
+                        taskBlock.setAttribute('data-task-id', task.id);
+                        taskBlock.innerHTML = task.title;
+                        taskBlock.title = `${task.title}${task.time ? ' at ' + formatTime(task.time) : ''}`;
+                        
+                        // Style the task block
+                        taskBlock.style.flex = `1 0 ${100 / tasks.length}%`;
+                        taskBlock.style.background = '#dbeafe';
+                        taskBlock.style.padding = '2px 4px';
+                        taskBlock.style.borderRadius = '3px';
+                        taskBlock.style.fontSize = '0.7rem';
+                        taskBlock.style.cursor = 'pointer';
+                        taskBlock.style.overflow = 'hidden';
+                        taskBlock.style.textOverflow = 'ellipsis';
+                        taskBlock.style.whiteSpace = 'nowrap';
+                        taskBlock.style.border = '1px solid #93c5fd';
+                        
+                        // Add click handler
+                        taskBlock.onclick = function() { showTaskDetails(task.id); };
+                        
+                        tasksContainer.appendChild(taskBlock);
+                    });
+                    
+                    timeContent.appendChild(tasksContainer);
+                }
+            });
+        }
+        
         // Open add task modal with pre-filled date from parameters
         function openAddTaskModalForDate(year, month, day) {
             // Format the date as YYYY-MM-DD
             const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             document.getElementById('taskDate').value = formattedDate;
             openAddTaskModal();
+        }
+        
+        // Show task details
+        function showTaskDetails(taskId) {
+            const task = allTasks.find(t => t.id === taskId);
+            if (task) {
+                document.getElementById('detailTaskTitle').textContent = task.title;
+                document.getElementById('detailTaskDate').textContent = formatDate(task.date);
+                document.getElementById('detailTaskTime').textContent = task.time ? formatTime(task.time) : 'All day';
+                document.getElementById('detailTaskDescription').textContent = task.description || 'No description';
+                document.getElementById('detailTaskLocation').textContent = task.location || 'No location specified';
+                document.getElementById('detailTaskStatus').textContent = task.status || 'Not completed';
+                
+                // Store current task ID for editing
+                editingTaskId = taskId;
+                
+                // Show task detail modal
+                document.getElementById('taskDetailModal').style.display = 'flex';
+            }
+        }
+        
+        // Close task detail modal
+        function closeTaskDetailModal() {
+            document.getElementById('taskDetailModal').style.display = 'none';
+            editingTaskId = null;
+        }
+        
+        // Edit current task
+        function editCurrentTask() {
+            if (editingTaskId) {
+                const task = allTasks.find(t => t.id === editingTaskId);
+                if (task) {
+                    document.getElementById('taskTitle').value = task.title;
+                    document.getElementById('taskDate').value = task.date;
+                    document.getElementById('taskTime').value = task.time || '';
+                    document.getElementById('taskDescription').value = task.description || '';
+                    document.getElementById('taskLocation').value = task.location || '';
+                    document.getElementById('taskStatus').value = task.status || 'Not completed';
+                    
+                    closeTaskDetailModal();
+                    openAddTaskModal();
+                }
+            }
+        }
+        
+        // Delete current task
+        async function deleteCurrentTask() {
+            if (editingTaskId && confirm('Are you sure you want to delete this task?')) {
+                const success = await deleteTaskFromDatabase(editingTaskId);
+                if (success) {
+                    // Refresh tasks from database
+                    await fetchTasks();
+                    closeTaskDetailModal();
+                }
+            }
         }
 
         // Modal functions
@@ -438,27 +737,42 @@
         }
 
         // Handle form submission
-        document.getElementById('addTaskForm').addEventListener('submit', function(e) {
+        document.getElementById('addTaskForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const title = document.getElementById('taskTitle').value;
             const date = document.getElementById('taskDate').value;
             const time = document.getElementById('taskTime').value;
             const description = document.getElementById('taskDescription').value;
+            const location = document.getElementById('taskLocation').value;
             
-            // Add new task
-            const newTask = {
-                id: allTasks.length + 1,
+            const status = document.getElementById('taskStatus').value;
+            const taskData = {
                 title: title,
                 date: date,
                 time: time,
-                description: description
+                description: description,
+                location: location,
+                status: status
             };
             
-            allTasks.unshift(newTask); // Add to beginning of array
-            currentPage = 1; // Go back to first page
-            renderTasks();
-            renderPagination();
+            if (editingTaskId) {
+                // Update existing task in database
+                const success = await updateTaskInDatabase(editingTaskId, taskData);
+                if (success) {
+                    // Refresh tasks from database
+                    await fetchTasks();
+                    editingTaskId = null;
+                }
+            } else {
+                // Add new task to database
+                const newTaskId = await addTaskToDatabase(taskData);
+                if (newTaskId) {
+                    // Refresh tasks from database
+                    await fetchTasks();
+                }
+            }
+            
             closeAddTaskModal();
         });
 
@@ -522,26 +836,47 @@
         }
 
         // Delete task function
-        function deleteTask(day) {
+        async function deleteTask(day) {
             const tasks = allTasks.filter(task => {
                 const taskDate = new Date(task.date);
-                
-                const lastPageBtn = document.createElement('button');
                 return taskDate.getDate() === parseInt(day);
             });
             
             if (tasks.length > 0 && confirm('Are you sure you want to delete this task?')) {
-                const taskIndex = allTasks.findIndex(t => t.id === tasks[0].id);
-                if (taskIndex !== -1) {
-                    allTasks.splice(taskIndex, 1);
-                    renderTasks();
-                    renderPagination();
+                const success = await deleteTaskFromDatabase(tasks[0].id);
+                if (success) {
+                    // Refresh tasks from database
+                    await fetchTasks();
                     // Close the task details
                     document.getElementById(`taskDetails-${day}`).style.display = 'none';
                 }
             }
         }
 
+        // Time format variable
+        let is24HourFormat = true; // Default to 24-hour format
+
+        // Toggle time format
+        function toggleTimeFormat() {
+            is24HourFormat = !is24HourFormat; // Toggle the format
+            const toggleButton = document.getElementById('timeFormatToggle');
+            toggleButton.textContent = is24HourFormat ? '24h' : '12h'; // Update button text
+            renderTasksOnCalendar(); // Re-render tasks to apply the new format
+        }
+        
+        // Format time
+        function formatTime(timeString) {
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            if (is24HourFormat) {
+                return `${hour < 10 ? '0' : ''}${hour}:${minutes}`; // Return 24-hour format
+            } else {
+                const period = hour >= 12 ? 'PM' : 'AM';
+                const formattedHour = hour % 12 || 12; // Convert to 12-hour format
+                return `${formattedHour}:${minutes} ${period}`;
+            }
+        }
+        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', initializeTasks);
     </script>

@@ -137,6 +137,14 @@ def dashboard():
                            overdue_jobs=overdue_jobs_info,
                            user_role=user_role)
 
+def get_all_tasks():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM tasks ORDER BY task_date, task_time')
+    tasks = c.fetchall()
+    conn.close()
+    return tasks
+
 def query_all_clients():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
@@ -184,7 +192,24 @@ def migrate_clients_table():
         conn.commit()
     conn.close()
 
+def create_tasks_table():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        task_date TEXT NOT NULL,
+        task_time TEXT,
+        location TEXT,
+        status TEXT NOT NULL DEFAULT 'Not completed',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )''')
+    conn.commit()
+    conn.close()
+
 migrate_clients_table()
+create_tasks_table()
 
 @app.route('/clients', methods=['GET', 'POST'])
 def clients():
@@ -419,25 +444,28 @@ def calendar():
         start_of_week = current_date - timedelta(days=current_date.weekday())
         end_of_week = start_of_week + timedelta(days=6)
         
-        # Format header for weekly view with ordinal suffixes and year transitions
-        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December']
-        
-        def get_ordinal_suffix(day):
-            if 11 <= day <= 13:
-                return 'th'
-            else:
-                return {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
-        
+    # Fetch tasks from the database for the calendar view
+    tasks = get_all_tasks()  # New function to fetch tasks
+    
+    month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
+                  'July', 'August', 'September', 'October', 'November', 'December']
+    
+    def get_ordinal_suffix(day):
+        if 11 <= day <= 13:
+            return 'th'
+        else:
+            return {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+    
+    if view == 'week':
         start_suffix = get_ordinal_suffix(start_of_week.day)
         end_suffix = get_ordinal_suffix(end_of_week.day)
         
         if start_of_week.month == end_of_week.month and start_of_week.year == end_of_week.year:
-            header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix} - {end_of_week.day}{end_suffix}) {start_of_week.year}"
+            header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix} - {end_of_week.day}{end_suffix})"
         elif start_of_week.year == end_of_week.year:
-            header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix}) - {month_names[end_of_week.month - 1]} ({end_of_week.day}{end_suffix}) {start_of_week.year}"
+            header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix}) - {month_names[end_of_week.month - 1]} ({end_of_week.day}{end_suffix})"
         else:
-            header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix}) {start_of_week.year} - {month_names[end_of_week.month - 1]} ({end_of_week.day}{end_suffix}) {end_of_week.year}"
+            header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix}) - {month_names[end_of_week.month - 1]} ({end_of_week.day}{end_suffix})"
         
         # Generate week days
         calendar_weeks = [[(start_of_week + timedelta(days=i)).day for i in range(7)]]
@@ -530,13 +558,122 @@ def edit_client(client_id):
     if request.method == 'POST':
         contact_name = request.form.get('contact_name', '').strip()
         phone_number = request.form.get('phone_number', '').strip()
-        account_type = request.form.get('account_type', '').strip()
-        company_name = request.form.get('company_name', '').strip()
-        email = request.form.get('email', '').strip()
+        account_type = request.form.get('account_type', '')
+        company_name = request.form.get('company_name', '')
+        email = request.form.get('email', '')
         # Additional logic for editing client
         # ...
         conn.commit()
     return render_template('edit_client.html')
+
+# Task management API endpoints
+@app.route('/api/tasks', methods=['GET'])
+def get_tasks():
+    if 'user_name' not in session:
+        print("Unauthorized access attempt to get tasks.")
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM tasks ORDER BY task_date, task_time')
+    tasks = c.fetchall()
+    conn.close()
+    
+    print(f"Retrieved {len(tasks)} tasks from database")
+    if tasks:
+        print("Tasks found:")
+        for task in tasks:
+            print(f"  - ID: {task[0]}, Title: {task[1]}, Date: {task[3]}")
+    
+    # Convert to list of dictionaries
+    task_list = []
+    for task in tasks:
+        task_list.append({
+            'id': task[0],
+            'title': task[1],
+            'description': task[2],
+            'date': task[3],
+            'time': task[4],
+            'location': task[5],
+            'status': task[6],
+            'created_at': task[7]
+        })
+    
+    return jsonify(task_list)
+
+@app.route('/api/tasks', methods=['POST'])
+def add_task():
+    if 'user_name' not in session:
+        print("Unauthorized access attempt to add task.")
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    print(f"Received task data: {data}")
+    
+    title = data.get('title')
+    description = data.get('description', '')
+    task_date = data.get('date')
+    task_time = data.get('time', '')
+    location = data.get('location', '')
+    status = data.get('status', 'Not completed')
+    
+    if not title or not task_date:
+        print("Task creation failed: Title and date are required.")
+        return jsonify({'error': 'Title and date are required'}), 400
+    
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    try:
+        c.execute('''INSERT INTO tasks (title, description, task_date, task_time, location, status)
+                     VALUES (?, ?, ?, ?, ?, ?)''', 
+                     (title, description, task_date, task_time, location, status))
+        task_id = c.lastrowid  # Get the ID of the newly added task
+        conn.commit()
+        print(f"Task added successfully: {title} with ID {task_id}.")
+        conn.close()
+    except Exception as e:
+        print(f"Error adding task: {str(e)}")
+        conn.close()
+        return jsonify({'error': 'Failed to add task'}), 500
+
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+def update_task(task_id):
+    if 'user_name' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    title = data.get('title')
+    description = data.get('description', '')
+    task_date = data.get('date')
+    task_time = data.get('time', '')
+    location = data.get('location', '')
+    status = data.get('status', 'Not completed')
+    
+    if not title or not task_date:
+        return jsonify({'error': 'Title and date are required'}), 400
+    
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('''UPDATE tasks SET title=?, description=?, task_date=?, task_time=?, location=?, status=?
+                 WHERE id=?''', 
+                 (title, description, task_date, task_time, location, status, task_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'message': 'Task updated successfully'})
+
+@app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    if 'user_name' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM tasks WHERE id=?', (task_id,))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'message': 'Task deleted successfully'})
 
 if __name__ == "__main__":
     app.run(debug=True)
