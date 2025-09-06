@@ -4,6 +4,81 @@
     <title>Products List</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='products.css') }}">
     <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 100%;
+            background-color: #006400;
+            color: black;
+            display: flex;
+            flex-direction: column;
+            padding-top: 20px;
+            box-sizing: border-box;
+        }
+        .sidebar img {
+            width: 100px;
+            margin: 0 auto 20px auto;
+            display: block;
+        }
+        .sidebar h2 {
+            color: orange;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .navbar {
+            display: flex;
+            flex-direction: column;
+            padding-left: 0;
+            margin: 0;
+            list-style: none;
+        }
+        .navbar a {
+            color: black;
+            font-size: 16px;
+            text-decoration: none;
+            display: block;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .navbar a:hover {
+            background-color: #004d00;
+        }
+        .nav-dropdown {
+            position: relative;
+        }
+        .nav-dropdown .dropbtn {
+            color: white;
+            font-size: 16px;
+            text-decoration: none;
+            display: block;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #004d00;
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 0 0 8px 8px;
+        }
+        .dropdown-content a {
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            display: block;
+        }
+        .dropdown-content a:hover {
+            background-color: #003300;
+        }
+        .nav-dropdown:hover .dropdown-content {
+            display: block;
+        }
         /* Popup image modal styles */
         .modal {
             display: none;
@@ -106,10 +181,6 @@
             color: #222;
             margin-right: 10px;
         }
-        /* Remove bold from Products tab in sidebar */
-        .sidebar .dropbtn {
-            font-weight: 400 !important;
-        }
     </style>
 </head>
 <body style="margin:0;">
@@ -121,29 +192,25 @@
     <img class="modal-content" id="modalImg" src="" alt="Product Image">
     <span id="modalNext" style="display:none;position:absolute;right:30px;top:50%;transform:translateY(-50%);font-size:50px;color:#fff;cursor:pointer;z-index:10000;">&#8594;</span>
     </div>
-    <div class="sidebar">
-        <h2>Golden Turf</h2>
-        <nav>
-            <a href="/dashboard">Dashboard</a>
-            <div class="nav-dropdown">
-                <a href="#" class="dropbtn">Products</a>
-                <div class="dropdown-content">
-                    <a href="{{ url_for('products_list') }}">Products List</a>
-                    <a href="{{ url_for('list_page') }}">Clients & Invoices List</a>
-                    <a href="{{ url_for('invoice') }}">Invoice Form</a>
-                    <a href="{{ url_for('clients') }}">Client Details Form</a>
-                </div>
-            </div>
-            <a href="{{ url_for('calendar') }}">Calendar</a>
-            <a href="{{ url_for('quotes') }}">Quotes</a>
-            <a href="{{ url_for('payments') }}">Payments</a>
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400;">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+        </div>
+        <h2 style="color: orange;">Golden Turf</h2>
+        <nav class="navbar">
+            <a href="/dashboard" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <a href="/products_list" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+            <a href="/invoice" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+            <a href="/clients" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+            <a href="/quotes" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="/payments" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
+            <a href="/calendar" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
         </nav>
     </div>
     <div class="main-content" style="margin-left:220px;">
         <div class="products-list-header">
             <!-- Logo already in sidebar -->
         </div>
-    <!-- Removed Payments button from right panel -->
         <div class="products-title" style="text-align:center;">Products</div>
         <div class="subheading-white" style="text-align:center;font-size:1.15em;font-weight:600;margin:32px 0 12px 0;">Synthetic Turf</div>
         <table class="products-list-table">
@@ -156,14 +223,11 @@
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/04/imperial.jpg" alt="Golden Imperial Lush" style="max-width:180px;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Impirial-lush4.jpg" alt="Golden Imperial Lush" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Impirial-lush2.jpg" alt="Golden Imperial Lush" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Impirial-lush3.jpg" alt="Golden Imperial Lush" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/imperiallush.jpg" alt="Golden Imperial Lush" style="max-width:180px;">
                         </div>
                         <strong>Golden Imperial Lush:</strong> <span style="font-weight:bold;">$15 per sqm</span><br>
-                        Premium synthetic turf designed for a lush, natural look. Pet and child friendly, UV protected, and suitable for residential and commercial use. Superior quality and durability. Ideal for residential backyards, pet areas, and play spaces.<br>
-                        <em>Features:</em> Life-like appearance, soft texture, UV protection, child and pet friendly, easy maintenance.<br>
-                        <em>Applications:</em> Residential lawns, play areas, pet zones, landscaping.
+                        Premium synthetic turf designed for a lush, natural look. Pet and child friendly, UV protected, and suitable for residential and commercial use.<br>
+                        <em>Features:</em> Life-like appearance, soft texture, UV protection, child and pet friendly.<br>
+                        <em>Applications:</em> Residential lawns, play areas, pet zones.
                     </div>
                 </td>
             </tr>
@@ -176,12 +240,9 @@
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/04/lush-green.jpg" alt="Golden Green Lush" style="max-width:180px;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Lush5.jpg" alt="Golden Green Lush" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Lush13.jpg" alt="Golden Green Lush" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Lush4.jpg" alt="Golden Green Lush" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/lush6-1.jpg" alt="Golden Green Lush" style="max-width:180px;">
                         </div>
                         <strong>Golden Green Lush:</strong> <span style="font-weight:bold;">$19 per sqm</span><br>
-                        Artificial grass with vibrant green color, ideal for backyards, play areas, and landscaping. UV protected, soft texture, and easy maintenance. Pet and child friendly, premium grade certified grass.<br>
+                        Artificial grass with vibrant green color, ideal for backyards, play areas, and landscaping. UV protected, soft texture, and easy maintenance.<br>
                         <em>Features:</em> Vibrant green color, soft feel, UV protection, child and pet friendly.<br>
                         <em>Applications:</em> Residential backyards, play areas, landscaping.
                     </div>
@@ -196,11 +257,9 @@
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/natural.jpg" alt="Golden Natural 40mm" style="max-width:180px;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Natural_4.jpg" alt="Golden Natural 40mm" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Natural_1-1152x1536.jpg" alt="Golden Natural 40mm" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/07/IMG-20191221-WA0026.jpg" alt="Golden Natural 40mm" style="max-width:180px;">
                         </div>
                         <strong>Golden Natural 40mm:</strong> <span style="font-weight:bold;">$17 per sqm</span><br>
-                        Realistic 40mm pile height turf, perfect for residential lawns and pet areas. UV protected, child safe, and long-lasting. Life-like and long-lasting, suitable for all climates.<br>
+                        Realistic 40mm pile height turf, perfect for residential lawns and pet areas. UV protected, child safe, and long-lasting.<br>
                         <em>Features:</em> 40mm pile height, realistic look, UV protection, child and pet friendly.<br>
                         <em>Applications:</em> Residential lawns, pet areas, landscaping.
                     </div>
@@ -215,12 +274,9 @@
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/golf.jpg" alt="Golden Golf Turf" style="max-width:180px;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/home_golf_court_golf_carpet-8.jpg" alt="Golden Golf Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/selected-golf_carpet_golf_putting_green-11.jpg" alt="Golden Golf Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/golf_carpet_golf_putting_green-2-1536x864.jpg" alt="Golden Golf Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/golf_carpet_golf_putting_green-6.jpg" alt="Golden Golf Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/golf_carpet_golf_putting_green-9-1536x864.jpg" alt="Golden Golf Turf" style="max-width:180px;">
                         </div>
-                        <strong>Golden Golf Turf:</strong> Specially crafted for golf putting and chipping, this turf offers a true ball roll and professional finish. UV protected and durable for outdoor use. Used in function centers, schools, and golf courses.<br>
+                        <strong>Golden Golf Turf:</strong> <span style="font-weight:bold;">$22 per sqm</span><br>
+                        Specially crafted for golf putting and chipping, this turf offers a true ball roll and professional finish. UV protected and durable for outdoor use.<br>
                         <em>Features:</em> True ball roll, professional finish, UV protection, durable.<br>
                         <em>Applications:</em> Golf putting/chipping, schools, function centers.
                     </div>
@@ -235,37 +291,26 @@
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/premium.jpg" alt="Golden Premium Turf" style="max-width:180px;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/07/Description-premium-photo-.jpg" alt="Golden Premium Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Premium_9.jpg" alt="Golden Premium Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Premium_11.jpg" alt="Golden Premium Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Premium_13.jpg" alt="Golden Premium Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/PREMIUM_15-1536x1152.jpg" alt="Golden Premium Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/07/FB_IMG_1596714611957.jpg" alt="Golden Premium Turf" style="max-width:180px;">
                         </div>
                         <strong>Golden Premium Turf:</strong> <span style="font-weight:bold;">$20 per sqm</span><br>
-                        High-grade synthetic grass for premium landscaping projects. Soft, dense, and visually appealing. UV protected and environmentally friendly. Premium grade certified grass, suitable for all landscaping needs.<br>
+                        High-grade synthetic grass for premium landscaping projects. Soft, dense, and visually appealing. UV protected and environmentally friendly.<br>
                         <em>Features:</em> Premium grade, soft and dense, UV protection, eco-friendly.<br>
                         <em>Applications:</em> Premium landscaping, gardens, commercial spaces.
                     </div>
                 </td>
             </tr>
-        </table>
-        <div class="subheading-white" style="text-align:center;font-size:1.15em;font-weight:600;margin:32px 0 12px 0;">Other Products</div>
-        <table class="products-list-table">
             <tr>
-                <td class="product-toggle" data-product="pegs">Peg - Upins/Nails</td>
+                <td class="product-toggle" data-product="pegs">Peg - U-pins/Nails</td>
             </tr>
             <tr id="info-pegs-row" style="display:none;">
                 <td colspan="1">
                     <div id="info-pegs" class="product-info">
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/peg2.jpg" alt="Peg - Upins/Nails" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/7130I8TfLkL._SL1000_.jpg" alt="Peg - Upins/Nails" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/DIY2-768x1024-1.jpg" alt="Peg - Upins/Nails" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/Is-Artificial-Grass-Toxic-QA2-802551536.jpg" alt="Peg - Upins/Nails" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/maxresdefault.jpg" alt="Peg - Upins/Nails" style="max-width:180px;">
+                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/peg2.jpg" alt="Peg - U-pins/Nails" style="max-width:180px;">
+                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/7130I8TfLkL._SL1000_.jpg" alt="Peg - U-pins/Nails" style="max-width:180px;">
                         </div>
-                        <strong>Peg - Upins/Nails:</strong> <span style="font-weight:bold;">$25 for 100 pieces</span><br>
-                        Essential for securing artificial turf installations. Durable and easy to use for a neat finish. Galvanized for rust resistance, recommended for all turf installations.<br>
+                        <strong>Peg - U-pins/Nails:</strong> <span style="font-weight:bold;">$25 for 100 pieces</span><br>
+                        Essential for securing artificial turf installations. Durable and easy to use for a neat finish. Galvanized for rust resistance.<br>
                         <em>Features:</em> Galvanized, rust resistant, easy to use.<br>
                         <em>Applications:</em> Securing turf, landscaping.
                     </div>
@@ -280,40 +325,10 @@
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/fountain1.jpg" alt="Fountains" style="max-width:180px;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG-20210305-WA0041.jpg" alt="Fountains" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG-20210205-WA0043.jpg" alt="Fountains" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG_20210805_155305.jpg" alt="Fountains" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/07/p-fountain-1.jpg" alt="Fountains" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG-20210205-WA0041.jpg" alt="Fountains" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/fountain-1.jpg" alt="Fountains" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG-20210205-WA0031.jpg" alt="Fountains" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG-20210205-WA0032.jpg" alt="Fountains" style="max-width:180px;">
                         </div>
-                        <strong>Fountains:</strong> Decorative water features to enhance your landscaping project. Adds elegance and tranquility to any space. Available in various designs to suit your garden or landscape.<br>
+                        <strong>Fountains:</strong> Decorative water features to enhance your landscaping project. Adds elegance and tranquility to any space.<br>
                         <em>Features:</em> Multiple designs, durable, easy installation.<br>
                         <em>Applications:</em> Gardens, landscaping, outdoor decor.
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="product-toggle" data-product="pebbles">Pebbles</td>
-            </tr>
-            <tr id="info-pebbles-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-pebbles" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/glowing-pebble1-1.jpg" alt="Pebbles" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/pebbles600x600.jpg" alt="Pebbles" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/8.jpg" alt="Pebbles" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/9.jpg" alt="Pebbles" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/11.jpg" alt="Pebbles" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/12.jpg" alt="Pebbles" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/13.jpg" alt="Pebbles" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/received_410804926973400-e1628237434738.jpeg" alt="Pebbles" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/WhatsApp-Image-2021-08-04-at-18.35.25.jpeg" alt="Pebbles" style="max-width:180px;">
-                        </div>
-                        <strong>Pebbles:</strong> Polished and glowing pebbles for garden beds, pathways, and decorative accents. Long-lasting and visually appealing. Available in multiple colors and finishes for decorative use.<br>
-                        <em>Features:</em> Polished/glowing, multiple colors, durable.<br>
-                        <em>Applications:</em> Garden beds, pathways, decorative accents.
                     </div>
                 </td>
             </tr>
@@ -326,14 +341,8 @@
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/07/1-1.jpg" alt="Artificial Hedges" style="max-width:180px;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG_20210805_155406.jpg" alt="Artificial Hedges" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG_20210805_155305.jpg" alt="Artificial Hedges" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/image7.jpeg" alt="Artificial Hedges" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG_20210805_155421.jpg" alt="Artificial Hedges" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/WhatsApp-Image-2021-08-04-at-3.42.28-AM.jpeg" alt="Artificial Hedges" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/WhatsApp-Image-2021-08-10-at-4.09.19-PM-1152x1536.jpeg" alt="Artificial Hedges" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/WhatsApp-Image-2021-08-10-at-4.09.18-PM-1152x1536.jpeg" alt="Artificial Hedges" style="max-width:180px;">
                         </div>
-                        <strong>Artificial Hedges:</strong> Realistic hedge panels for privacy and aesthetics. UV protected and maintenance free. Easy to install, perfect for creating green walls and privacy screens.<br>
+                        <strong>Artificial Hedges:</strong> Realistic hedge panels for privacy and aesthetics. UV protected and maintenance free.<br>
                         <em>Features:</em> UV protected, realistic look, easy install.<br>
                         <em>Applications:</em> Privacy screens, green walls, landscaping.
                     </div>
@@ -348,13 +357,8 @@
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/bamboo13.jpg" alt="Bamboo Products" style="max-width:180px;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/bamboo555.jpg" alt="Bamboo Products" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/bamboo-wall1-1536x1024.jpg" alt="Bamboo Products" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/131962086_2195562777243324_1164272107425441220_n.jpg" alt="Bamboo Products" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/6.jpg" alt="Bamboo Products" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/received_521798048828349-1152x1536.jpeg" alt="Bamboo Products" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG-20191120-WA0034.jpg" alt="Bamboo Products" style="max-width:180px;">
                         </div>
-                        <strong>Bamboo Products:</strong> Natural bamboo accessories for landscaping and garden design. Eco-friendly and versatile. Used for fencing, garden edging, and decorative accents.<br>
+                        <strong>Bamboo Products:</strong> Natural bamboo accessories for landscaping and garden design. Eco-friendly and versatile.<br>
                         <em>Features:</em> Eco-friendly, versatile, natural look.<br>
                         <em>Applications:</em> Fencing, garden edging, decor.
                     </div>
@@ -369,146 +373,32 @@
                         <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/a-tape2.jpg" alt="Adhesive Joining Tape" style="max-width:180px;">
                             <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG-20210228-WA0034.jpg" alt="Adhesive Joining Tape" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/7130I8TfLkL._SL1000_.jpg" alt="Adhesive Joining Tape" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/Tape.jpg" alt="Adhesive Joining Tape" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/maxresdefault.jpg" alt="Adhesive Joining Tape" style="max-width:180px;">
                         </div>
                         <strong>Adhesive Joining Tape:</strong> <span style="font-weight:bold;">$25 for 15m length</span><br>
-                        Used for joining turf seams securely. Strong adhesive, weather resistant, and easy to apply. Recommended for all artificial turf installations.<br>
+                        Used for joining turf seams securely. Strong adhesive, weather resistant, and easy to apply.<br>
                         <em>Features:</em> Strong adhesive, weather resistant, easy to apply.<br>
                         <em>Applications:</em> Joining turf seams, landscaping.
                     </div>
                 </td>
             </tr>
         </table>
-        <div class="products-list">
-            <h2>Product Pricing</h2>
-            <ul>
-                <li>Golden Imperial Lush - $15 per square metre</li>
-                <li>Golden Green Lush - $19 per square metre</li>
-                <li>Golden Natural 40mm - $17 per square metre</li>
-                <li>Golden Golf Turf - $22 per square metre</li>
-                <li>Golden Premium Turf - $20 per square metre</li>
-                <li>Peg (U-pins/Nails) - $25 for 100 pieces</li>
-                <li>Fountains - Varying price (manually added on invoices)</li>
-                <li>Artificial Hedges - $10 per 50cm x 50cm</li>
-                <li>Pebbles:</li>
-                <ul>
-                    <li>Black Pebbles - 20kg bag is $18</li>
-                    <li>White Pebbles - 20kg bag is $15</li>
-                </ul>
-                <li>Bamboo Products:</li>
-                <ul>
-                    <li>2 metres - $40</li>
-                    <li>2.4 metres - $38</li>
-                    <li>1.8 metres - $38</li>
-                </ul>
-                <li>Adhesive Joining Tape - $25 for 15 metres</li>
-            </ul>
-        </div>
     </div>
 <script>
 // Toggle product info dropdowns below each product
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.product-toggle').forEach(function(el) {
-        el.addEventListener('click', function() {
-            var prod = el.getAttribute('data-product');
-            var row = document.getElementById('info-' + prod + '-row');
-            if (row.style.display === 'table-row') {
-                row.style.display = 'none';
-            } else {
-                document.querySelectorAll('tr[id^="info-"]').forEach(function(r) { r.style.display = 'none'; });
-                row.style.display = 'table-row';
-            }
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.product-toggle').forEach(function(el) {
+            el.addEventListener('click', function() {
+                var prod = el.getAttribute('data-product');
+                var row = document.getElementById('info-' + prod + '-row');
+                if (row.style.display === 'table-row') {
+                    row.style.display = 'none';
+                } else {
+                    document.querySelectorAll('tr[id^="info-"]').forEach(function(r) { r.style.display = 'none'; });
+                    row.style.display = 'table-row';
+                }
+            });
         });
     });
-    // Sidebar dropdown on click
-    var dropdown = document.getElementById('products-sidebar-dropdown');
-    if (dropdown) {
-        var btn = dropdown.querySelector('.dropbtn');
-        var content = dropdown.querySelector('.dropdown-content');
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            content.style.display = (content.style.display === 'block') ? 'none' : 'block';
-        });
-        document.addEventListener('click', function(e) {
-            if (!dropdown.contains(e.target)) {
-                content.style.display = 'none';
-            }
-        });
-    }
-
-    // Popup image enlarge feature with arrows
-    var modal = document.getElementById('imgModal');
-    var modalImg = document.getElementById('modalImg');
-    var modalPrev = document.getElementById('modalPrev');
-    var modalNext = document.getElementById('modalNext');
-    var currentImages = [];
-    var currentIndex = 0;
-
-    document.querySelectorAll('.product-info img').forEach(function(img) {
-        img.style.cursor = 'pointer';
-        img.addEventListener('click', function() {
-            // Get all images in the same product-info div
-            var parentDiv = img.parentElement;
-            currentImages = Array.from(parentDiv.querySelectorAll('img'));
-            currentIndex = currentImages.indexOf(img);
-            modal.style.display = 'block';
-            modalImg.src = img.src;
-            modalImg.alt = img.alt;
-            // Show/hide arrows
-            if (currentImages.length > 1) {
-                modalPrev.style.display = 'block';
-                modalNext.style.display = 'block';
-            } else {
-                modalPrev.style.display = 'none';
-                modalNext.style.display = 'none';
-            }
-        });
-    });
-    modalPrev.onclick = function(e) {
-        e.stopPropagation();
-        showPrevImg();
-    };
-    modalNext.onclick = function(e) {
-        e.stopPropagation();
-        showNextImg();
-    };
-
-    function showPrevImg() {
-        if (currentImages.length > 1) {
-            currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
-            modalImg.src = currentImages[currentIndex].src;
-            modalImg.alt = currentImages[currentIndex].alt;
-        }
-    }
-    function showNextImg() {
-        if (currentImages.length > 1) {
-            currentIndex = (currentIndex + 1) % currentImages.length;
-            modalImg.src = currentImages[currentIndex].src;
-            modalImg.alt = currentImages[currentIndex].alt;
-        }
-    }
-
-    // Keyboard arrow navigation for modal
-    document.addEventListener('keydown', function(e) {
-        if (modal.style.display === 'block' && currentImages.length > 1) {
-            if (e.key === 'ArrowLeft') {
-                showPrevImg();
-            } else if (e.key === 'ArrowRight') {
-                showNextImg();
-            }
-        }
-    });
-    document.getElementById('closeModal').onclick = function() {
-        modal.style.display = 'none';
-    };
-    modal.onclick = function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-        }
-    };
-});
 </script>
 </body>
 </html>

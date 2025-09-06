@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Invoice Form - Golden Turf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
 </head>
 <body>
@@ -18,14 +19,13 @@
                 <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
                 <div class="dropdown-content">
                     <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
-                    <a href="{{ url_for('list_page') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
                     <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
                     <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
                 </div>
             </div>
-            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
             <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
             <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
+            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
         </nav>
     </div>
     <div class="container" style="margin-left: 220px;">
@@ -86,58 +86,23 @@
                 <input type="checkbox" id="gst" name="gst" value="yes" {% if gst == 'yes' %}checked{% endif %} />
             </section>
 
-            <section class="invoice-summary">
-                <h2>Invoice Summary</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Client Name</th>
-                            <th>Turf Type</th>
-                            <th>Area (sq m)</th>
-                            <th>Extra Fee</th>
-                            <th>Extras</th>
-                            <th>Total</th>
-                            <th>Payment Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ client_name or '' }}</td>
-                            <td>{{ turf_type or '' }}</td>
-                            <td>{{ area or 0 }}</td>
-                            <td>${{ "%.2f"|format(extra_fee or 0) }}</td>
-                            <td>{{ extras or 'None' }}</td>
-                            <td>
-                                {% set extra_cost = extras_costs.get(extras, 0) %}
-                                {% if area and area > 0 %}
-                                    {% set subtotal = (area or 0) + (extra_fee or 0) + extra_cost %}
-                                {% else %}
-                                    {% set subtotal = (extra_fee or 0) + extra_cost %}
-                                {% endif %}
-                                {% if subtotal < 0 %}
-                                    <span class="error">Invalid total amount</span>
-                                {% else %}
-                                    {% if gst == 'yes' %}
-                                        {% set gst_amount = subtotal * 0.10 %}
-                                        {% set total = subtotal + gst_amount %}
-                                        ${{ "%.2f"|format(total) }} (incl. GST ${{ "%.2f"|format(gst_amount) }})
-                                    {% else %}
-                                        {% set total = subtotal %}
-                                        ${{ "%.2f"|format(total) }}
-                                    {% endif %}
-                                {% endif %}
-                            </td>
-                            <td>{{ payment_status or '' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </section>
-
             <div class="form-actions">
                 <button type="submit">Submit Invoice</button>
                 <button type="button" onclick="window.print()">Print Invoice</button>
             </div>
         </form>
+
+        {% if summary %}
+        <div class="invoice-summary">
+            <h2>Invoice Summary</h2>
+            <p>Client Name: {{ summary.client_name }}</p>
+            <p>Turf Type: {{ summary.turf_type }}</p>
+            <p>Area: {{ summary.area }} sq m</p>
+            <p>Extra Fee: ${{ "%.2f"|format(summary.extra_fee) }}</p>
+            <p>GST: ${{ "%.2f"|format(summary.gst) }}</p>
+            <p>Total Price: ${{ "%.2f"|format(summary.total_price) }}</p>
+        </div>
+        {% endif %}
     </div>
 
     <script>

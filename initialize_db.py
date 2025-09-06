@@ -73,6 +73,17 @@ def initialize_database():
     )
     ''')
 
+    # Create products table
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_name TEXT NOT NULL,
+        turf_type TEXT NOT NULL,
+        description TEXT,
+        stock INTEGER NOT NULL
+    )
+    ''')
+
     conn.commit()
     conn.close()
     print("Database initialized successfully.")

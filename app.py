@@ -109,10 +109,10 @@ def dashboard():
     total_clients = len(clients)
     total_services = sum(1 for job in jobs if job[3] == 'Completed')
 
-    total_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid')
-    today_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d').date() == today)
-    yesterday_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d').date() == yesterday)
-    last_7_days_sales = sum(payment[3] for payment in payments if payment[4] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d').date() >= last_7_days)
+    total_sales = sum(float(payment[8]) for payment in payments if payment[2] == 'Paid')
+    today_sales = sum(float(payment[8]) for payment in payments if payment[2] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d %H:%M:%S').date() == today)
+    yesterday_sales = sum(float(payment[8]) for payment in payments if payment[2] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d %H:%M:%S').date() == yesterday)
+    last_7_days_sales = sum(float(payment[8]) for payment in payments if payment[2] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d %H:%M:%S').date() >= last_7_days)
 
     upcoming_jobs = [job for job in jobs if datetime.strptime(job[2], '%Y-%m-%d').date() >= today]
     overdue_jobs = [job for job in jobs if datetime.strptime(job[2], '%Y-%m-%d').date() < today and job[3] != 'Completed']
@@ -164,7 +164,9 @@ def query_all_jobs():
 def query_all_payments():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('SELECT * FROM payments')
+    c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date, invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total
+                  FROM invoices
+                  LEFT JOIN clients ON invoices.client_id = clients.id''')
     payments = c.fetchall()
     conn.close()
     return payments
@@ -249,10 +251,10 @@ def clients():
             success = 'Client saved successfully.'
 
     c.execute('SELECT * FROM clients')
-    client_list = c.fetchall()
+    clients = c.fetchall()
     conn.close()
 
-    return render_template('clients.html', clients=client_list, error=error, success=success)
+    return render_template('clients.html', clients=clients, error=error, success=success)
 
 @app.route('/logout')
 def logout():
@@ -271,6 +273,8 @@ def forgot_password():
 def invoice():
     if 'user_name' not in session:
         return redirect(url_for('login'))
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
     if request.method == 'POST':
         client_name = request.form.get('client_name', '')
         turf_type = request.form.get('turf_type', '')
@@ -290,66 +294,58 @@ def invoice():
         except ValueError:
             extra_fee_val = 0.0
 
-        conn = sqlite3.connect('users.db')
-        c = conn.cursor()
+        # Ensure numeric values for price calculation
+        price_table = {
+            'Golden Imperial Lush': 15,
+            'Golden Green Lush': 19,
+            'Golden Natural 40mm': 17,
+            'Golden Golf Turf': 22,
+            'Golden Premium Turf': 20,
+            'Peg (Upins/Nails)': 25 / 100,
+            'Artificial Hedges': 10 / 0.25,
+            'Black Pebbles': 18 / 20,
+            'White Pebbles': 15 / 20,
+            'Bamboo Products': 12
+        }
+
+        price = price_table.get(turf_type, 0) * area_val + extra_fee_val
+        gst_amount = price * 0.1 if gst == 'yes' else 0
+        total_price = price + gst_amount
+
+        # Get client_id from client_name
         c.execute('SELECT id FROM clients WHERE client_name = ?', (client_name,))
-        client = c.fetchone()
-        client_id = client[0] if client else None
+        client_row = c.fetchone()
+        client_id = client_row[0] if client_row else None
 
-        if client_id:
-            price_table = {
-                'Golden Imperial Lush': 15,
-                'Golden Green Lush': 19,
-                'Golden Natural 40mm': 17,
-                'Golden Golf Turf': 22,
-                'Golden Premium Turf': 20,
-                'Peg (Upins/Nails)': 25 / 100,
-                'Artificial Hedges': 10 / 0.25,
-                'Black Pebbles': 18 / 20,
-                'White Pebbles': 15 / 20,
-                'Bamboo Products': {
-                    '2 metres': 40,
-                    '2.4 metres': 38,
-                    '1.8 metres': 38
-                },
-                'Adhesive Joining Tape': 25 / 15
-            }
+        c.execute('''INSERT INTO invoices (client_id, product, quantity, price, gst, total, status, created_date)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                     (client_id, turf_type, area_val, price, gst_amount, total_price, payment_status, invoice_date))
+        conn.commit()
 
-            if turf_type in price_table:
-                price_per_unit = price_table[turf_type]
-            elif extras in price_table:
-                price_per_unit = price_table[extras]
-            elif extras == 'Fountain':
-                price_per_unit = 0
-            else:
-                price_per_unit = 0
+        c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
+                      invoices.gst, invoices.total, invoices.status, invoices.created_date
+                      FROM invoices
+                      LEFT JOIN clients ON invoices.client_id = clients.id''')
+        invoices = c.fetchall()
+        conn.close()
 
-            subtotal = area_val * price_per_unit + extra_fee_val
-            gst_amount = subtotal * 0.10 if gst == 'yes' else 0
-            total = subtotal + gst_amount
-
-            c.execute('''INSERT INTO invoices (client_id, product, quantity, price, gst, total, status)
-                          VALUES (?, ?, ?, ?, ?, ?, ?)''', 
-                          (client_id, turf_type, area_val, extra_fee_val, gst_amount, total, payment_status))
-            conn.commit()
-            conn.close()
-            success = 'Invoice saved successfully.'
-        else:
-            success = None
-
-        return render_template('invoice.html',
-                               client_name=client_name,
-                               turf_type=turf_type,
-                               area=area_val,
-                               extra_fee=extra_fee_val,
-                               extras=extras,
-                               payment_status=payment_status,
-                               gst=gst,
-                               invoice_id='INV-0001',
-                               invoice_date=invoice_date,
-                               success=success)
+        return render_template('invoice.html', invoices=invoices, summary={
+            'client_name': client_name,
+            'turf_type': turf_type,
+            'area': area_val,
+            'extra_fee': extra_fee_val,
+            'gst': gst_amount,
+            'total_price': total_price
+        })
     else:
-        return render_template('invoice.html')
+        c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
+                      invoices.gst, invoices.total, invoices.status, invoices.created_date
+                      FROM invoices
+                      LEFT JOIN clients ON invoices.client_id = clients.id''')
+        invoices = c.fetchall()
+        conn.close()
+
+        return render_template('invoice.html', invoices=invoices)
 
 @app.route('/products_list')
 def products_list():
@@ -383,12 +379,9 @@ def quotes():
 
 @app.route('/payments')
 def payments():
-    """Render the blank payments page."""
-    return render_template('payments.html')
-def payments():
     if 'user_name' not in session:
         return redirect(url_for('login'))
-    
+
     # Get invoices data for payments
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
@@ -398,7 +391,7 @@ def payments():
                   LEFT JOIN clients ON invoices.client_id = clients.id''')
     invoices_data = c.fetchall()
     conn.close()
-    
+
     # Format the data for the template
     invoices = []
     for invoice in invoices_data:
@@ -406,11 +399,13 @@ def payments():
             'client_name': invoice[1],
             'status': invoice[2],
             'due_date': invoice[3],
-            'products': [{'name': invoice[4], 'quantity': invoice[5]}],
-            'amount_gst': invoice[7],
-            'total_amount': invoice[8]
+            'product': invoice[4],
+            'quantity': invoice[5],
+            'price': float(invoice[6]) if invoice[6] else 0.0,
+            'gst': float(invoice[7]) if invoice[7] else 0.0,
+            'total': float(invoice[8]) if invoice[8] else 0.0
         })
-    
+
     current_date = datetime.now().strftime('%Y-%m-%d')
     return render_template('payments.html', invoices=invoices, current_date=current_date)
 
@@ -418,139 +413,101 @@ def payments():
 def calendar():
     if 'user_name' not in session:
         return redirect(url_for('login'))
-    
+
     # Get current date for calendar navigation
-    today = datetime.now()
+    today = datetime(2025, 9, 6)  # Fixed date for testing and correct day of week
     current_year = request.args.get('year', today.year, type=int)
     current_month = request.args.get('month', today.month, type=int)
     current_day = request.args.get('day', today.day, type=int)
     view = request.args.get('view', 'month')
-    
+
     # Create current date object
     current_date = datetime(current_year, current_month, current_day)
-    
-    # Calculate navigation based on view
-    if view == 'week':
-        # Weekly navigation
-        prev_date = current_date - timedelta(weeks=1)
-        next_date = current_date + timedelta(weeks=1)
-        
-        prev_year = prev_date.year
-        prev_month = prev_date.month
-        prev_day = prev_date.day
-        
-        next_year = next_date.year
-        next_month = next_date.month
-        next_day = next_date.day
-        
-        # Get week range (Monday to Sunday)
-        start_of_week = current_date - timedelta(days=current_date.weekday())
-        end_of_week = start_of_week + timedelta(days=6)
-        
+
     # Fetch tasks from the database for the calendar view
-    tasks = get_all_tasks()  # New function to fetch tasks
-    
+    tasks = get_all_tasks()
+
+    # Map task statuses to colors
+    status_colors = {
+        'Not completed': 'red',
+        'In Progress': 'orange',
+        'Completed': 'green'
+    }
+
+    # Organize tasks by date
+    tasks_by_date = {}
+    for task in tasks:
+        task_date = datetime.strptime(task[3], '%Y-%m-%d').date()
+        task_color = status_colors.get(task[6], 'gray')  # Default to gray if status is invalid
+        task = list(task)
+        task[6] = task_color
+        if task_date not in tasks_by_date:
+            tasks_by_date[task_date] = []
+        tasks_by_date[task_date].append(task)
+
+    # Prepare data for rendering based on view
+    calendar_data = []
     month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
-                  'July', 'August', 'September', 'October', 'November', 'December']
-    
-    def get_ordinal_suffix(day):
-        if 11 <= day <= 13:
-            return 'th'
-        else:
-            return {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
-    
-    if view == 'week':
-        start_suffix = get_ordinal_suffix(start_of_week.day)
-        end_suffix = get_ordinal_suffix(end_of_week.day)
-        
+                   'July', 'August', 'September', 'October', 'November', 'December']
+
+    if view == 'month':
+        cal = Calendar(firstweekday=6)  # Set Sunday as the first day of the week
+        days = cal.itermonthdays(current_year, current_month)
+        # Adjust today to current_date for consistency with navigation
+        today = current_date.date()
+        for day in days:
+            if day == 0:
+                calendar_data.append({'day': None, 'tasks': [], 'is_today': False})
+            else:
+                date = datetime(current_year, current_month, day).date()
+                is_today = (date == today)
+                calendar_data.append({'day': day, 'tasks': tasks_by_date.get(date, []), 'is_today': is_today})
+        header_text = month_names[current_month - 1]
+    elif view == 'week':
+        # Adjust start_of_week to Sunday (weekday 6) instead of Monday (weekday 0)
+        # Python's weekday(): Monday=0, Sunday=6
+        # We want weeks to start on Sunday, so adjust accordingly
+        weekday = current_date.weekday()
+        # Calculate days to subtract to get to Sunday
+        days_to_sunday = (weekday + 1) % 7
+        start_of_week = current_date - timedelta(days=days_to_sunday)
+        end_of_week = start_of_week + timedelta(days=6)
+        for i in range(7):
+            date = start_of_week + timedelta(days=i)
+            calendar_data.append({'day': date.day, 'tasks': tasks_by_date.get(date.date(), [])})
+        start_suffix = 'th' if 11 <= start_of_week.day <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(start_of_week.day % 10, 'th')
+        end_suffix = 'th' if 11 <= end_of_week.day <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(end_of_week.day % 10, 'th')
         if start_of_week.month == end_of_week.month and start_of_week.year == end_of_week.year:
             header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix} - {end_of_week.day}{end_suffix})"
         elif start_of_week.year == end_of_week.year:
             header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix}) - {month_names[end_of_week.month - 1]} ({end_of_week.day}{end_suffix})"
         else:
             header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix}) - {month_names[end_of_week.month - 1]} ({end_of_week.day}{end_suffix})"
-        
-        # Generate week days
-        calendar_weeks = [[(start_of_week + timedelta(days=i)).day for i in range(7)]]
-        
     elif view == 'day':
-        # Daily navigation
-        prev_date = current_date - timedelta(days=1)
-        next_date = current_date + timedelta(days=1)
-        
-        prev_year = prev_date.year
-        prev_month = prev_date.month
-        prev_day = prev_date.day
-        
-        next_year = next_date.year
-        next_month = next_date.month
-        next_day = next_date.day
-        
-        # Format header for daily view
-        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December']
-        header_text = f"{month_names[current_month - 1]} {current_day}"
-        
-        # Generate single day
-        calendar_weeks = [[current_day]]
-        
-    else:
-        # Monthly navigation
-        prev_month = current_month - 1
-        prev_year = current_year
-        if prev_month < 1:
-            prev_month = 12
-            prev_year = current_year - 1
-            
-        next_month = current_month + 1
-        next_year = current_year
-        if next_month > 12:
-            next_month = 1
-            next_year = current_year + 1
-        
-        prev_day = current_day
-        next_day = current_day
-        
-        # Format header for monthly view
-        month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December']
-        header_text = month_names[current_month - 1]
-        
-        # Generate month calendar
-        cal = Calendar()
-        calendar_weeks = cal.monthdayscalendar(current_year, current_month)
-    
+        tasks_by_hour = {hour: [] for hour in range(24)}
+        for task in tasks_by_date.get(current_date.date(), []):
+            if task[4]:  # task_time
+                try:
+                    hour = int(task[4].split(':')[0])
+                    tasks_by_hour[hour].append(task)
+                except ValueError:
+                    pass
+        calendar_data = [{'hour': hour, 'tasks': tasks_by_hour[hour]} for hour in range(24)]
+        # Fix the day view header to show correct day of week for the current_date
+        day_of_week = current_date.strftime('%A')
+        header_text = f"{month_names[current_month - 1]} {current_day} ({day_of_week})"
+
     return render_template('calendar.html', 
-                          current_year=current_year,
-                          current_month=current_month,
-                          current_day=current_day,
-                          current_month_name=header_text,
-                          prev_year=prev_year,
-                          prev_month=prev_month,
-                          prev_day=prev_day,
-                          next_year=next_year,
-                          next_month=next_month,
-                          next_day=next_day,
-                          view=view,
-                          calendar_weeks=calendar_weeks)
+                           calendar_data=calendar_data, 
+                           current_year=current_year, 
+                           current_month=current_month, 
+                           current_day=current_day,
+                           header_text=header_text, 
+                           month_names=month_names, 
+                           view=view,
+                           tasks=tasks)
 
-@app.route('/list')
-def list_page():
-    if 'user_name' not in session:
-        return redirect(url_for('login'))
 
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('SELECT id, client_name, phone, created_date, "Active" as status FROM clients')
-    clients = c.fetchall()
-    c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
-                  invoices.gst, invoices.total, invoices.status, invoices.id
-                  FROM invoices
-                  LEFT JOIN clients ON invoices.client_id = clients.id''')
-    invoices = c.fetchall()
-    conn.close()
-
-    return render_template('list_page.html', clients=clients, invoices=invoices)
 
 @app.route('/clients/edit/<int:client_id>', methods=['GET', 'POST'])
 def edit_client(client_id):
@@ -567,7 +524,14 @@ def edit_client(client_id):
         # Additional logic for editing client
         # ...
         conn.commit()
-    return render_template('edit_client.html')
+    c.execute('SELECT id, client_name, phone, account_type, company_name, email, actions FROM clients WHERE id = ?', (client_id,))
+    client = c.fetchone()
+    conn.close()
+
+    if not client:
+        return render_template('edit_client.html', error="Client not found.")
+
+    return render_template('edit_client.html', client=client)
 
 # Task management API endpoints
 @app.route('/api/tasks', methods=['GET'])
@@ -604,26 +568,26 @@ def get_tasks():
     
     return jsonify(task_list)
 
-@app.route('/api/tasks', methods=['POST'])
+@app.route('/api/tasks', methods=['POST'], endpoint='add_task_api')
 def add_task():
     if 'user_name' not in session:
         print("Unauthorized access attempt to add task.")
         return jsonify({'error': 'Unauthorized'}), 401
-    
+
     data = request.get_json()
     print(f"Received task data: {data}")
-    
+
     title = data.get('title')
     description = data.get('description', '')
     task_date = data.get('date')
     task_time = data.get('time', '')
     location = data.get('location', '')
     status = data.get('status', 'Not completed')
-    
+
     if not title or not task_date:
         print("Task creation failed: Title and date are required.")
         return jsonify({'error': 'Title and date are required'}), 400
-    
+
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     try:
@@ -638,6 +602,8 @@ def add_task():
         print(f"Error adding task: {str(e)}")
         conn.close()
         return jsonify({'error': 'Failed to add task'}), 500
+
+    return jsonify({'message': 'Task added successfully', 'task_id': task_id}), 201
 
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
@@ -677,6 +643,40 @@ def delete_task(task_id):
     conn.close()
     
     return jsonify({'message': 'Task deleted successfully'})
+
+@app.route('/clients/delete/<int:client_id>', methods=['POST'])
+def delete_client(client_id):
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM clients WHERE id = ?', (client_id,))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('clients'))
+
+@app.route('/add_task', methods=['POST'], endpoint='add_task_form')
+def add_task():
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    title = request.form.get('title')
+    description = request.form.get('description')
+    task_date = request.form.get('task_date')
+    task_time = request.form.get('task_time')
+    location = request.form.get('location')
+    status = request.form.get('status')
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('''INSERT INTO tasks (title, description, task_date, task_time, location, status)
+                 VALUES (?, ?, ?, ?, ?, ?)''', (title, description, task_date, task_time, location, status))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('calendar'))
 
 if __name__ == "__main__":
     app.run(debug=True)

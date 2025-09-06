@@ -1,30 +1,12 @@
-# Calendar Enhancement Tasks
+# TODO: Calendar Layout Modifications
 
-## 1. Automatic Task Display on Calendar
-- [ ] Modify calendar cells to show task indicators
-- [ ] Add visual indicators for days with tasks
+## Tasks
+- [x] Update static/calendar.css to reduce sidebar width to 200px and add spacing between sidebar and calendar
+- [x] Update templates/calendar.html to add year header at the very top
+- [x] Update templates/calendar.html to add daily, weekly, monthly view options below year
+- [x] Adjust main container layout in calendar.html for proper spacing and calendar positioning
+- [x] Test the layout changes in browser
 
-## 2. Task Click Functionality
-- [ ] Create task detail popup modal
-- [ ] Add edit/delete buttons to task popup
-- [ ] Implement task click handlers
-
-## 3. Hover Functionality for Empty Dates
-- [ ] Add hover effects to calendar cells
-- [ ] Implement "Add Task" button on hover for empty dates
-- [ ] Connect hover functionality to add task modal
-
-## 4. Daily View Task Sorting
-- [ ] Sort tasks by time in daily view
-- [ ] Handle all-day tasks (no specific time)
-- [ ] Implement proper time slot allocation
-
-## 5. Task Detail Popup
-- [ ] Create new modal for task details
-- [ ] Display complete task information
-- [ ] Add edit and delete functionality
-
-## Files to Modify:
-- templates/calendar.html (main implementation)
-- static/calendar.css (styling updates)
-- app.py (backend support if needed)
+## Progress
+- Started: [Date/Time]
+- Completed: [Date/Time]

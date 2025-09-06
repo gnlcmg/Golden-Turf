@@ -3,13 +3,16 @@
 <head>
     <meta charset="utf-8">
     <title>Payments</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='payments.css') }}" />
-    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
+t    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
     <style>
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f4f4f4; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+        th { background-color: #f4f4f4; font-size: 13px; font-weight: 600; }
         .overdue { color: red; font-weight: bold; }
+        .content-area { flex: 1; padding: 1rem; }
+        .content-area h1 { margin: 0 0 1rem 0; font-size: 1.5rem; }
         
         /* Main wrapper and sidebar styles */
         .main-wrapper {
@@ -38,7 +41,7 @@
         }
         
         .sidebar nav a {
-            color: #64748b;
+            color: #fafafa;
             text-decoration: none;
             padding: 0.75rem 1rem;
             border-radius: 6px;
@@ -74,7 +77,7 @@
         .dropdown-content {
             display: none;
             position: absolute;
-            background: white;
+            background: #006400;
             min-width: 200px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             border-radius: 6px;
@@ -82,9 +85,9 @@
             left: 100%;
             top: 0;
         }
-        
+
         .dropdown-content a {
-            color: #64748b;
+            color: white;
             padding: 0.75rem 1rem;
             text-decoration: none;
             display: block;
@@ -108,22 +111,24 @@
 </head>
 <body>
     <div class="main-wrapper">
-            <div class="sidebar">
-            <h2><img src="{{ url_for('static', filename='logo.png') }}" alt="Golden Turf Logo" style="width: 100%; height: auto;"></h2>
-            <nav>
-                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+            <div style="width:100%;text-align:center;margin-bottom:20px;">
+                <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+            </div>
+            <h2 style="color: orange;">Golden Turf</h2>
+            <nav class="navbar">
+                <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
                 <div class="nav-dropdown">
-                    <a href="#" class="dropbtn">Products</a>
+                    <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
                     <div class="dropdown-content">
-                        <a href="{{ url_for('products_list') }}">Products List</a>
-                        <a href="{{ url_for('clients') }}">Clients & Invoices List</a>
-                        <a href="{{ url_for('invoice') }}">Invoice Form</a>
-                        <a href="{{ url_for('clients') }}">Client Details Form</a>
+                        <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                        <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                        <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
                     </div>
                 </div>
-                <a href="{{ url_for('calendar') }}">Calendar</a>
-                <a href="{{ url_for('quotes') }}">Quotes</a>
-                <a href="{{ url_for('payments') }}">Payments</a>
+                <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+                <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
+                <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
             </nav>
         </div>
 

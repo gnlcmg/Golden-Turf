@@ -4,10 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Edit Client - Golden Turf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
 </head>
 <body>
-    <div class="container">
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+        </div>
+        <h2 style="color: orange;">Golden Turf</h2>
+        <nav class="navbar">
+            <a href="/dashboard" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                </div>
+            </div>
+            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
+            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+        </nav>
+    </div>
+    <div class="container" style="margin-left: 220px; padding: 20px;">
         <header>
             <h1>Edit Client Details</h1>
         </header>
@@ -35,6 +56,13 @@
 
             <label for="actions">Actions:</label>
             <input type="text" id="actions" name="actions" value="{{ client[6] or '' }}" />
+
+            <label for="invoices">Invoices:</label>
+            <select id="invoices" name="invoices">
+                {% for invoice in invoices %}
+                <option value="{{ invoice[0] }}">Invoice #{{ invoice[0] }} - {{ invoice[1] }}</option>
+                {% endfor %}
+            </select>
 
             <button type="submit">Update Client</button>
         </form>

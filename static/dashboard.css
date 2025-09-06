@@ -162,3 +162,72 @@ footer {
     color: #777;
     font-size: 14px;
 }
+
+/* Modal popup styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    z-index: 1000;
+}
+
+.modal.active {
+    display: block;
+}
+
+.modal-header {
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.modal-footer button {
+    margin-left: 10px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    background-color: #2f6f2f;
+    color: white;
+    cursor: pointer;
+}
+
+.modal-footer button:hover {
+    background-color: #1f4d1f;
+}
+
+/* Dropdown styles */
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #2f6f2f;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    z-index: 1000;
+}
+
+.dropdown-menu.active {
+    display: block;
+}
+
+.dropdown-menu li {
+    padding: 10px 15px;
+    color: white;
+    cursor: pointer;
+}
+
+.dropdown-menu li:hover {
+    background-color: #1f4d1f;
+}
