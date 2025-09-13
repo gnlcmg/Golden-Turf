@@ -84,6 +84,19 @@ def initialize_database():
     )
     ''')
 
+    # Create quotes table
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS quotes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_name TEXT NOT NULL,
+        turf_type TEXT NOT NULL,
+        area_in_sqm REAL NOT NULL,
+        other_products TEXT,
+        total_price REAL,
+        created_date TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
     conn.commit()
     conn.close()
     print("Database initialized successfully.")

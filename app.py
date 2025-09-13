@@ -365,18 +365,47 @@ def products_list():
 def quotes():
     if 'user_name' not in session:
         return redirect(url_for('login'))
-    
+
     if request.method == 'POST':
         # Handle form submission
         client_name = request.form.get('client_name')
         turf_type = request.form.get('turf_type')
-        area_in_sqm = request.form.get('area_in_sqm')
+        area_in_sqm_str = request.form.get('area_in_sqm')
         other_products = request.form.get('other_products')
-        # Process the quote data here
-        return render_template('quotes.html', success=True)
-    
-    return render_template('quotes.html')
 
+        # Calculate total price
+        price_table = {
+
+            'Golden Green Lush': 19,
+            'Golden Natural 40mm': 17,
+            'Golden Golf Turf': 22,
+            'Golden Premium Turf': 20,
+            'Peg (Upins/Nails)': 25 / 100,
+            'Artificial Hedges': 10 / 0.25,
+            'Black Pebbles': 18 / 20,
+            'White Pebbles': 15 / 20,
+            'Bamboo Products': 12
+        }
+
+        try:
+            area_in_sqm = float(area_in_sqm_str) if area_in_sqm_str else 0.0
+        except ValueError:
+            area_in_sqm = 0.0
+
+        total_price = price_table.get(turf_type, 0) * area_in_sqm
+
+        # Store in database
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute('''INSERT INTO quotes (client_name, turf_type, area_in_sqm, other_products, total_price)
+                     VALUES (?, ?, ?, ?, ?)''',
+                     (client_name, turf_type, area_in_sqm, other_products, total_price))
+        conn.commit()
+        conn.close()
+
+        return render_template('quotes.html', success=True)
+
+    return render_template('quotes.html')
 @app.route('/payments')
 def payments():
     if 'user_name' not in session:
@@ -385,11 +414,20 @@ def payments():
     # Get invoices data for payments
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date, 
+    c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date,
                   invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total
                   FROM invoices
                   LEFT JOIN clients ON invoices.client_id = clients.id''')
     invoices_data = c.fetchall()
+
+    # Get clients data
+    c.execute('SELECT * FROM clients')
+    clients_data = c.fetchall()
+
+    # Get quotes data
+    c.execute('SELECT * FROM quotes')
+    quotes_data = c.fetchall()
+
     conn.close()
 
     # Format the data for the template
@@ -406,8 +444,32 @@ def payments():
             'total': float(invoice[8]) if invoice[8] else 0.0
         })
 
+    # Format clients data
+    clients = []
+    for client in clients_data:
+        clients.append({
+            'id': client[0],
+            'client_name': client[1],
+            'email': client[2] or '',
+            'phone': client[3] or '',
+            'account_type': client[4] or '',
+            'company_name': client[5] or '',
+            'actions': client[6] or ''
+        })
+
+    # Format quotes data
+    quotes = []
+    for quote in quotes_data:
+        quotes.append({
+            'client_name': quote[1],
+            'turf_type': quote[2],
+            'area_in_sqm': quote[3],
+            'other_products': quote[4] or 'None',
+            'total_price': float(quote[5]) if quote[5] else 0.0
+        })
+
     current_date = datetime.now().strftime('%Y-%m-%d')
-    return render_template('payments.html', invoices=invoices, current_date=current_date)
+    return render_template('payments.html', invoices=invoices, clients=clients, quotes=quotes, current_date=current_date)
 
 @app.route('/calendar')
 def calendar():
@@ -415,7 +477,7 @@ def calendar():
         return redirect(url_for('login'))
 
     # Get current date for calendar navigation
-    today = datetime(2025, 9, 6)  # Fixed date for testing and correct day of week
+    today = datetime.now()  # Use actual current date and time
     current_year = request.args.get('year', today.year, type=int)
     current_month = request.args.get('month', today.month, type=int)
     current_day = request.args.get('day', today.day, type=int)
@@ -521,9 +583,31 @@ def edit_client(client_id):
         account_type = request.form.get('account_type', '')
         company_name = request.form.get('company_name', '')
         email = request.form.get('email', '')
-        # Additional logic for editing client
-        # ...
+
+        # Validate input
+        import re
+        if not re.match(r'^[A-Za-z ]+$', contact_name):
+            conn.close()
+            return render_template('edit_client.html', error='Contact name must contain only alphabetic characters and spaces.', client=client)
+        if phone_number and not phone_number.isdigit():
+            conn.close()
+            return render_template('edit_client.html', error='Phone number must contain digits only.', client=client)
+        if account_type not in ['Active', 'Deactivated']:
+            conn.close()
+            return render_template('edit_client.html', error='Invalid account type.', client=client)
+        if '@' not in email or '.' not in email:
+            conn.close()
+            return render_template('edit_client.html', error='Invalid email format.', client=client)
+
+        # Update client in database
+        c.execute('''UPDATE clients SET client_name=?, phone=?, account_type=?, company_name=?, email=? WHERE id=?''',
+                  (contact_name, phone_number, account_type, company_name, email, client_id))
         conn.commit()
+        conn.close()
+
+        # Redirect to clients and invoices list with clients tab active
+        return redirect(url_for('payments') + '#clients')
+
     c.execute('SELECT id, client_name, phone, account_type, company_name, email, actions FROM clients WHERE id = ?', (client_id,))
     client = c.fetchone()
     conn.close()
@@ -653,9 +737,18 @@ def delete_client(client_id):
     c = conn.cursor()
     c.execute('DELETE FROM clients WHERE id = ?', (client_id,))
     conn.commit()
+
+    # Reset Account ID to 1 if no other clients exist
+    cur = c.execute('SELECT COUNT(*) FROM clients')
+    count = cur.fetchone()[0]
+    if count == 0:
+        # Reset the sqlite_sequence for clients table to 0
+        c.execute("DELETE FROM sqlite_sequence WHERE name='clients'")
+        conn.commit()
+
     conn.close()
 
-    return redirect(url_for('clients'))
+    return redirect(url_for('payments'))
 
 @app.route('/add_task', methods=['POST'], endpoint='add_task_form')
 def add_task():

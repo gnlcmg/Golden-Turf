@@ -1,12 +1,13 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <title>Payments</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='payments.css') }}" />
-t    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
     <style>
+        body { background-color: white; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
         th { background-color: #f4f4f4; font-size: 13px; font-weight: 600; }
@@ -107,6 +108,34 @@ t    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&displ
             flex: 1;
             padding: 2rem;
         }
+
+        .filter-buttons {
+            margin-bottom: 1rem;
+        }
+
+        .filter-btn {
+            background-color: #006400;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            margin-right: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .filter-btn:hover {
+            background-color: #004d00;
+        }
+
+        .filter-btn.active {
+            background-color: #f0a500;
+            color: black;
+        }
+
+        .section {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -127,34 +156,146 @@ t    <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&displ
                     </div>
                 </div>
                 <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-                <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
+                <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
                 <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
             </nav>
         </div>
 
         <div class="content-area">
-            <h1>Payments Page</h1>
-            <table>
-                <tr>
-                    <th>Clients</th>
-                    <th>Status</th>
-                    <th>Due Date</th>
-                    <th>Products</th>
-                    <th>Amount (+ GST)</th>
-                    <th>Total Amount</th>
-                </tr>
-                {% for invoice in invoices %}
-                <tr class="{% if invoice.status == 'Unpaid' and invoice.due_date < current_date %}overdue{% endif %}">
-                    <td>{{ invoice.client_name }}</td>
-                    <td>{{ invoice.status }}</td>
-                    <td>{{ invoice.due_date }}</td>
-                    <td>{{ invoice.product }}</td>
-                    <td>{{ invoice.price + invoice.gst }}</td>
-                    <td>{{ invoice.total }}</td>
-                </tr>
-                {% endfor %}
-            </table>
+            <div class="filter-buttons">
+                <button id="filter-invoices" class="filter-btn active">Invoices</button>
+                <button id="filter-clients" class="filter-btn">Clients</button>
+            </div>
+            <h1 id="dynamic-heading">Invoices</h1>
+
+            <div id="invoices-section" class="section">
+                <table>
+                    <tr>
+                        <th>Clients</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                        <th>Products</th>
+                        <th>Amount (+ GST)</th>
+                        <th>Total Amount</th>
+                    </tr>
+                    {% for invoice in invoices %}
+                    <tr class="{% if invoice.status == 'Unpaid' and invoice.due_date < current_date %}overdue{% endif %}">
+                        <td>{{ invoice.client_name }}</td>
+                        <td>{{ invoice.status }}</td>
+                        <td>{{ invoice.due_date }}</td>
+                        <td>{{ invoice.product }}</td>
+                        <td>{{ invoice.price + invoice.gst }}</td>
+                        <td>{{ invoice.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <div id="clients-section" class="section" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Account ID</th>
+                            <th>Contact Name</th>
+                            <th>Phone Number</th>
+                            <th>Account Type</th>
+                            <th>Company Name</th>
+                            <th>Email</th>
+                            <th>Actions</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in clients %}
+                        <tr>
+                            <td>{{ client.id }}</td>
+                            <td>{{ client.client_name }}</td>
+                            <td>{{ client.phone }}</td>
+                            <td>{{ client.account_type }}</td>
+                            <td>{{ client.company_name or '' }}</td>
+                            <td>{{ client.email or '' }}</td>
+                        <td>
+                            <a href="{{ url_for('edit_client', client_id=client.id) }}" style="color: #006400; text-decoration: none; margin-right: 10px;">Edit</a>
+                            <form method="POST" action="{{ url_for('delete_client', client_id=client.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this client?');" class="delete-client-form">
+                                <button type="submit" style="background: none; border: none; color: red; cursor: pointer; text-decoration: underline;">Delete</button>
+                            </form>
+                        </td>
+                        <td>{{ client.actions or '' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8">No clients found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     </div>
+
+    <script>
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const sections = document.querySelectorAll('.section');
+        const dynamicHeading = document.getElementById('dynamic-heading');
+
+        function switchTab(tabId) {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            // Add active class to the specified button
+            document.getElementById(tabId).classList.add('active');
+
+            // Hide all sections
+            sections.forEach(section => section.style.display = 'none');
+
+            // Show the corresponding section and update heading
+            if (tabId === 'filter-invoices') {
+                document.getElementById('invoices-section').style.display = 'block';
+                dynamicHeading.textContent = 'Invoices';
+            } else if (tabId === 'filter-clients') {
+                document.getElementById('clients-section').style.display = 'block';
+                dynamicHeading.textContent = 'Clients';
+            }
+        }
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                switchTab(button.id);
+            });
+        });
+
+        // Check URL hash on page load and switch to clients tab if #clients
+        if (window.location.hash === '#clients') {
+            switchTab('filter-clients');
+        }
+
+        // Add event listener to delete client forms to prevent redirect and refresh list dynamically
+        document.querySelectorAll('.delete-client-form').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                if (!confirm('Are you sure you want to delete this client?')) {
+                    return;
+                }
+                const action = this.action;
+                fetch(action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams(new FormData(this))
+                }).then(response => {
+                    if (response.ok) {
+                        // Reload the clients section without full page reload
+                        location.reload();
+                    } else {
+                        alert('Failed to delete client.');
+                    }
+                }).catch(() => {
+                    alert('Failed to delete client.');
+                });
+            });
+        });
+    </script>
 </body>
 </html>

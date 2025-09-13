@@ -78,15 +78,15 @@
                 </div>
             </div>
             <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
             <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
         </nav>
     </div>
-    <div class="container" style="margin-left: 220px;">
+    <div class="container" style="margin-left: 220px; background-color: white; padding: 1rem; max-width: 900px;">
         <header>
             <h1>Quotation Form</h1>
         </header>
-        <div class="form-container">
+        <div class="form-container" style="max-width: 600px;">
             <form method="POST" action="{{ url_for('quotes') }}">
                 <label for="client_name">Name (Client):</label>
                 <input type="text" id="client_name" name="client_name">

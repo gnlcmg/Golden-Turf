@@ -1,98 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Calendar</title>
-    <link rel="stylesheet" href="/static/calendar.css">
-    <link rel="stylesheet" href="/static/dashboard.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 200px;
-            height: 100%;
-            background-color: #006400;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            padding-top: 20px;
-            box-sizing: border-box;
-            z-index: 10;
-            overflow: visible;
-        }
-        .sidebar img {
-            width: 100px;
-            margin: 0 auto 20px auto;
-            display: block;
-        }
-        .sidebar h2 {
-            color: orange;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .navbar {
-            display: flex;
-            flex-direction: column;
-            padding-left: 0;
-            margin: 0;
-            list-style: none;
-        }
-        .navbar a {
-            color: white;
-            font-size: 16px;
-            text-decoration: none;
-            display: block;
-            padding: 10px 20px;
-            cursor: pointer;
-        }
-        .navbar a:hover {
-            background-color: #004d00;
-        }
-        .nav-dropdown {
-            position: relative;
-        }
-        .nav-dropdown .dropbtn {
-            color: white;
-            font-size: 16px;
-            text-decoration: none;
-            display: block;
-            padding: 10px 20px;
-            cursor: pointer;
-        }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background-color: #004d00;
-            min-width: 180px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            z-index: 1;
-            border-radius: 0 0 8px 8px;
-        }
-        .dropdown-content a {
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            display: block;
-        }
-        .dropdown-content a:hover {
-            background-color: #003300;
-        }
-        .nav-dropdown:hover .dropdown-content {
-            display: block;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/calendar.css" />
+    <link rel="stylesheet" href="/static/dashboard.css" />
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 200px;
+                height: 100%;
+                background-color: #006400;
+                color: white;
+                display: flex;
+                flex-direction: column;
+                padding-top: 20px;
+                box-sizing: border-box;
+                z-index: 10;
+                overflow: visible;
+            }
+            .sidebar img {
+                width: 100px;
+                margin: 0 auto 20px auto;
+                display: block;
+            }
+            .sidebar h2 {
+                color: orange;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .navbar {
+                display: flex;
+                flex-direction: column;
+                padding-left: 0;
+                margin: 0;
+                list-style: none;
+            }
+            .navbar a {
+                color: white;
+                font-size: 16px;
+                text-decoration: none;
+                display: block;
+                padding: 10px 20px;
+                cursor: pointer;
+            }
+            .navbar a:hover {
+                background-color: #004d00;
+            }
+            .nav-dropdown {
+                position: relative;
+            }
+            .nav-dropdown .dropbtn {
+                color: white;
+                font-size: 16px;
+                text-decoration: none;
+                display: block;
+                padding: 10px 20px;
+                cursor: pointer;
+            }
+            .dropdown-content {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background-color: #004d00;
+                min-width: 180px;
+                box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+                z-index: 1;
+                border-radius: 0 0 8px 8px;
+            }
+            .dropdown-content a {
+                color: white;
+                padding: 10px 20px;
+                text-decoration: none;
+                display: block;
+            }
+            .dropdown-content a:hover {
+                background-color: #003300;
+            }
+            .nav-dropdown:hover .dropdown-content {
+                display: block;
+            }
+
+            /* Task status color boxes on calendar */
+            .task-status-box {
+                width: 12px;
+                height: 12px;
+                border-radius: 3px;
+                display: inline-block;
+                margin-right: 4px;
+                vertical-align: middle;
+            }
+            .task-not-completed {
+                background-color: #dc3545; /* red */
+            }
+            .task-in-progress {
+                background-color: #fd7e14; /* orange */
+            }
+            .task-completed {
+                background-color: #28a745; /* green */
+            }
+
+            /* Task box on calendar day */
+            .task-box {
+                border-radius: 4px;
+                padding: 2px 6px;
+                margin-bottom: 2px;
+                cursor: pointer;
+                color: white;
+                font-size: 10px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+            .task-box.task-not-completed {
+                background-color: #dc3545;
+            }
+            .task-box.task-in-progress {
+                background-color: #fd7e14;
+            }
+            .task-box.task-completed {
+                background-color: #28a745;
+            }
+
+            /* Task status color dot in task list */
+            .task-status-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                display: inline-block;
+                margin-right: 6px;
+                vertical-align: middle;
+            }
+            .task-status-dot.not-completed {
+                background-color: #dc3545;
+            }
+            .task-status-dot.in-progress {
+                background-color: #fd7e14;
+            }
+            .task-status-dot.completed {
+                background-color: #28a745;
+            }
+
+            /* Adjust task menu dropdown to the left to avoid cutoff */
+            .task-menu {
+                position: absolute;
+                top: 10px;
+                right: auto;
+                left: -110px;
+                cursor: pointer;
+                z-index: 10000;
+            }
+            .dropdown-menu {
+                position: absolute;
+                left: 0;
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                z-index: 10001;
+                min-width: 100px;
+            }
+        </style>
 </head>
 <body>
     <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
-            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;" />
         </div>
         <h2 style="color: orange;">Golden Turf</h2>
         <nav class="navbar">
@@ -141,9 +220,10 @@
                                     <div class="today-indicator" style="position: absolute; top: 5px; left: 5px; width: 10px; height: 10px; background-color: blue; border-radius: 50%;"></div>
                                 {% endif %}
                                 {% for task in day.tasks %}
-                                    <div class="task task-{{ task[6] | lower | replace(' ', '-') }}" onclick="showTaskDetails('{{ task[0] }}')">
-                                        <p style="font-size: 10px; margin: 0;">{{ task[1] }}</p>
-                                    </div>
+                                <div class="task-box task-{{ task[6] | lower | replace(' ', '-') }}" onclick="showTaskDetails('{{ task[0] }}')">
+                                    <span class="task-status-box task-{{ task[6] | lower | replace(' ', '-') }}"></span>
+                                    <p style="font-size: 10px; margin: 0;">{{ task[1] }}</p>
+                                </div>
                                 {% endfor %}
                             {% endif %}
                         </div>
@@ -190,7 +270,7 @@
 
         <aside class="tasks-sidebar" style="flex: 0 0 200px;">
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button class="add-event" onclick="openTaskModal()">+ Add New Task</button>
+                <button class="add-event" onclick="openAddTaskPopup()">+ Add New Task</button>
                 <button class="today-btn" onclick="goToToday()" style="background-color: #28a745; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Today</button>
             </div>
             <div style="margin-bottom: 5px;">
@@ -213,7 +293,7 @@
                         </div>
                         <div class="task-menu" style="position: absolute; top: 10px; right: 10px; cursor: pointer;" onclick="toggleTaskMenu(this)">
                             &#8230;
-                            <div class="dropdown-menu" style="display: none; position: absolute; right: 0; background: white; border: 1px solid #ccc; border-radius: 4px; z-index: 10;">
+                            <div class="dropdown-menu" style="display: none; position: absolute; left: 0; background: white; border: 1px solid #ccc; border-radius: 4px; z-index: 10;">
                                 <div onclick="printTask('{{ task[0] }}')" style="padding: 8px; cursor: pointer;">Print</div>
                                 <div onclick="editTask('{{ task[0] }}')" style="padding: 8px; cursor: pointer;">Edit</div>
                                 <div onclick="deleteTaskFromList('{{ task[0] }}')" style="padding: 8px; cursor: pointer;">Delete</div>
@@ -237,21 +317,22 @@
                 <button id="cancel-edit-btn" onclick="cancelEdit()" style="margin-top: 10px; display:none;">Cancel</button>
             </div>
         </div>
-        <div id="task-modal" class="modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-            <div class="modal-content" style="width: 300px; padding: 20px; border-radius: 8px; background-color: #fff;">
-                <span class="close" onclick="closeTaskModal()" style="cursor: pointer; font-size: 20px; font-weight: bold;">&times;</span>
+
+        <div id="add-task-popup" class="modal" style="display:none;">
+            <div class="modal-content" style="width: 350px; padding: 20px; border-radius: 8px; background-color: #fff;">
+                <span class="close" onclick="closeAddTaskPopup()" style="cursor: pointer; font-size: 20px; font-weight: bold;">&times;</span>
                 <h2 style="text-align: center;">Add New Task</h2>
                 <form action="/add_task" method="POST" style="display: flex; flex-direction: column; gap: 10px;">
                     <label for="title">Title:</label>
-                    <input type="text" id="title" name="title" required>
+                    <input type="text" id="title" name="title" required />
                     <label for="description">Description:</label>
                     <textarea id="description" name="description" style="resize: none;"></textarea>
                     <label for="task_date">Date:</label>
-                    <input type="date" id="task_date" name="task_date" required>
+                    <input type="date" id="task_date" name="task_date" required />
                     <label for="task_time">Time:</label>
-                    <input type="time" id="task_time" name="task_time">
+                    <input type="time" id="task_time" name="task_time" />
                     <label for="location">Location:</label>
-                    <input type="text" id="location" name="location">
+                    <input type="text" id="location" name="location" />
                     <label for="status">Status:</label>
                     <select id="status" name="status">
                         <option value="Not completed">Not completed</option>
@@ -259,6 +340,33 @@
                         <option value="Completed">Completed</option>
                     </select>
                     <button type="submit" style="background-color: #007BFF; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Add Task</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="edit-task-popup" class="modal" style="display:none;">
+            <div class="modal-content" style="width: 350px; padding: 20px; border-radius: 8px; background-color: #fff;">
+                <span class="close" onclick="closeEditTaskPopup()" style="cursor: pointer; font-size: 20px; font-weight: bold;">&times;</span>
+                <h2 style="text-align: center;">Edit Task</h2>
+                <form id="edit-task-form" style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="hidden" id="edit-task-id" name="task_id" />
+                    <label for="edit-title">Title:</label>
+                    <input type="text" id="edit-title" name="title" required />
+                    <label for="edit-description">Description:</label>
+                    <textarea id="edit-description" name="description" style="resize: none;"></textarea>
+                    <label for="edit-task_date">Date:</label>
+                    <input type="date" id="edit-task_date" name="task_date" required />
+                    <label for="edit-task_time">Time:</label>
+                    <input type="time" id="edit-task_time" name="task_time" />
+                    <label for="edit-location">Location:</label>
+                    <input type="text" id="edit-location" name="location" />
+                    <label for="edit-status">Status:</label>
+                    <select id="edit-status" name="status">
+                        <option value="Not completed">Not completed</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                    <button type="submit" style="background-color: #007BFF; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Update Task</button>
                 </form>
             </div>
         </div>
@@ -301,16 +409,26 @@
             window.location.href = url.toString();
         }
 
-        function openTaskModal() {
-            const modal = document.getElementById('task-modal');
-            modal.style.display = 'block';
-            modal.style.zIndex = '1000';
+        function openAddTaskPopup() {
+            console.log('openAddTaskPopup called');
+            const modal = document.getElementById('add-task-popup');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.style.zIndex = '1000';
+            } else {
+                console.error('Modal element not found');
+            }
         }
 
-        function closeTaskModal() {
-            const modal = document.getElementById('task-modal');
-            modal.style.display = 'none';
-            modal.style.zIndex = '';
+        function closeAddTaskPopup() {
+            console.log('closeAddTaskPopup called');
+            const modal = document.getElementById('add-task-popup');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.style.zIndex = '';
+            } else {
+                console.error('Modal element not found');
+            }
         }
 
         function showTaskDetails(taskId) {
@@ -442,32 +560,69 @@
         }
 
         function printTask(taskId) {
-            fetch('/api/tasks/' + taskId)
-                .then(response => response.json())
-                .then(task => {
-                    const printWindow = window.open('', '_blank');
-                    printWindow.document.write(`
-                        <html>
-                        <head><title>Task Details</title></head>
-                        <body>
-                            <h1>${task.title}</h1>
-                            <p><strong>Description:</strong> ${task.description}</p>
-                            <p><strong>Date:</strong> ${task.date}</p>
-                            <p><strong>Time:</strong> ${task.time}</p>
-                            <p><strong>Location:</strong> ${task.location}</p>
-                            <p><strong>Status:</strong> ${task.status}</p>
-                        </body>
-                        </html>
-                    `);
-                    printWindow.document.close();
-                    printWindow.print();
-                });
+                    fetch('/api/tasks/' + taskId)
+                        .then(response => response.json())
+                        .then(task => {
+                            const printWindow = window.open('', '_blank');
+                            printWindow.document.write(`
+                                <html>
+                                <head><title>Task Details</title></head>
+                                <body>
+                                    <h1>${task.title}</h1>
+                                    <p><strong>Description:</strong> ${task.description}</p>
+                                    <p><strong>Date:</strong> ${task.date}</p>
+                                    <p><strong>Time:</strong> ${task.time}</p>
+                                    <p><strong>Location:</strong> ${task.location}</p>
+                                    <p><strong>Status:</strong> ${task.status}</p>
+                                </body>
+                                </html>
+                            `);
+                            printWindow.document.close();
+                            printWindow.print();
+                        });
         }
 
         function editTask(taskId) {
-            showTaskDetails(taskId);
-            enableTaskEditing();
+            fetch('/api/tasks/' + taskId)
+                .then(response => response.json())
+                .then(task => {
+                    document.getElementById('edit-task-id').value = taskId;
+                    document.getElementById('edit-title').value = task.title;
+                    document.getElementById('edit-description').value = task.description;
+                    document.getElementById('edit-task_date').value = task.date;
+                    document.getElementById('edit-task_time').value = task.time;
+                    document.getElementById('edit-location').value = task.location;
+                    document.getElementById('edit-status').value = task.status;
+                    document.getElementById('edit-task-popup').style.display = 'flex';
+                    document.getElementById('edit-task-popup').style.zIndex = '1000';
+                });
         }
+
+        function closeEditTaskPopup() {
+            document.getElementById('edit-task-popup').style.display = 'none';
+            document.getElementById('edit-task-popup').style.zIndex = '';
+        }
+
+        document.getElementById('edit-task-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const taskId = document.getElementById('edit-task-id').value;
+            const data = {
+                title: document.getElementById('edit-title').value,
+                description: document.getElementById('edit-description').value,
+                date: document.getElementById('edit-task_date').value,
+                time: document.getElementById('edit-task_time').value,
+                location: document.getElementById('edit-location').value,
+                status: document.getElementById('edit-status').value
+            };
+            fetch('/api/tasks/' + taskId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(() => {
+                closeEditTaskPopup();
+                location.reload();
+            });
+        });
 
         function deleteTaskFromList(taskId) {
             if (confirm('Are you sure you want to delete this task?')) {

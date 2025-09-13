@@ -10,3 +10,6 @@
 ## Progress
 - Started: [Date/Time]
 - Completed: [Date/Time]
+
+## Additional Tasks Completed
+- [x] Integrated Notes into Clients page: Removed separate Notes tab and added Notes column to clients table next to Actions column, displaying client.actions field.

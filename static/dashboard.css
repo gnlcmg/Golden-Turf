@@ -84,6 +84,11 @@ body {
     margin-left: 220px;
     padding: 30px 40px;
 }
+
+.main-wrapper .content-area {
+    margin-left: 250px; /* Match sidebar width in payments.html */
+    padding: 2rem;
+}
 h1 {
     color: #2f6f2f;
     margin-bottom: 30px;

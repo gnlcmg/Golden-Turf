@@ -102,6 +102,45 @@
         .daily-task-item.all-day {
             background: #dcfce7;
         }
+        
+        /* Task box on calendar day */
+        .calendar-task-box {
+            border: 2px solid black;
+            border-radius: 5px;
+            padding: 2px 5px;
+            margin: 2px 0;
+            cursor: pointer;
+            color: black;
+            font-size: 1.1rem;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calendar-task-box .task-text-inner {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background-color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+            font-size: 1.2rem;
+            text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .calendar-task-box.not-completed {
+            background-color: #f87171; /* red */
+        }
+        .calendar-task-box.in-progress {
+            background-color: #fbbf24; /* orange */
+        }
+        .calendar-task-box.completed {
+            background-color: #34d399; /* green */
+        }
     </style>
 </head>
 <body>
@@ -122,7 +161,7 @@
                     </div>
                 </div>
                 <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-                <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
+                <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
                 <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
             </nav>
         </div>
@@ -233,6 +272,345 @@
                 tasksList.appendChild(taskItem);
             });
         }
+    </script>
+
+    <script>
+        // New function to render tasks with status, dots, and color preview
+        function renderTasksWithStatus() {
+            const tasksList = document.getElementById('tasksList');
+            tasksList.innerHTML = ''; // Clear existing tasks
+
+            allTasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item';
+
+                // Determine status class for color coding
+                let statusClass = '';
+                if (task.status === 'Completed') {
+                    statusClass = 'task-completed';
+                } else if (task.status.toLowerCase() === 'in progress') {
+                    statusClass = 'task-in-progress';
+                } else {
+                    statusClass = 'task-not-completed';
+                }
+
+                taskItem.innerHTML = `
+                    <div class="status-circle ${statusClass}" title="${task.status}"></div>
+                    <div class="task-content">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-date">${formatDate(task.date)}${task.time ? ', ' + formatTime(task.time) : ''}</div>
+                        ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                    </div>
+                    <div class="task-dots" title="Options">&#8942;</div>
+                `;
+                tasksList.appendChild(taskItem);
+            });
+        }
+
+        // Call the new render function instead of the old one
+        renderTasksWithStatus();
+
+        // Function to render tasks on calendar days with color-coded boxes and three dots
+        function renderTasksOnCalendar() {
+            const calendarGrid = document.getElementById('calendarGrid');
+            if (!calendarGrid) return;
+
+            // Clear existing tasks from calendar day cells and daily time slots
+            allTasks.forEach(task => {
+                const taskDate = new Date(task.date);
+                const day = taskDate.getDate();
+
+                // Clear task containers for week/month views
+                const taskContainer = document.getElementById(`tasks-${day}`);
+                if (taskContainer) {
+                    taskContainer.innerHTML = '';
+                }
+
+                // Clear daily view time slots
+                if (task.time) {
+                    const hour = parseInt(task.time.split(':')[0]);
+                    const timeContainer = document.getElementById(`time-${hour}`);
+                    if (timeContainer) {
+                        timeContainer.innerHTML = '';
+                    }
+                }
+            });
+
+            const currentView = '{{ view }}';
+            const currentYear = {{ current_year }};
+            const currentMonth = {{ current_month }} - 1; // JS months 0-based
+            const currentDay = {{ current_day }};
+
+            if (currentView === 'day') {
+                // Render tasks in daily view time slots
+                allTasks.forEach(task => {
+                    const taskDate = new Date(task.date);
+                    const currentDate = new Date(currentYear, currentMonth, currentDay);
+                    if (taskDate.toDateString() === currentDate.toDateString()) {
+                        const hour = task.time ? parseInt(task.time.split(':')[0]) : null;
+                        if (hour !== null) {
+                            const timeContainer = document.getElementById(`time-${hour}`);
+                            if (timeContainer) {
+                                let statusClass = '';
+                                if (task.status === 'Completed') {
+                                    statusClass = 'completed';
+                                } else if (task.status.toLowerCase() === 'in progress') {
+                                    statusClass = 'in-progress';
+                                } else {
+                                    statusClass = 'not-completed';
+                                }
+
+                                const taskBox = document.createElement('div');
+                                taskBox.className = `calendar-task-box ${statusClass}`;
+
+                                const innerBox = document.createElement('div');
+                                innerBox.className = 'task-text-inner';
+                                innerBox.textContent = task.title;
+
+                                taskBox.appendChild(innerBox);
+
+                                taskBox.title = `Status: ${task.status}\nDate: ${task.date}\nTime: ${task.time || 'N/A'}\nDescription: ${task.description || 'N/A'}`;
+
+                                taskBox.addEventListener('click', () => {
+                                    openTaskDetailModal(task);
+                                });
+
+                                const dots = document.createElement('span');
+                                dots.className = 'task-dots';
+                                dots.innerHTML = '&#8942;';
+                                dots.title = 'Options';
+
+                                dots.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    // TODO: Implement options menu (edit, print, delete)
+                                    alert('Options menu not implemented yet.');
+                                });
+
+                                taskBox.appendChild(dots);
+                                timeContainer.appendChild(taskBox);
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Render tasks in week and month views
+                allTasks.forEach(task => {
+                    const taskDate = new Date(task.date);
+                    const day = taskDate.getDate();
+                    const taskContainer = document.getElementById(`tasks-${day}`);
+                    if (taskContainer) {
+                        let statusClass = '';
+                        if (task.status === 'Completed') {
+                            statusClass = 'completed';
+                        } else if (task.status.toLowerCase() === 'in progress') {
+                            statusClass = 'in-progress';
+                        } else {
+                            statusClass = 'not-completed';
+                        }
+
+                        const taskBox = document.createElement('div');
+                        taskBox.className = `calendar-task-box ${statusClass}`;
+
+                        const innerBox = document.createElement('div');
+                        innerBox.className = 'task-text-inner';
+                        innerBox.textContent = task.title;
+
+                        taskBox.appendChild(innerBox);
+
+                        taskBox.title = `Status: ${task.status}\nDate: ${task.date}\nTime: ${task.time || 'N/A'}\nDescription: ${task.description || 'N/A'}`;
+
+                        taskBox.addEventListener('click', () => {
+                            openTaskDetailModal(task);
+                        });
+
+                        const dots = document.createElement('span');
+                        dots.className = 'task-dots';
+                        dots.innerHTML = '&#8942;';
+                        dots.title = 'Options';
+
+                        dots.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            // TODO: Implement options menu (edit, print, delete)
+                            alert('Options menu not implemented yet.');
+                        });
+
+                        taskBox.appendChild(dots);
+                        taskContainer.appendChild(taskBox);
+                    }
+                });
+            }
+        }
+=======
+        // Function to render tasks on calendar days with colored boxes and outline
+        function renderTasksOnCalendar() {
+            // Clear existing tasks on calendar
+            const calendarGrid = document.getElementById('calendarGrid');
+            if (!calendarGrid) return;
+
+            // Clear all task containers for each day and hour (for daily view)
+            allTasks.forEach(task => {
+                const day = new Date(task.date).getDate();
+                const taskContainer = document.getElementById(`tasks-${day}`);
+                if (taskContainer) {
+                    taskContainer.innerHTML = '';
+                }
+                // Clear daily view time slots
+                if (task.time) {
+                    const hour = parseInt(task.time.split(':')[0]);
+                    const timeContainer = document.getElementById(`time-${hour}`);
+                    if (timeContainer) {
+                        timeContainer.innerHTML = '';
+                    }
+                }
+            });
+
+            // Get current view from template variable
+            const currentView = '{{ view }}';
+
+            if (currentView === 'day') {
+                // Render tasks in daily view time slots
+                allTasks.forEach(task => {
+                    const taskDate = new Date(task.date);
+                    const currentDate = new Date({{ current_year }}, {{ current_month }} - 1, {{ current_day }});
+                    if (taskDate.toDateString() === currentDate.toDateString()) {
+                        const hour = task.time ? parseInt(task.time.split(':')[0]) : null;
+                        if (hour !== null) {
+                            const timeContainer = document.getElementById(`time-${hour}`);
+                            if (timeContainer) {
+                                // Determine status class for color coding
+                                let statusClass = '';
+                                if (task.status === 'Completed') {
+                                    statusClass = 'completed';
+                                } else if (task.status.toLowerCase() === 'in progress') {
+                                    statusClass = 'in-progress';
+                                } else {
+                                    statusClass = 'not-completed';
+                                }
+
+                                const taskBox = document.createElement('div');
+                                taskBox.className = `calendar-task-box ${statusClass}`;
+
+                                // Wrap task title in inner box for styling
+                                const innerBox = document.createElement('div');
+                                innerBox.className = 'task-text-inner';
+                                innerBox.textContent = task.title;
+
+                                taskBox.appendChild(innerBox);
+
+                                taskBox.title = `Status: ${task.status}\nDate: ${task.date}\nTime: ${task.time || 'N/A'}\nDescription: ${task.description || 'N/A'}`;
+
+                                // Add click event to open task detail modal
+                                taskBox.addEventListener('click', () => {
+                                    openTaskDetailModal(task);
+                                });
+
+                                // Add three dots for options inside the task box
+                                const dots = document.createElement('span');
+                                dots.className = 'task-dots';
+                                dots.innerHTML = '&#8942;';
+                                dots.title = 'Options';
+
+                                // Prevent click on dots from opening the modal
+                                dots.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    // TODO: Implement options menu (edit, print, delete)
+                                    alert('Options menu not implemented yet.');
+                                });
+
+                                taskBox.appendChild(dots);
+                                timeContainer.appendChild(taskBox);
+                            }
+                        } else {
+                            // Handle all-day tasks (no time) - could add to a special container if needed
+                        }
+                    }
+                });
+            } else {
+                // Render tasks in week and month views
+                allTasks.forEach(task => {
+                    const taskDate = new Date(task.date);
+                    const day = taskDate.getDate();
+                    const taskContainer = document.getElementById(`tasks-${day}`);
+                    if (taskContainer) {
+                        // Determine status class for color coding
+                        let statusClass = '';
+                        if (task.status === 'Completed') {
+                            statusClass = 'completed';
+                        } else if (task.status.toLowerCase() === 'in progress') {
+                            statusClass = 'in-progress';
+                        } else {
+                            statusClass = 'not-completed';
+                        }
+
+                        const taskBox = document.createElement('div');
+                        taskBox.className = `calendar-task-box ${statusClass}`;
+
+                        // Wrap task title in inner box for styling
+                        const innerBox = document.createElement('div');
+                        innerBox.className = 'task-text-inner';
+                        innerBox.textContent = task.title;
+
+                        taskBox.appendChild(innerBox);
+
+                        taskBox.title = `Status: ${task.status}\nDate: ${task.date}\nTime: ${task.time || 'N/A'}\nDescription: ${task.description || 'N/A'}`;
+
+                        // Add click event to open task detail modal
+                        taskBox.addEventListener('click', () => {
+                            openTaskDetailModal(task);
+                        });
+
+                        // Add three dots for options inside the task box
+                        const dots = document.createElement('span');
+                        dots.className = 'task-dots';
+                        dots.innerHTML = '&#8942;';
+                        dots.title = 'Options';
+
+                        // Prevent click on dots from opening the modal
+                        dots.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            // TODO: Implement options menu (edit, print, delete)
+                            alert('Options menu not implemented yet.');
+                        });
+
+                        taskBox.appendChild(dots);
+                        taskContainer.appendChild(taskBox);
+                    }
+                });
+            }
+        }
+
+        // Function to open task detail modal with task info
+        function openTaskDetailModal(task) {
+            const modal = document.getElementById('taskDetailModal');
+            document.getElementById('detailTaskTitle').textContent = task.title;
+            document.getElementById('detailTaskDate').textContent = task.date;
+            document.getElementById('detailTaskTime').textContent = task.time || 'N/A';
+            document.getElementById('detailTaskDescription').textContent = task.description || 'N/A';
+            document.getElementById('detailTaskLocation').textContent = task.location || 'N/A';
+
+            // Show modal
+            modal.style.display = 'flex';
+
+            // Disable editing fields initially
+            // (Assuming modal fields are spans, so no editing by default)
+        }
+
+        // Function to close task detail modal
+        function closeTaskDetailModal() {
+            const modal = document.getElementById('taskDetailModal');
+            modal.style.display = 'none';
+        }
+
+        // Close modal when clicking outside content
+        window.onclick = function(event) {
+            const modal = document.getElementById('taskDetailModal');
+            if (event.target === modal) {
+                closeTaskDetailModal();
+            }
+        }
+
+        // Call renderTasksOnCalendar after tasks are loaded
+        renderTasksOnCalendar();
     </script>
             
             <div class="pagination" id="pagination">

@@ -24,7 +24,7 @@
                 </div>
             </div>
             <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
             <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
         </nav>
     </div>
@@ -54,15 +54,10 @@
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" value="{{ client[5] or '' }}" required />
 
-            <label for="actions">Actions:</label>
+            <label for="actions">Notes:</label>
             <input type="text" id="actions" name="actions" value="{{ client[6] or '' }}" />
 
-            <label for="invoices">Invoices:</label>
-            <select id="invoices" name="invoices">
-                {% for invoice in invoices %}
-                <option value="{{ invoice[0] }}">Invoice #{{ invoice[0] }} - {{ invoice[1] }}</option>
-                {% endfor %}
-            </select>
+            <!-- Removed Invoices dropdown as per request -->
 
             <button type="submit">Update Client</button>
         </form>
