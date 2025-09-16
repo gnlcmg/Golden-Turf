@@ -110,23 +110,33 @@
             /* Task box on calendar day */
             .task-box {
                 border-radius: 4px;
-                padding: 2px 6px;
-                margin-bottom: 2px;
+                padding: 4px 8px;
+                margin: 4px auto;
                 cursor: pointer;
-                color: white;
-                font-size: 10px;
+                color: black;
+                font-size: 12px;
                 display: flex;
                 align-items: center;
-                gap: 4px;
+                justify-content: center;
+                border: 2px solid transparent;
+                width: 90%;
+                box-sizing: border-box;
+                text-align: center;
             }
             .task-box.task-not-completed {
+                border: 2px solid #dc3545;
                 background-color: #dc3545;
+                color: white;
             }
             .task-box.task-in-progress {
+                border: 2px solid #fd7e14;
                 background-color: #fd7e14;
+                color: white;
             }
             .task-box.task-completed {
+                border: 2px solid #28a745;
                 background-color: #28a745;
+                color: white;
             }
 
             /* Task status color dot in task list */
@@ -166,6 +176,62 @@
                 z-index: 10001;
                 min-width: 100px;
             }
+
+            /* Daily view task blocks */
+            .day-timeline {
+                position: relative;
+                width: 100%;
+                height: 1440px; /* 24 hours * 60px per hour */
+            }
+            .hour-slot {
+                position: absolute;
+                width: 100%;
+                height: 60px; /* 60px per hour */
+                border-top: 1px solid #ccc;
+                box-sizing: border-box;
+            }
+            .hour-label {
+                position: absolute;
+                left: 5px;
+                top: 5px;
+                font-size: 12px;
+                font-weight: bold;
+                color: #666;
+            }
+            .task-block {
+                position: absolute;
+                left: 50px; /* Leave space for hour labels */
+                height: 30px; /* Default height, will be calculated */
+                border-radius: 4px;
+                padding: 2px 8px;
+                font-size: 12px;
+                color: white;
+                cursor: pointer;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                z-index: 10;
+            }
+            .task-block.task-not-completed {
+                background-color: #dc3545;
+                border: 1px solid #dc3545;
+            }
+            .task-block.task-in-progress {
+                background-color: #fd7e14;
+                border: 1px solid #fd7e14;
+            }
+            .task-block.task-completed {
+                background-color: #28a745;
+                border: 1px solid #28a745;
+            }
+            .all-day-slot {
+                position: relative;
+                width: 100%;
+                min-height: 100px;
+                border: 1px solid #ccc;
+                background-color: #f0f0f0;
+                margin-bottom: 10px;
+            }
         </style>
 </head>
 <body>
@@ -188,13 +254,16 @@
             <a href="/payments" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
             <a href="/calendar" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
         </nav>
+        <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+            <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+        </div>
     </div>
 
     <main style="display: flex; gap: 50px; margin-left: 250px; max-width: calc(100% - 250px); overflow: visible; position: relative; z-index: 1;">
         <section class="calendar" style="flex: 1; max-width: 100%;">
             <div class="year-header" style="text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 20px; color: #006400;">{{ current_year }}</div>
             <div class="view-options" style="display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;">
-                <button onclick="navigate('day')" style="padding: 5px 15px; cursor: pointer;">Daily</button>
                 <button onclick="navigate('week')" style="padding: 5px 15px; cursor: pointer;">Weekly</button>
                 <button onclick="navigate('month')" style="padding: 5px 15px; cursor: pointer;">Monthly</button>
             </div>
@@ -217,19 +286,20 @@
                             {% if day.day %}
                                 <span class="day-number" style="position: absolute; top: 5px; right: 5px; font-size: 14px; font-weight: bold;">{{ day.day }}</span>
                                 {% if day.is_today %}
-                                    <div class="today-indicator" style="position: absolute; top: 5px; left: 5px; width: 10px; height: 10px; background-color: blue; border-radius: 50%;"></div>
+                                    <div class="today-dot" style="position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
                                 {% endif %}
-                                {% for task in day.tasks %}
-                                <div class="task-box task-{{ task[6] | lower | replace(' ', '-') }}" onclick="showTaskDetails('{{ task[0] }}')">
-                                    <span class="task-status-box task-{{ task[6] | lower | replace(' ', '-') }}"></span>
-                                    <p style="font-size: 10px; margin: 0;">{{ task[1] }}</p>
-                                </div>
-                                {% endfor %}
+
+                    {% for task in day.tasks %}
+                    <div class="task-box task-{{ task[9] }}" onclick="showTaskDetails('{{ task[0] }}')">
+                        <span class="task-status-box task-{{ task[9] }}"></span>
+                        <p style="margin: 0;">{{ task[1] }}</p>
+                    </div>
+                    {% endfor %}
                             {% endif %}
                         </div>
                     {% endfor %}
                 </div>
-            {% elif view == 'week' %}
+                    {% elif view == 'week' %}
                 <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;">
                     <div class="day-name" style="font-weight: bold; text-align: center;">Sun</div>
                     <div class="day-name" style="font-weight: bold; text-align: center;">Mon</div>
@@ -238,40 +308,29 @@
                     <div class="day-name" style="font-weight: bold; text-align: center;">Thu</div>
                     <div class="day-name" style="font-weight: bold; text-align: center;">Fri</div>
                     <div class="day-name" style="font-weight: bold; text-align: center;">Sat</div>
-                    {% for day in calendar_data %}
-                        <div class="calendar-day {% if day.tasks %}has-tasks{% endif %}" style="position: relative; width: 100px; height: 100px; border: 1px solid #ccc; border-radius: 8px;">
-                            {% if day.day %}
-                                <span class="day-number" style="position: absolute; top: 5px; right: 5px; font-size: 14px; font-weight: bold;">{{ day.day }}</span>
-                            {% for task in day.tasks %}
-                                <div class="task task-{{ task[6] | lower | replace(' ', '-') }}" onclick="showTaskDetails('{{ task[0] }}')">
-                                    <p style="font-size: 10px; margin: 0;">{{ task[1] }}</p>
-                                </div>
-                            {% endfor %}
+                {% for day in calendar_data %}
+                    <div class="calendar-day {% if day.tasks %}has-tasks{% endif %} {% if day.is_today %}today{% endif %}" style="position: relative; width: 100px; height: 100px; border: 1px solid #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        {% if day.day %}
+                            <span class="day-number" style="position: absolute; top: 5px; right: 5px; font-size: 14px; font-weight: bold;">{{ day.day }}</span>
+                            {% if day.is_today %}
+                                <div class="today-dot" style="position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
                             {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% elif view == 'day' %}
-                <div class="day-timeline" style="display: flex; flex-direction: column; gap: 10px;">
-                    <div class="day-name" style="font-weight: bold; text-align: center; margin-bottom: 10px;">{{ header_text }}</div>
-                    {% for hour_data in calendar_data %}
-                        <div class="hour-slot" style="position: relative; width: 100%; height: 50px; border: 1px solid #ccc;">
-                            <span class="hour-label" style="position: absolute; top: 5px; left: 5px; font-size: 12px;">{{ hour_data.hour }}:00</span>
-                            {% for task in hour_data.tasks %}
-                                <div class="task task-{{ task[6] | lower | replace(' ', '-') }}" onclick="showTaskDetails('{{ task[0] }}')">
-                                    <p style="font-size: 10px; margin: 0;">{{ task[1] }}</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
+                        {% for task in day.tasks %}
+                            <div class="task-box {{ task[9] }}" onclick="showTaskDetails('{{ task[0] }}')">
+                                <p style="margin: 0;">{{ task[1] }}</p>
+                            </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                {% endfor %}
                 </div>
             {% endif %}
         </section>
 
         <aside class="tasks-sidebar" style="flex: 0 0 200px;">
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <button class="add-event" onclick="openAddTaskPopup()">+ Add New Task</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <button class="today-btn" onclick="goToToday()" style="background-color: #28a745; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Today</button>
+                <button class="add-event" onclick="openAddTaskPopup()">+ Add New Task</button>
             </div>
             <div style="margin-bottom: 5px;">
                 <label for="filter-status">Filter by Status:</label>
@@ -288,7 +347,7 @@
                     <li class="task-item" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 5px; border-radius: 5px; position: relative;">
                         <div onclick="showTaskDetails('{{ task[0] }}')" style="cursor: pointer;">
                             <p><strong>{{ task[1] }}</strong></p>
-                            <p>{{ task[3] }} {{ task[4] }}</p>
+                            <p>{{ task[3] }} {{ task[4] }}{% if task[5] %} - {{ task[5] }}{% endif %}</p>
                             <p>Status: {{ task[6] }}</p>
                         </div>
                         <div class="task-menu" style="position: absolute; top: 10px; right: 10px; cursor: pointer;" onclick="toggleTaskMenu(this)">
@@ -329,17 +388,19 @@
                     <textarea id="description" name="description" style="resize: none;"></textarea>
                     <label for="task_date">Date:</label>
                     <input type="date" id="task_date" name="task_date" required />
-                    <label for="task_time">Time:</label>
-                    <input type="time" id="task_time" name="task_time" />
-                    <label for="location">Location:</label>
-                    <input type="text" id="location" name="location" />
-                    <label for="status">Status:</label>
-                    <select id="status" name="status">
-                        <option value="Not completed">Not completed</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Completed">Completed</option>
-                    </select>
-                    <button type="submit" style="background-color: #007BFF; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Add Task</button>
+                <label for="task_time">Start Time:</label>
+                <input type="time" id="task_time" name="task_time" />
+                <label for="task_end_time">End Time:</label>
+                <input type="time" id="task_end_time" name="task_end_time" />
+                <label for="location">Location:</label>
+                <input type="text" id="location" name="location" />
+                <label for="status">Status:</label>
+                <select id="status" name="status">
+                    <option value="Not completed">Not completed</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                </select>
+                <button type="submit" style="background-color: #007BFF; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Add Task</button>
                 </form>
             </div>
         </div>
@@ -388,6 +449,15 @@
                 const currentYear = parseInt(url.searchParams.get('year')) || new Date().getFullYear();
                 const currentDate = new Date(currentYear, currentMonth - 1, currentDay);
                 currentDate.setDate(currentDate.getDate() + offset);
+                url.searchParams.set('day', currentDate.getDate());
+                url.searchParams.set('month', currentDate.getMonth() + 1);
+                url.searchParams.set('year', currentDate.getFullYear());
+            } else if (view === 'week') {
+                const currentDay = parseInt(url.searchParams.get('day')) || new Date().getDate();
+                const currentMonth = parseInt(url.searchParams.get('month')) || new Date().getMonth() + 1;
+                const currentYear = parseInt(url.searchParams.get('year')) || new Date().getFullYear();
+                const currentDate = new Date(currentYear, currentMonth - 1, currentDay);
+                currentDate.setDate(currentDate.getDate() + (offset * 7)); // Navigate by 7 days for weeks
                 url.searchParams.set('day', currentDate.getDate());
                 url.searchParams.set('month', currentDate.getMonth() + 1);
                 url.searchParams.set('year', currentDate.getFullYear());

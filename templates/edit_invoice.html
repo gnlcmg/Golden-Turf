@@ -1,41 +1,109 @@
-<!DOCTYPE html>
+eit<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Edit Invoice - Golden Turf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
 </head>
 <body>
-    <div class="container">
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+        </div>
+        <h2 style="color: orange;">Golden Turf</h2>
+        <nav class="navbar">
+            <a href="/dashboard" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                </div>
+            </div>
+            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
+            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+        </nav>
+    </div>
+    <div class="container" style="margin-left: 220px; padding: 20px;">
         <header>
-            <h1>Edit Invoice Details</h1>
+            <h1>Edit Invoice Details</h1> 
         </header>
         {% if error %}
             <div class="error">{{ error }}</div>
         {% endif %}
         <form method="POST" action="{{ url_for('edit_invoice', invoice_id=invoice[0]) }}">
+            <label for="client_name">Client Name:</label>
+            <select id="client_name" name="client_name" required>
+                {% for client in clients %}
+                <option value="{{ client }}" {% if client == invoice[1] %}selected{% endif %}>{{ client }}</option>
+                {% endfor %}
+            </select>
+
             <label for="product">Product:</label>
-            <input type="text" id="product" name="product" value="{{ invoice[2] }}" required />
+            <input type="text" id="product" name="product" value="{{ invoice[2] }}" list="products" required />
+            <datalist id="products">
+                {% for product in products %}
+                <option value="{{ product }}">
+                {% endfor %}
+            </datalist>
 
             <label for="quantity">Quantity:</label>
-            <input type="number" id="quantity" name="quantity" min="0" step="1" value="{{ invoice[3] }}" required />
+            <input type="number" step="0.01" id="quantity" name="quantity" value="{{ invoice[3] }}" required />
 
             <label for="price">Price:</label>
-            <input type="number" id="price" name="price" min="0" step="0.01" value="{{ invoice[4] }}" required />
+            <input type="number" step="0.01" id="price" name="price" value="{{ invoice[4] }}" readonly />
 
-            <label for="gst">GST:</label>
-            <input type="number" id="gst" name="gst" min="0" step="0.01" value="{{ invoice[5] }}" required />
+            <label for="gst_checkbox" style="font-weight: normal; font-size: 1rem; cursor: pointer;">Apply GST (10%):</label>
+            <input type="checkbox" id="gst_checkbox" name="gst_checkbox" value="yes" style="width: 24px; height: 24px; cursor: pointer;" {% if invoice[5] > 0 %}checked{% endif %} />
+
+            <label for="total">Total:</label>
+            <input type="number" step="0.01" id="total" name="total" value="{{ invoice[6] }}" readonly />
 
             <label for="status">Status:</label>
             <select id="status" name="status" required>
-                <option value="Paid" {% if invoice[8] == 'Paid' %}selected{% endif %}>Paid</option>
-                <option value="Unpaid" {% if invoice[8] == 'Unpaid' %}selected{% endif %}>Unpaid</option>
-                <option value="Overdue" {% if invoice[8] == 'Overdue' %}selected{% endif %}>Overdue</option>
+                <option value="Paid" {% if invoice[7] == 'Paid' %}selected{% endif %}>Paid</option>
+                <option value="Unpaid" {% if invoice[7] == 'Unpaid' %}selected{% endif %}>Unpaid</option>
             </select>
 
             <button type="submit">Update Invoice</button>
         </form>
     </div>
+    <script>
+        const priceTable = JSON.parse('{{ price_table | tojson() | safe }}');
+        const productSelect = document.getElementById('product');
+        const priceInput = document.getElementById('price');
+        const quantityInput = document.getElementById('quantity');
+        const totalInput = document.getElementById('total');
+        const gstCheckbox = document.getElementById('gst_checkbox');
+
+        function updatePriceAndTotal() {
+            const selectedProduct = productSelect.value;
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const unitPrice = priceTable[selectedProduct];
+            if (unitPrice !== undefined) {
+                const basePrice = unitPrice * quantity;
+                priceInput.value = basePrice.toFixed(2);
+                let total = basePrice;
+                if (gstCheckbox.checked) {
+                    total = total * 1.1; // Add 10% GST
+                }
+                totalInput.value = total.toFixed(2);
+            } else {
+                priceInput.value = '';
+                totalInput.value = '';
+            }
+        }
+
+        productSelect.addEventListener('change', updatePriceAndTotal);
+        quantityInput.addEventListener('input', updatePriceAndTotal);
+        gstCheckbox.addEventListener('change', updatePriceAndTotal);
+
+        // Initialize on page load
+        updatePriceAndTotal();
+    </script>
 </body>
 </html>

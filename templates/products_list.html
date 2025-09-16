@@ -2,212 +2,30 @@
 <html>
 <head>
     <title>Products List</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='products.css') }}">
-    <style>
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 200px;
-            height: 100%;
-            background-color: #006400;
-            color: black;
-            display: flex;
-            flex-direction: column;
-            padding-top: 20px;
-            box-sizing: border-box;
-        }
-        .sidebar img {
-            width: 100px;
-            margin: 0 auto 20px auto;
-            display: block;
-        }
-        .sidebar h2 {
-            color: orange;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .navbar {
-            display: flex;
-            flex-direction: column;
-            padding-left: 0;
-            margin: 0;
-            list-style: none;
-        }
-        .navbar a {
-            color: black;
-            font-size: 16px;
-            text-decoration: none;
-            display: block;
-            padding: 10px 20px;
-            cursor: pointer;
-        }
-        .navbar a:hover {
-            background-color: #004d00;
-        }
-        .nav-dropdown {
-            position: relative;
-        }
-        .nav-dropdown .dropbtn {
-            color: white;
-            font-size: 16px;
-            text-decoration: none;
-            display: block;
-            padding: 10px 20px;
-            cursor: pointer;
-        }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background-color: #004d00;
-            min-width: 180px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            z-index: 1;
-            border-radius: 0 0 8px 8px;
-        }
-        .dropdown-content a {
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            display: block;
-        }
-        .dropdown-content a:hover {
-            background-color: #003300;
-        }
-        .nav-dropdown:hover .dropdown-content {
-            display: block;
-        }
-        /* Popup image modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.7);
-        }
-        .modal-content {
-            margin: 5% auto;
-            display: block;
-            max-width: 600px;
-            width: 90%;
-            border-radius: 8px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-        }
-        .close {
-            color: #fff;
-            position: absolute;
-            top: 30px;
-            right: 50px;
-            font-size: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 10000;
-        }
-        /* Remove bold from Products tab in sidebar */
-        .sidebar .dropbtn {
-            font-weight: 400 !important;
-        }
-        .product-info {
-            background: #f9f9f9;
-            border: 1.5px solid #222;
-            color: #111;
-            font-size: 1em;
-            margin: 0 10px 18px 10px;
-            padding: 18px;
-            text-align: left;
-        }
-        .products-list-header {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            margin-bottom: 30px;
-        }
-        .products-logo {
-            height: 60px;
-            margin-right: 30px;
-        }
-        .products-title {
-            font-size: 2.5em;
-            font-family: Arial, sans-serif;
-            font-weight: 700;
-            color: #222;
-            margin-bottom: 0;
-        }
-        .products-desc {
-            font-size: 1em;
-            color: #222;
-            margin-bottom: 10px;
-            margin-left: 10px;
-        }
-        .products-list-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .products-list-table tr {
-            border-bottom: 1px solid #222;
-        }
-        .products-list-table td {
-            font-size: 1.4em;
-            padding: 18px 0;
-            text-align: center;
-            color: #111;
-            font-family: Arial, sans-serif;
-            background: #fff;
-            border: 1.5px solid #222;
-        }
-        .products-list-table td:first-child {
-            font-weight: 400;
-        }
-        .subheading-white {
-            color: #fff !important;
-            background: none;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.18);
-        }
-        .products-input-note {
-            margin-top: 30px;
-            text-align: right;
-            color: #333;
-            font-size: 0.95em;
-        }
-        .products-arrow {
-            font-size: 1.1em;
-            color: #222;
-            margin-right: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 <body style="margin:0;">
-    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
-    <!-- Popup Modal for Enlarged Images -->
-    <div id="imgModal" class="modal">
-    <span class="close" id="closeModal">&times;</span>
-    <span id="modalPrev" style="display:none;position:absolute;left:30px;top:50%;transform:translateY(-50%);font-size:50px;color:#fff;cursor:pointer;z-index:10000;">&#8592;</span>
-    <img class="modal-content" id="modalImg" src="" alt="Product Image">
-    <span id="modalNext" style="display:none;position:absolute;right:30px;top:50%;transform:translateY(-50%);font-size:50px;color:#fff;cursor:pointer;z-index:10000;">&#8594;</span>
-    </div>
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400;">
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100vh; background-color: #006400; color: white;">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
             <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
         <h2 style="color: orange;">Golden Turf</h2>
-            <nav class="navbar">
-                <a href="/dashboard" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
-                <a href="/products_list" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
-                <a href="/invoice" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
-                <a href="/clients" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
-                <a href="/quotes" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-                <a href="/payments" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
-                <a href="/calendar" style="font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-            </nav>
+        <nav class="navbar">
+            <a href="/dashboard" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                <div class="dropdown-content" style="background-color: #006400;">
+                    <a href="/products_list" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                    <a href="/invoice" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                    <a href="/clients" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                </div>
+            </div>
+            <a href="/quotes" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="/payments" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
+            <a href="/calendar" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+        </nav>
     </div>
-    <div class="main-content" style="margin-left:220px;">
+    <div class="main-content" style="margin-left:220px; color: #222;">
         <div class="products-list-header">
             <!-- Logo already in sidebar -->
         </div>
@@ -215,190 +33,56 @@
         <div class="subheading-white" style="text-align:center;font-size:1.15em;font-weight:600;margin:32px 0 12px 0;">Synthetic Turf</div>
         <table class="products-list-table">
             <tr>
-                <td class="product-toggle" data-product="imperial">Golden Imperial Lush</td>
+                <th>Product Name</th>
+                <th>Turf Type</th>
+                <th>Description</th>
+                <th>Stock</th>
+                <th>Price</th>
+                <th>Image</th>
             </tr>
-            <tr id="info-imperial-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-imperial" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/04/imperial.jpg" alt="Golden Imperial Lush" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Impirial-lush4.jpg" alt="Golden Imperial Lush" style="max-width:180px;">
-                        </div>
-                        <strong>Golden Imperial Lush:</strong> <span style="font-weight:bold;">$15 per sqm</span><br>
-                        Premium synthetic turf designed for a lush, natural look. Pet and child friendly, UV protected, and suitable for residential and commercial use.<br>
-                        <em>Features:</em> Life-like appearance, soft texture, UV protection, child and pet friendly.<br>
-                        <em>Applications:</em> Residential lawns, play areas, pet zones.
-                    </div>
-                </td>
-            </tr>
+            {% for product in products %}
             <tr>
-                <td class="product-toggle" data-product="green">Golden Green Lush</td>
-            </tr>
-            <tr id="info-green-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-green" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/04/lush-green.jpg" alt="Golden Green Lush" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Lush5.jpg" alt="Golden Green Lush" style="max-width:180px;">
-                        </div>
-                        <strong>Golden Green Lush:</strong> <span style="font-weight:bold;">$19 per sqm</span><br>
-                        Artificial grass with vibrant green color, ideal for backyards, play areas, and landscaping. UV protected, soft texture, and easy maintenance.<br>
-                        <em>Features:</em> Vibrant green color, soft feel, UV protection, child and pet friendly.<br>
-                        <em>Applications:</em> Residential backyards, play areas, landscaping.
-                    </div>
+                <td>{{ product[0] }}</td>
+                <td>{{ product[1] }}</td>
+                <td>{{ product[2] }}</td>
+                <td>{{ product[3] }}</td>
+                <td>${{ "%.2f"|format(product[4]) }}</td>
+                <td>
+                    {% if product[5] %}
+                    <img src="{{ product[5] }}" alt="{{ product[0] }}" style="max-width:100px; max-height:60px;">
+                    {% else %}
+                    No image
+                    {% endif %}
                 </td>
             </tr>
-            <tr>
-                <td class="product-toggle" data-product="natural">Golden Natural 40mm</td>
-            </tr>
-            <tr id="info-natural-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-natural" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/natural.jpg" alt="Golden Natural 40mm" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/Natural_4.jpg" alt="Golden Natural 40mm" style="max-width:180px;">
-                        </div>
-                        <strong>Golden Natural 40mm:</strong> <span style="font-weight:bold;">$17 per sqm</span><br>
-                        Realistic 40mm pile height turf, perfect for residential lawns and pet areas. UV protected, child safe, and long-lasting.<br>
-                        <em>Features:</em> 40mm pile height, realistic look, UV protection, child and pet friendly.<br>
-                        <em>Applications:</em> Residential lawns, pet areas, landscaping.
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="product-toggle" data-product="golf">Golden Golf Turf</td>
-            </tr>
-            <tr id="info-golf-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-golf" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/golf.jpg" alt="Golden Golf Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/home_golf_court_golf_carpet-8.jpg" alt="Golden Golf Turf" style="max-width:180px;">
-                        </div>
-                        <strong>Golden Golf Turf:</strong> <span style="font-weight:bold;">$22 per sqm</span><br>
-                        Specially crafted for golf putting and chipping, this turf offers a true ball roll and professional finish. UV protected and durable for outdoor use.<br>
-                        <em>Features:</em> True ball roll, professional finish, UV protection, durable.<br>
-                        <em>Applications:</em> Golf putting/chipping, schools, function centers.
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="product-toggle" data-product="premium">Golden Premium Turf</td>
-            </tr>
-            <tr id="info-premium-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-premium" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/premium.jpg" alt="Golden Premium Turf" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/07/Description-premium-photo-.jpg" alt="Golden Premium Turf" style="max-width:180px;">
-                        </div>
-                        <strong>Golden Premium Turf:</strong> <span style="font-weight:bold;">$20 per sqm</span><br>
-                        High-grade synthetic grass for premium landscaping projects. Soft, dense, and visually appealing. UV protected and environmentally friendly.<br>
-                        <em>Features:</em> Premium grade, soft and dense, UV protection, eco-friendly.<br>
-                        <em>Applications:</em> Premium landscaping, gardens, commercial spaces.
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="product-toggle" data-product="pegs">Peg - U-pins/Nails</td>
-            </tr>
-            <tr id="info-pegs-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-pegs" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/peg2.jpg" alt="Peg - U-pins/Nails" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/7130I8TfLkL._SL1000_.jpg" alt="Peg - U-pins/Nails" style="max-width:180px;">
-                        </div>
-                        <strong>Peg - U-pins/Nails:</strong> <span style="font-weight:bold;">$25 for 100 pieces</span><br>
-                        Essential for securing artificial turf installations. Durable and easy to use for a neat finish. Galvanized for rust resistance.<br>
-                        <em>Features:</em> Galvanized, rust resistant, easy to use.<br>
-                        <em>Applications:</em> Securing turf, landscaping.
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="product-toggle" data-product="fountains">Fountains</td>
-            </tr>
-            <tr id="info-fountains-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-fountains" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/fountain1.jpg" alt="Fountains" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG-20210305-WA0041.jpg" alt="Fountains" style="max-width:180px;">
-                        </div>
-                        <strong>Fountains:</strong> Decorative water features to enhance your landscaping project. Adds elegance and tranquility to any space.<br>
-                        <em>Features:</em> Multiple designs, durable, easy installation.<br>
-                        <em>Applications:</em> Gardens, landscaping, outdoor decor.
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="product-toggle" data-product="hedges">Artificial Hedges</td>
-            </tr>
-            <tr id="info-hedges-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-hedges" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/07/1-1.jpg" alt="Artificial Hedges" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG_20210805_155406.jpg" alt="Artificial Hedges" style="max-width:180px;">
-                        </div>
-                        <strong>Artificial Hedges:</strong> Realistic hedge panels for privacy and aesthetics. UV protected and maintenance free.<br>
-                        <em>Features:</em> UV protected, realistic look, easy install.<br>
-                        <em>Applications:</em> Privacy screens, green walls, landscaping.
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="product-toggle" data-product="bamboo">Bamboo Products</td>
-            </tr>
-            <tr id="info-bamboo-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-bamboo" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/06/bamboo13.jpg" alt="Bamboo Products" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/02/bamboo555.jpg" alt="Bamboo Products" style="max-width:180px;">
-                        </div>
-                        <strong>Bamboo Products:</strong> Natural bamboo accessories for landscaping and garden design. Eco-friendly and versatile.<br>
-                        <em>Features:</em> Eco-friendly, versatile, natural look.<br>
-                        <em>Applications:</em> Fencing, garden edging, decor.
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="product-toggle" data-product="adhesive">Adhesive Joining Tape</td>
-            </tr>
-            <tr id="info-adhesive-row" style="display:none;">
-                <td colspan="1">
-                    <div id="info-adhesive" class="product-info">
-                        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2020/06/a-tape2.jpg" alt="Adhesive Joining Tape" style="max-width:180px;">
-                            <img src="https://goldenturf.com.au/wp-content/uploads/2021/08/IMG-20210228-WA0034.jpg" alt="Adhesive Joining Tape" style="max-width:180px;">
-                        </div>
-                        <strong>Adhesive Joining Tape:</strong> <span style="font-weight:bold;">$25 for 15m length</span><br>
-                        Used for joining turf seams securely. Strong adhesive, weather resistant, and easy to apply.<br>
-                        <em>Features:</em> Strong adhesive, weather resistant, easy to apply.<br>
-                        <em>Applications:</em> Joining turf seams, landscaping.
-                    </div>
-                </td>
-            </tr>
+            {% endfor %}
         </table>
+
+        <style>
+            /* Make Actions column bold in tables on products and clients tabs */
+            #products-section table th.actions-header,
+            #products-section table td.actions-cell,
+            #clients-section table th.actions-header,
+            #clients-section table td.actions-cell {
+                font-weight: bold;
+            }
+            .products-list-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .products-list-table th, .products-list-table td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            .products-list-table th {
+                background-color: #006400;
+                color: white;
+            }
+            .products-list-table tr:nth-child(even) {
+                background-color: #f2f2f2;
+            }
+        </style>
     </div>
-<script>
-// Toggle product info dropdowns below each product
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.product-toggle').forEach(function(el) {
-            el.addEventListener('click', function() {
-                var prod = el.getAttribute('data-product');
-                var row = document.getElementById('info-' + prod + '-row');
-                if (row.style.display === 'table-row') {
-                    row.style.display = 'none';
-                } else {
-                    document.querySelectorAll('tr[id^="info-"]').forEach(function(r) { r.style.display = 'none'; });
-                    row.style.display = 'table-row';
-                }
-            });
-        });
-    });
-</script>
 </body>
 </html>

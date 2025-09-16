@@ -6,6 +6,17 @@
     <title>Invoice Form - Golden Turf</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
+    <style>
+@media print {
+    form, .sidebar, header, .form-actions { display: none !important; }
+    .invoice-summary { display: block !important; margin: 0 auto; }
+    body { background: #fff !important; }
+}
+.invoice-summary { display: none; }
+@media screen {
+    .invoice-summary { display: block; }
+}
+</style>
 </head>
 <body>
     <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
@@ -35,9 +46,25 @@
 
             <form method="POST" action="{{ url_for('invoice') }}">
             <section class="client-info">
-                <h2>Client Information</h2>
                 <label for="client_name">Client Name:</label>
-                <input type="text" id="client_name" name="client_name" value="{{ client_name or '' }}" required />
+                <input type="text" id="client_name" name="client_name" value="{{ client_name or '' }}" autocomplete="off" required placeholder="Start typing to search clients..." oninput="filterClients()" list="client_list" />
+                <datalist id="client_list">
+                    {% for client in clients %}
+                        <option value="{{ client }}">{{ client }}</option>
+                    {% endfor %}
+                </datalist>
+                <script>
+                function filterClients() {
+                    var input = document.getElementById('client_name');
+                    var filter = input.value.toLowerCase();
+                    var datalist = document.getElementById('client_list');
+                    var options = datalist.options;
+                    for (var i = 0; i < options.length; i++) {
+                        var txt = options[i].value.toLowerCase();
+                        options[i].style.display = txt.includes(filter) ? '' : 'none';
+                    }
+                }
+                </script>
 
                 <label for="turf_type">Turf Type:</label>
                 <select id="turf_type" name="turf_type" required>
@@ -52,18 +79,71 @@
                 <label for="area">Area (sq meters):</label>
                 <input type="number" id="area" name="area" min="0.01" step="0.01" value="{{ area or '' }}" required />
 
-                <label for="extra_fee">Extra Fee:</label>
-                <input type="number" id="extra_fee" name="extra_fee" min="0" step="0.01" value="{{ extra_fee or 0 }}" />
+                <!-- Removed single extra_fee input -->
 
-                <label for="extras">Extras:</label>
-                <select id="extras" name="extras">
-                    <option value="none" {% if extras == 'none' %}selected{% endif %}>None</option>
-                    <option value="artificial_hedges" {% if extras == 'artificial_hedges' %}selected{% endif %}>Artificial Hedges</option>
-                    <option value="fountain" {% if extras == 'fountain' %}selected{% endif %}>Fountain</option>
-                    <option value="bamboo_products" {% if extras == 'bamboo_products' %}selected{% endif %}>Bamboo Products</option>
-                    <option value="polished_pebbles" {% if extras == 'polished_pebbles' %}selected{% endif %}>Polished/Glowing Pebbles</option>
-                    <option value="pegs" {% if extras == 'pegs' %}selected{% endif %}>Pegs (U-pins/Nails)</option>
-                </select>
+                <fieldset>
+                    <legend>Extras</legend>
+
+                    <div>
+                        <label><input type="checkbox" id="artificial_hedges_check"> Artificial Hedges (per 50cm x 50cm)</label>
+                        <div id="artificial_hedges_div" style="display:none;">
+                            <label for="artificial_hedges_qty">Quantity:</label>
+                            <input type="number" id="artificial_hedges_qty" name="artificial_hedges_qty" min="0" step="1" value="{{ artificial_hedges_qty or 0 }}" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label><input type="checkbox" id="fountain_check"> Fountain</label>
+                        <div id="fountain_div" style="display:none;">
+                            <label for="fountain_price">Price:</label>
+                            <input type="number" id="fountain_price" name="fountain_price" min="0" step="0.01" value="{{ fountain_price or 0 }}" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label><input type="checkbox" id="bamboo_check"> Bamboo Products (various sizes)</label>
+                        <div id="bamboo_div" style="display:none;">
+                            <label for="bamboo_products_size">Size:</label>
+                            <select id="bamboo_products_size" name="bamboo_products_size">
+                                <option value="none" {% if bamboo_products_size == 'none' %}selected{% endif %}>None</option>
+                                <option value="2m" {% if bamboo_products_size == '2m' %}selected{% endif %}>2 metres</option>
+                                <option value="2.4m" {% if bamboo_products_size == '2.4m' %}selected{% endif %}>2.4 metres</option>
+                                <option value="1.8m" {% if bamboo_products_size == '1.8m' %}selected{% endif %}>1.8 metres</option>
+                            </select>
+                            <label for="bamboo_products_qty">Quantity:</label>
+                            <input type="number" id="bamboo_products_qty" name="bamboo_products_qty" min="0" step="1" value="{{ bamboo_products_qty or 0 }}" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label><input type="checkbox" id="pebbles_check"> Pebbles (20kg bag)</label>
+                        <div id="pebbles_div" style="display:none;">
+                            <label for="pebbles_type">Type:</label>
+                            <select id="pebbles_type" name="pebbles_type">
+                                <option value="black" {% if pebbles_type == 'black' %}selected{% endif %}>Black</option>
+                                <option value="white" {% if pebbles_type == 'white' %}selected{% endif %}>White</option>
+                            </select>
+                            <label for="pebbles_qty">Quantity:</label>
+                            <input type="number" id="pebbles_qty" name="pebbles_qty" min="0" step="1" value="{{ pebbles_qty or 0 }}" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label><input type="checkbox" id="pegs_check"> Pegs (U-pins/Nails)</label>
+                        <div id="pegs_div" style="display:none;">
+                            <label for="pegs_qty">Quantity:</label>
+                            <input type="number" id="pegs_qty" name="pegs_qty" min="0" step="1" value="{{ pegs_qty or 0 }}" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label><input type="checkbox" id="adhesive_tape_check"> Adhesive Joining Tape (15 metres)</label>
+                        <div id="adhesive_tape_div" style="display:none;">
+                            <label for="adhesive_tape_qty">Quantity:</label>
+                            <input type="number" id="adhesive_tape_qty" name="adhesive_tape_qty" min="0" step="1" value="{{ adhesive_tape_qty or 0 }}" />
+                        </div>
+                    </div>
+                </fieldset>
 
                 {% set extras_costs = {
                     'none': 0,
@@ -79,7 +159,6 @@
                     <option value="" disabled selected>Select payment status</option>
                     <option value="Paid" {% if payment_status == 'Paid' %}selected{% endif %}>Paid</option>
                     <option value="Unpaid" {% if payment_status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
-                    <option value="Overdue" {% if payment_status == 'Overdue' %}selected{% endif %}>Overdue</option>
                 </select>
 
                 <label for="gst">Apply GST (10%):</label>
@@ -98,7 +177,7 @@
             <p>Client Name: {{ summary.client_name }}</p>
             <p>Turf Type: {{ summary.turf_type }}</p>
             <p>Area: {{ summary.area }} sq m</p>
-            <p>Extra Fee: ${{ "%.2f"|format(summary.extra_fee) }}</p>
+            <p>Extras Cost: ${{ "%.2f"|format(summary.extras_cost) }}</p>
             <p>GST: ${{ "%.2f"|format(summary.gst) }}</p>
             <p>Total Price: ${{ "%.2f"|format(summary.total_price) }}</p>
         </div>
@@ -127,6 +206,28 @@
 
         // Update GST calculation to 10%
         const gstRate = 0.10; // 10% GST
+
+        // Toggle extras
+        const extras = [
+            'artificial_hedges',
+            'fountain',
+            'bamboo',
+            'pebbles',
+            'pegs',
+            'adhesive_tape'
+        ];
+
+        extras.forEach(extra => {
+            const check = document.getElementById(extra + '_check');
+            const div = document.getElementById(extra + '_div');
+            check.addEventListener('change', function() {
+                if (this.checked) {
+                    div.style.display = 'block';
+                } else {
+                    div.style.display = 'none';
+                }
+            });
+        });
     </script>
 </body>
 </html>

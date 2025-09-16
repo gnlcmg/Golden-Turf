@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verify Code - Golden Turf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='forgotpassword.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <header class="logo">
+                <span class="golden">GOLDEN</span><span class="turf">TURF</span>
+            </header>
+        </div>
+        <div class="right-panel">
+            <h1>Enter Verification Code</h1>
+            <form class="verifycode-form" method="POST" action="{{ url_for('verify_code', email=email) }}">
+                <div class="input-group">
+                    <i class="fa fa-key icon"></i>
+                    <input type="text" id="code" name="code" placeholder="Enter 6-digit code" maxlength="6" pattern="\d{6}" required />
+                </div>
+                <button type="submit" class="btn-verify-code">Verify Code</button>
+            </form>
+            {% if error %}
+                <p class="error-message">{{ error }}</p>
+            {% endif %}
+            <div class="login-link">
+                Remembered your password? <a href="{{ url_for('login') }}">Login Now</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

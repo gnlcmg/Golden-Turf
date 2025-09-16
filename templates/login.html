@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Golden Turf</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='forgotpassword.css') }}" />
-    <link href="https://fonts.googleapis.com/css2?family=Eastman+Grotesque&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
 </head>
 <body>
     <div class="container">
@@ -17,16 +15,14 @@
         </div>
         <div class="right-panel">
             <h1>Login</h1>
-            <form class="forgotpassword-form" action="{{ url_for('login') }}" method="POST" autocomplete="off">
+            <form action="{{ url_for('login') }}" method="POST" autocomplete="off">
                 <div class="input-group">
-                    <i class="fa fa-user icon"></i>
-                    <input type="email" name="email" placeholder="EMAIL" required />
+                    <input type="email" name="email" placeholder="EMAIL" required>
                 </div>
                 <div class="input-group">
-                    <i class="fa fa-lock icon toggle-password" toggle="#password"></i>
-                    <input type="password" id="password" name="password" placeholder="PASSWORD" required />
+                    <input type="password" name="password" placeholder="PASSWORD" required>
                 </div>
-                <button type="submit" class="btn-send-link">LOGIN</button>
+                <button type="submit" class="btn-login">LOGIN</button>
             </form>
             <div class="login-link">
                 <a href="{{ url_for('forgot_password') }}">Forgot password?</a>
@@ -36,22 +32,5 @@
             </div>
         </div>
     </div>
-    <script>
-        // Toggle password visibility
-        document.querySelectorAll('.toggle-password').forEach(function(element) {
-            element.addEventListener('click', function() {
-                const input = document.querySelector(this.getAttribute('toggle'));
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    this.classList.add('fa-eye-slash');
-                    this.classList.remove('fa-eye');
-                } else {
-                    input.type = 'password';
-                    this.classList.add('fa-eye');
-                    this.classList.remove('fa-eye-slash');
-                }
-            });
-        });
-    </script>
 </body>
 </html>

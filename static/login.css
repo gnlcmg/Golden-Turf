@@ -10,23 +10,70 @@ body, html {
     height: 100%;
     background: #fff;
     color: #000;
+    overflow-x: hidden;
 }
 
 .container {
-    max-width: 400px;
-    margin: 5rem auto;
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Left green panel with large green shape */
+.left-panel {
+    background-color: #fff;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    background-color: #f9f9f9;
+    position: relative;
+    overflow: hidden;
+}
+
+.left-panel::before {
+    content: "";
+    position: absolute;
+    top: -100px;
+    left: -150px;
+    width: 400px;
+    height: 400px;
+    background-color: #20723B;
+    border-radius: 50%;
+    z-index: 0;
+}
+
+/* Right panel with large orange shape */
+.right-panel {
+    flex: 2;
+    padding: 4rem 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background-color: #fff;
+}
+
+.right-panel::before {
+    content: "";
+    position: absolute;
+    bottom: -100px;
+    right: -150px;
+    width: 400px;
+    height: 400px;
+    background-color: #F28F2B;
+    border-radius: 50%;
+    z-index: 0;
 }
 
 .logo {
     font-weight: 700;
-    font-size: 3rem;
-    text-align: center;
-    margin-bottom: 2rem;
+    font-size: 3.5rem;
     user-select: none;
+    position: relative;
+    z-index: 1;
+    font-family: 'Eastman Grotesque', Arial, sans-serif;
 }
 
 .logo .golden {
@@ -34,25 +81,29 @@ body, html {
 }
 
 .logo .turf {
-    color: #20723B; /* green */
+    background: linear-gradient(90deg, #20723B 0%, #7FB23D 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.message {
-    text-align: center;
-    margin-bottom: 1rem;
-    color: red;
-    font-weight: 600;
+/* Login form styles */
+h1 {
+    font-weight: 700;
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
 .login-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    position: relative;
+    z-index: 1;
 }
 
 .input-group {
     position: relative;
     width: 100%;
+    margin-bottom: 1.5rem;
 }
 
 .input-group .icon {
@@ -73,10 +124,10 @@ body, html {
     font-size: 1rem;
     outline: none;
     transition: border-color 0.3s ease;
+    text-transform: uppercase;
 }
 
 .input-group input::placeholder {
-    text-transform: uppercase;
     color: #999;
 }
 
@@ -84,64 +135,73 @@ body, html {
     border-color: #20723B;
 }
 
+/* Large black login button */
 .btn-login {
     background-color: #000;
     color: #fff;
     border: none;
-    padding: 14px;
-    font-size: 1.1rem;
-    font-weight: 600;
+    padding: 16px;
+    font-size: 1.2rem;
+    font-weight: 700;
     border-radius: 4px;
     cursor: pointer;
+    width: 100%;
     text-transform: uppercase;
     transition: background-color 0.3s ease;
+    margin-bottom: 1rem;
 }
 
 .btn-login:hover {
-    background-color: #333;
+    background-color: #222;
 }
 
-.forgot-password {
-    margin-top: 0.5rem;
+/* Forgot password link below button */
+.login-link {
     font-size: 0.9rem;
     text-align: center;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
 }
 
-.forgot-password a {
+.login-link a {
     color: #20723B;
     text-decoration: none;
     font-weight: 600;
 }
 
-.forgot-password a:hover {
-    text-decoration: underline;
-}
-
-.links-container {
-    text-align: center;
-    margin-top: 0.5rem;
-}
-
-.create-account a {
-    color: #20723B;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-decoration: none;
-}
-
-.create-account a:hover {
+.login-link a:hover {
     text-decoration: underline;
 }
 
 /* Responsive */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     .container {
-        margin: 2rem 1rem;
-        padding: 1rem;
+        flex-direction: column;
     }
 
-    .logo {
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
+    .left-panel {
+        flex: none;
+        height: 150px;
+        justify-content: center;
+    }
+
+    .left-panel::before {
+        top: -50px;
+        left: -100px;
+        width: 250px;
+        height: 250px;
+    }
+
+    .right-panel {
+        flex: none;
+        padding: 2rem 1rem;
+    }
+
+    .right-panel::before {
+        bottom: -50px;
+        right: -100px;
+        width: 250px;
+        height: 250px;
     }
 }

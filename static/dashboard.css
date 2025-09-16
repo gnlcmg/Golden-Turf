@@ -6,7 +6,7 @@ body {
 }
 .sidebar {
     width: 220px;
-    background-color: #2f6f2f;
+    background-color: #006400;
     color: white;
     height: 100vh;
     position: fixed;
@@ -21,11 +21,77 @@ body {
 }
 .sidebar nav a {
     display: block;
-    color: white;
+    color: white !important;
     padding: 12px 20px;
     text-decoration: none;
     font-size: 18px;
     transition: background-color 0.3s ease;
+}
+
+/* Tab buttons background orange, white font */
+.filter-btn {
+    background-color: #f0a500;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: box-shadow 0.3s ease;
+    margin-right: 0.5rem;
+}
+
+.filter-btn.active {
+    background-color: #f0a500;
+    color: white;
+    box-shadow: 0 0 0 2px white;
+}
+
+/* Style for arrows outside dropdowns */
+.filter-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.filter-buttons select {
+    padding: 0.5rem 2rem 0.5rem 0.5rem; /* extra right padding for arrow */
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: white url("data:image/svg+xml;utf8,<svg fill='black' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right 0.5rem center;
+    background-size: 1rem;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+}
+
+/* Remove separate arrow spans */
+.filter-buttons .arrow {
+    display: none;
+}
+
+/* Adjust arrow visibility for hidden selects */
+.filter-buttons select[style*="display: none"] {
+    display: none;
+}
+
+/* Tab container adjustments */
+.tab-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Sidebar Payments link text update */
+.sidebar nav a[href$="payments"]::after {
+    content: "";
+    font-size: inherit;
+    color: inherit;
+    margin-left: 0;
 }
 .sidebar nav a:hover {
     background-color: #1f4d1f;
@@ -39,7 +105,7 @@ body {
 
 /* Dropdown button */
 .dropbtn {
-    color: white;
+    color: black;
     padding: 12px 20px;
     text-decoration: none;
     font-size: 18px;
@@ -51,10 +117,14 @@ body {
 .dropdown-content {
     display: none;
     position: absolute;
-    background-color: #2f6f2f;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1;
+    background-color: #006400;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.3);
+    z-index: 1000;
+    border-radius: 5px;
+    border: 1px solid #004d00;
+    top: 100%;
+    left: 0;
 }
 
 /* Links inside the dropdown */
@@ -63,11 +133,14 @@ body {
     padding: 12px 16px;
     text-decoration: none;
     display: block;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
 }
 
 /* Change color of dropdown links on hover */
 .dropdown-content a:hover {
-    background-color: #1f4d1f;
+    background-color: #004d00;
+    color: #f0a500;
 }
 
 /* Show the dropdown menu on hover */
@@ -83,6 +156,15 @@ body {
 .main-content {
     margin-left: 220px;
     padding: 30px 40px;
+}
+.sidebar {
+    color: black;
+}
+.sidebar h2 {
+    color: black;
+}
+.sidebar nav a {
+    color: black;
 }
 
 .main-wrapper .content-area {
@@ -235,4 +317,85 @@ footer {
 
 .dropdown-menu li:hover {
     background-color: #1f4d1f;
+}
+
+/* New styles for user request */
+
+/* Tab buttons background orange, white outline when active */
+.filter-btn {
+    background-color: #f0a500;
+    color: black;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: box-shadow 0.3s ease;
+}
+
+.filter-btn.active {
+    background-color: #f0a500;
+    color: black;
+    box-shadow: 0 0 0 2px white;
+}
+
+/* Headings for Invoices and Clients white */
+#dynamic-heading {
+    color: white !important;
+}
+
+/* Tables under invoices and clients tabs white background, black font */
+#invoices-section table,
+#clients-section table {
+    background-color: white;
+    color: black;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#invoices-section table th,
+#invoices-section table td,
+#clients-section table th,
+#clients-section table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+}
+
+/* Product boxes */
+.products-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.product-box {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    padding: 20px;
+    width: 300px;
+    text-align: center;
+}
+
+.product-box h3 {
+    color: #2e7d32;
+    margin-bottom: 10px;
+}
+
+.product-box img {
+    max-width: 100%;
+    height: auto;
+    margin: 10px 0;
+}
+
+.product-box p {
+    margin: 10px 0;
+    line-height: 1.5;
+}
+
+.product-box strong {
+    font-size: 1.2em;
+    color: #f0a500;
 }

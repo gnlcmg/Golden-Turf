@@ -1,11 +1,205 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 import sqlite3
 import re
+import string
 from datetime import datetime, timedelta
 from calendar import Calendar
+from flask_mail import Mail, Message
+import secrets
+from bcrypt import hashpw, gensalt, checkpw
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
+
+mail = Mail(app)
+# Reverting email configuration to original state for local testing
+app.config['MAIL_SERVER'] = 'localhost'
+app.config['MAIL_PORT'] = 1025
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_SUPPRESS_SEND'] = True
+
+# Define a list of manually added emails
+ALLOWED_EMAILS = ['admin@goldenturf.com', 'manager@goldenturf.com']
+
+# ...existing code...
+
+# Place this route after app is defined
+@app.route('/update_stock', methods=['POST'])
+def update_stock():
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+    if not has_permission('products_list'):
+        return redirect(url_for('access_restricted'))
+    product_name = request.form.get('product_name')
+    stock = request.form.get('stock', type=int)
+    if product_name is not None and stock is not None and stock >= 0:
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute('UPDATE products SET stock = ? WHERE product_name = ?', (stock, product_name))
+        conn.commit()
+        conn.close()
+    return redirect(url_for('products_list'))
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+import sqlite3
+import re
+import string
+from datetime import datetime, timedelta
+from calendar import Calendar
+from flask_mail import Mail, Message
+import secrets
+from bcrypt import hashpw, gensalt, checkpw
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key_here'
+
+mail = Mail(app)
+# Reverting email configuration to original state for local testing
+app.config['MAIL_SERVER'] = 'localhost'
+app.config['MAIL_PORT'] = 1025
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_SUPPRESS_SEND'] = True
+
+# Define a list of manually added emails
+ALLOWED_EMAILS = ['admin@goldenturf.com', 'manager@goldenturf.com']
+
+def has_permission(required_permission):
+    # User with ID 1 always has admin access
+    if session.get('user_id') == 1:
+        return True
+    if session.get('user_role') == 'admin':
+        return True
+    user_permissions = session.get('user_permissions', '')
+    return required_permission in user_permissions.split(',')
+
+def can_change_role(current_user_id, target_user_id):
+    """Prevent users from changing their own role."""
+    return current_user_id != target_user_id
+
+def can_demote_admin(target_user_id, new_role):
+    """Check if admin can be demoted based on constraints."""
+    if new_role != 'admin':
+        if target_user_id == 1:
+            # User ID 1 must always be admin, cannot be demoted
+            return False
+        else:
+            # Cannot remove admin rights if only one admin
+            conn = sqlite3.connect('users.db')
+            c = conn.cursor()
+            c.execute('SELECT COUNT(*) FROM users WHERE role = ?', ('admin',))
+            admin_count = c.fetchone()[0]
+            conn.close()
+            return admin_count > 1
+    return True
+
+def migrate_invoices_table():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(invoices)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'extras_json' not in columns:
+        c.execute("ALTER TABLE invoices ADD COLUMN extras_json TEXT DEFAULT '{}'")
+        conn.commit()
+    conn.close()
+
+def migrate_products_table():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(products)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'price' not in columns:
+        c.execute("ALTER TABLE products ADD COLUMN price REAL DEFAULT 0.0")
+        conn.commit()
+    if 'image_url' not in columns:
+        c.execute("ALTER TABLE products ADD COLUMN image_url TEXT")
+        conn.commit()
+    if 'image_urls' not in columns:
+        c.execute("ALTER TABLE products ADD COLUMN image_urls TEXT")
+        conn.commit()
+
+    # Update existing products with default prices and image URLs if missing
+    import json
+    default_data = {
+        'Golden Imperial Lush': {
+            'price': 15.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2021/04/imperial.jpg',
+                'https://goldenturf.com.au/wp-content/uploads/2021/04/imperial2.jpg'
+            ]
+        },
+        'Golden Green Lush': {
+            'price': 19.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2021/04/lush-green.jpg',
+                'https://goldenturf.com.au/wp-content/uploads/2021/04/lush-green2.jpg'
+            ]
+        },
+        'Golden Natural 40mm': {
+            'price': 17.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2020/06/natural.jpg'
+            ]
+        },
+        'Golden Golf Turf': {
+            'price': 22.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2021/06/golf.jpg'
+            ]
+        },
+        'Golden Premium Turf': {
+            'price': 20.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2021/06/premium.jpg'
+            ]
+        },
+        'Peg (U-pins/Nails)': {
+            'price': 25.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2020/06/peg2.jpg'
+            ]
+        },
+        'Fountains': {
+            'price': 0.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2020/06/fountain1.jpg'
+            ]
+        },
+        'Artificial Hedges': {
+            'price': 0.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2021/07/1-1.jpg'
+            ]
+        },
+        'Black Pebbles': {
+            'price': 0.0,
+            'image_urls': []
+        },
+        'White Pebbles': {
+            'price': 0.0,
+            'image_urls': []
+        },
+        'Bamboo Products': {
+            'price': 0.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2021/06/bamboo13.jpg'
+            ]
+        },
+        'Adhesive Joining Tape': {
+            'price': 0.0,
+            'image_urls': [
+                'https://goldenturf.com.au/wp-content/uploads/2020/06/a-tape2.jpg'
+            ]
+        }
+    }
+    for product_name, data in default_data.items():
+        c.execute("UPDATE products SET price = ?, image_urls = ? WHERE product_name = ? AND (price = 0.0 OR price IS NULL OR image_urls IS NULL)",
+                  (data['price'], json.dumps(data['image_urls']), product_name))
+    conn.commit()
+    conn.close()
+
+migrate_invoices_table()
+migrate_products_table()
 
 @app.route('/')
 def home():
@@ -45,62 +239,159 @@ def payments_quote():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    message = ''
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-        
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+
         if not name or not email or not password:
-            return render_template("register.html", error="All fields are required.")
-        
+            flash('All fields are required.')
+            return render_template('register.html')
+
         if len(password) < 6:
-            return render_template("register.html", error="Password must be at least 6 characters long.")
-        
+            flash('Password must be at least 6 characters long.')
+            return render_template('register.html')
+
+        hashed_password = hashpw(password.encode('utf-8'), gensalt())
+
         conn = sqlite3.connect('users.db')
         c = conn.cursor()
+        c.execute('SELECT COUNT(*) FROM users')
+        user_count = c.fetchone()[0]
+        # Ensure first user is admin, and if only one user exists, always admin
+        role = 'admin' if user_count == 0 else 'user'
         try:
-            c.execute('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', 
-                      (name, email, password))
+            c.execute('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+                      (name, email, hashed_password.decode('utf-8'), role))
             conn.commit()
-            message = 'Registration successful!'
+            flash('Registration successful!')
             conn.close()
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
-            message = 'Email already registered!'
+            flash('Email already registered!')
             conn.close()
-    
-    return render_template('register.html', message=message)
+
+    return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    message = ''
+    # Removed check to always allow access to login page
+    # if 'user_name' in session:
+    #     print("User already logged in, redirecting to dashboard.")  # Debugging log
+    #     return redirect(url_for('dashboard'))
+
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-
-        conn = sqlite3.connect('users.db')
-        c = conn.cursor()
-        c.execute('SELECT * FROM users WHERE email = ? AND password = ?', (email, password))
-        user = c.fetchone()
-        conn.close()
-
-        if user:
-            session['user_name'] = user[1]
-            return redirect(url_for('dashboard'))
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        print(f"Login attempt: email={email}, password={password}")  # Debugging log
+        if not email or not password:
+            flash('Please enter email and password.')
         else:
-            message = 'Invalid email or password!'
-    return render_template('login.html', message=message)
+            conn = sqlite3.connect('users.db')
+            c = conn.cursor()
+            c.execute('SELECT id, name, role, password, permissions FROM users WHERE email = ?', (email,))
+            user = c.fetchone()
+            print(f"User fetched from database: {user}")  # Debugging log
+            if user:
+                stored_password = user[3]
+                # Check if stored_password is hashed (starts with $2b$ or $2a$ for bcrypt)
+                if isinstance(stored_password, str) and (stored_password.startswith('$2b$') or stored_password.startswith('$2a$')):
+                    try:
+                        hashed_password = stored_password.encode('utf-8')
+                        if checkpw(password.encode('utf-8'), hashed_password):
+                            session['user_id'] = user[0]
+                            session['user_name'] = user[1]
+                            session['user_role'] = user[2] if user[2] else 'user'
+                            session['user_permissions'] = user[4] if user[4] else ''
+                            print(f"Session set: user_id={session['user_id']}, user_name={session['user_name']}, user_role={session['user_role']}, user_permissions={session['user_permissions']}")  # Debugging log
+
+                            # Always assign the user's own database (named uniquely, e.g., by email)
+                            session['database'] = f'{email}_db.sqlite'
+                            print("Assigned user's own database.")  # Debugging log
+
+                            # Create a new empty database for the user if it doesn't exist
+                            user_db = sqlite3.connect(session['database'])
+                            user_db.execute('''CREATE TABLE IF NOT EXISTS clients (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                client_name TEXT NOT NULL,
+                                email TEXT,
+                                phone TEXT,
+                                account_type TEXT,
+                                company_name TEXT,
+                                actions TEXT,
+                                created_date TEXT
+                            )''')
+                            user_db.commit()
+                            user_db.close()
+
+                            conn.close()
+                            print("Redirecting to dashboard.")  # Debugging log
+                            return redirect(url_for('dashboard'))
+                        else:
+                            # flash('Invalid email or password.')
+                            print("Password mismatch.")  # Debugging log
+                    except ValueError:
+                        flash('Invalid password format. Please reset your password.')
+                        print("Invalid password format.")  # Debugging log
+                else:
+                    # Password is stored in plain text or unknown format, compare directly (not secure)
+                    if password == stored_password:
+                        session['user_id'] = user[0]
+                        session['user_name'] = user[1]
+                        session['user_role'] = user[2] if user[2] else 'user'
+                        session['user_permissions'] = user[4] if user[4] else ''
+                        print(f"Session set: user_id={session['user_id']}, user_name={session['user_name']}, user_role={session['user_role']}, user_permissions={session['user_permissions']}")  # Debugging log
+
+                        # Always assign the user's own database (named uniquely, e.g., by email)
+                        session['database'] = f'{email}_db.sqlite'
+                        print("Assigned user's own database.")  # Debugging log
+
+                        # Create a new empty database for the user if it doesn't exist
+                        user_db = sqlite3.connect(session['database'])
+                        user_db.execute('''CREATE TABLE IF NOT EXISTS clients (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            client_name TEXT NOT NULL,
+                            email TEXT,
+                            phone TEXT,
+                            account_type TEXT,
+                            company_name TEXT,
+                            actions TEXT,
+                            created_date TEXT
+                        )''')
+                        user_db.commit()
+                        user_db.close()
+
+                        conn.close()
+                        print("Redirecting to dashboard.")  # Debugging log
+                        return redirect(url_for('dashboard'))
+                    else:
+                        # flash('Invalid email or password.')
+                        print("Password mismatch.")  # Debugging log
+            else:
+                # flash('Invalid email or password.')
+                print("User not found in database.")  # Debugging log
+            conn.close()
+    print("Login failed.")  # Debugging log
+    return render_template('login.html')
 
 @app.route('/dashboard')
 def dashboard():
     if 'user_name' not in session:
+        print("Dashboard access denied: No user_name in session")  # Debugging log
         return redirect(url_for('login'))
 
-    user_role = 'admin'
-    clients = query_all_clients()
-    jobs = query_all_jobs()
-    payments = query_all_payments()
+    # All users can access the dashboard
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+
+    print(f"Dashboard accessed: user_name={session.get('user_name')}, user_role={session.get('user_role')}")  # Debugging log
+
+    user_role = session.get('user_role', 'user')
+    clients = query_all_clients(user_id)
+    jobs = query_all_jobs(user_id)
+    payments = query_all_payments(user_id)
 
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
@@ -121,10 +412,17 @@ def dashboard():
     c = conn.cursor()
     overdue_jobs_info = []
     for job in overdue_jobs:
-        c.execute('SELECT client_name FROM clients WHERE id = ?', (job[1],))
+        c.execute('SELECT client_name FROM clients WHERE id = ? AND owner_id = ?', (job[1], user_id))
         client_name = c.fetchone()
         if client_name:
             overdue_jobs_info.append({'client_name': client_name[0], 'job_date': job[2]})
+    conn.close()
+
+    # Fetch admin users
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("SELECT name, email FROM users WHERE role = 'admin'")
+    admins = c.fetchall()
     conn.close()
 
     return render_template('dashboard.html',
@@ -135,7 +433,8 @@ def dashboard():
                            yesterday_sales=yesterday_sales,
                            last_7_days_sales=last_7_days_sales,
                            overdue_jobs=overdue_jobs_info,
-                           user_role=user_role)
+                           user_role=user_role,
+                           admins=admins)
 
 def get_all_tasks():
     conn = sqlite3.connect('users.db')
@@ -145,28 +444,29 @@ def get_all_tasks():
     conn.close()
     return tasks
 
-def query_all_clients():
+def query_all_clients(user_id):
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('SELECT * FROM clients')
+    c.execute('SELECT * FROM clients WHERE owner_id = ?', (user_id,))
     clients = c.fetchall()
     conn.close()
     return clients
 
-def query_all_jobs():
+def query_all_jobs(user_id):
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('SELECT * FROM jobs')
+    c.execute('SELECT * FROM jobs WHERE owner_id = ?', (user_id,))
     jobs = c.fetchall()
     conn.close()
     return jobs
 
-def query_all_payments():
+def query_all_payments(user_id):
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date, invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total
                   FROM invoices
-                  LEFT JOIN clients ON invoices.client_id = clients.id''')
+                  LEFT JOIN clients ON invoices.client_id = clients.id
+                  WHERE invoices.owner_id = ?''', (user_id,))
     payments = c.fetchall()
     conn.close()
     return payments
@@ -203,6 +503,7 @@ def create_tasks_table():
         description TEXT,
         task_date TEXT NOT NULL,
         task_time TEXT,
+        task_end_time TEXT,
         location TEXT,
         status TEXT NOT NULL DEFAULT 'Not completed',
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -210,12 +511,123 @@ def create_tasks_table():
     conn.commit()
     conn.close()
 
+def migrate_tasks_table():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(tasks)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'task_end_time' not in columns:
+        c.execute("ALTER TABLE tasks ADD COLUMN task_end_time TEXT")
+        conn.commit()
+    conn.close()
+
+def migrate_users_table():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(users)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'reset_token' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN reset_token TEXT")
+        conn.commit()
+    if 'token_expiry' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN token_expiry TEXT")
+        conn.commit()
+    if 'role' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
+        # Set first user as admin if exists
+        c.execute("SELECT id FROM users ORDER BY id LIMIT 1")
+        first_user = c.fetchone()
+        if first_user:
+            c.execute("UPDATE users SET role = 'admin' WHERE id = ?", (first_user[0],))
+        conn.commit()
+    if 'permissions' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT ''")
+        conn.commit()
+    if 'verification_code' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN verification_code TEXT")
+        conn.commit()
+    conn.close()
+
+def migrate_clients_owner_id():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(clients)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'owner_id' not in columns:
+        c.execute("ALTER TABLE clients ADD COLUMN owner_id INTEGER")
+        # Set owner_id to 1 for existing clients (assuming first user is admin)
+        c.execute("UPDATE clients SET owner_id = 1 WHERE owner_id IS NULL")
+        conn.commit()
+    conn.close()
+
+def migrate_invoices_owner_id():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(invoices)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'owner_id' not in columns:
+        c.execute("ALTER TABLE invoices ADD COLUMN owner_id INTEGER")
+        # Set owner_id to 1 for existing invoices
+        c.execute("UPDATE invoices SET owner_id = 1 WHERE owner_id IS NULL")
+        conn.commit()
+    conn.close()
+
+def migrate_tasks_owner_id():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(tasks)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'owner_id' not in columns:
+        c.execute("ALTER TABLE tasks ADD COLUMN owner_id INTEGER")
+        # Set owner_id to 1 for existing tasks
+        c.execute("UPDATE tasks SET owner_id = 1 WHERE owner_id IS NULL")
+        conn.commit()
+    conn.close()
+
+def migrate_quotes_owner_id():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(quotes)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'owner_id' not in columns:
+        c.execute("ALTER TABLE quotes ADD COLUMN owner_id INTEGER")
+        # Set owner_id to 1 for existing quotes
+        c.execute("UPDATE quotes SET owner_id = 1 WHERE owner_id IS NULL")
+        conn.commit()
+    conn.close()
+
+def migrate_jobs_owner_id():
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(jobs)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'owner_id' not in columns:
+        c.execute("ALTER TABLE jobs ADD COLUMN owner_id INTEGER")
+        # Set owner_id to 1 for existing jobs
+        c.execute("UPDATE jobs SET owner_id = 1 WHERE owner_id IS NULL")
+        conn.commit()
+    conn.close()
+
 migrate_clients_table()
 create_tasks_table()
+migrate_tasks_table()
+migrate_users_table()
+migrate_clients_owner_id()
+migrate_invoices_owner_id()
+migrate_tasks_owner_id()
+migrate_quotes_owner_id()
+migrate_jobs_owner_id()
 
 @app.route('/clients', methods=['GET', 'POST'])
 def clients():
     if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    if not has_permission('clients'):
+        return redirect(url_for('access_restricted'))
+
+    user_id = session.get('user_id')
+    if not user_id:
         return redirect(url_for('login'))
 
     error = None
@@ -244,13 +656,13 @@ def clients():
             error = 'Invalid email format.'
 
         if not error:
-            c.execute('''INSERT INTO clients (client_name, email, phone, account_type, company_name, actions, created_date)
-                          VALUES (?, ?, ?, ?, ?, ?, ?)''', 
-                          (contact_name, email, phone_number, account_type, company_name, actions, created_date))
+            c.execute('''INSERT INTO clients (client_name, email, phone, account_type, company_name, actions, created_date, owner_id)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                          (contact_name, email, phone_number, account_type, company_name, actions, created_date, user_id))
             conn.commit()
             success = 'Client saved successfully.'
 
-    c.execute('SELECT * FROM clients')
+    c.execute('SELECT * FROM clients WHERE owner_id = ?', (user_id,))
     clients = c.fetchall()
     conn.close()
 
@@ -261,71 +673,365 @@ def logout():
     session.pop('user_name', None)
     return redirect(url_for('login'))
 
+@app.route('/access_restricted')
+def access_restricted():
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+    # User with ID 1 always has access
+    if session.get('user_id') == 1:
+        return redirect(url_for('dashboard'))
+    return render_template('access_restricted.html')
+
+@app.route('/profiles', methods=['GET', 'POST'])
+def profiles():
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    # User with ID 1 always has access to profiles
+    if session.get('user_id') != 1 and session.get('user_role') != 'admin':
+        return redirect(url_for('access_restricted'))
+
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+
+        if not name or not email or not password:
+            flash('All fields are required.')
+        elif len(password) < 6:
+            flash('Password must be at least 6 characters long.')
+        else:
+            conn = sqlite3.connect('users.db')
+            c = conn.cursor()
+            try:
+                c.execute('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', (name, email, password, 'admin'))
+                conn.commit()
+                flash('User added successfully!')
+            except sqlite3.IntegrityError:
+                flash('Email already exists!')
+            conn.close()
+
+        return redirect(url_for('profiles'))
+
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    # Ensure user with ID 1 is always admin
+    c.execute('UPDATE users SET role = "admin" WHERE id = 1')
+    conn.commit()
+    c.execute('SELECT id, name, email, role, permissions FROM users ORDER BY id')
+    users = c.fetchall()
+    conn.close()
+    return render_template('profiles.html', users=users)
+
+@app.route('/profiles/delete/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('access_restricted'))
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    conn.commit()
+
+    # Reorder IDs sequentially
+    c.execute('SELECT id FROM users ORDER BY id')
+    users = c.fetchall()
+    for index, user in enumerate(users, start=1):
+        c.execute('UPDATE users SET id = ? WHERE id = ?', (index, user[0]))
+    conn.commit()
+
+    # Reset the sqlite_sequence to ensure next insert uses sequential ID
+    c.execute("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM users) WHERE name='users'")
+    conn.commit()
+    conn.close()
+
+    flash('User deleted successfully!')
+    return redirect(url_for('profiles'))
+
+@app.route('/profiles/edit/<int:user_id>', methods=['GET', 'POST'])
+def edit_user(user_id):
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('access_restricted'))
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+
+    # Check if there is only one admin in the system (after connection)
+    c.execute('SELECT COUNT(*) FROM users WHERE role = "admin"')
+    only_one_admin = c.fetchone()[0] == 1
+    session['only_one_admin'] = only_one_admin
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        # Role and permissions may be disabled for self-edit, so get from DB if not in form
+        role = request.form.get('role') or user[3] if 'user' in locals() else 'user'
+        permissions = ','.join(request.form.getlist('permissions')) if request.form.getlist('permissions') else (user[4] if 'user' in locals() else '')
+
+        current_user_id = session.get('user_id')
+
+        if not name or not email:
+            flash('Name and email are required.')
+        elif len(password) < 6 and password:
+            flash('Password must be at least 6 characters long if provided.')
+        else:
+            if password:
+                c.execute('UPDATE users SET name = ?, email = ?, password = ?, role = ?, permissions = ? WHERE id = ?',
+                          (name, email, password, role, permissions, user_id))
+            else:
+                c.execute('UPDATE users SET name = ?, email = ?, role = ?, permissions = ? WHERE id = ?',
+                          (name, email, role, permissions, user_id))
+            conn.commit()
+            flash('User updated successfully!')
+            conn.close()
+            return redirect(url_for('profiles'))
+
+    c.execute('SELECT id, name, email, role, permissions FROM users WHERE id = ?', (user_id,))
+    user = c.fetchone()
+    conn.close()
+
+    if not user:
+        flash('User not found.')
+        return redirect(url_for('profiles'))
+
+    return render_template('edit_user.html', user=user)
+
+@app.route('/profiles/toggle_admin/<int:user_id>', methods=['POST'])
+def toggle_admin(user_id):
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('access_restricted'))
+
+    current_user_id = session.get('user_id')
+
+    if not can_change_role(current_user_id, user_id):
+        flash('You cannot change your own role.')
+        return redirect(url_for('profiles'))
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT role FROM users WHERE id = ?', (user_id,))
+    current_role = c.fetchone()[0]
+    new_role = 'user' if current_role == 'admin' else 'admin'
+
+    if not can_demote_admin(user_id, new_role):
+        if user_id == 1:
+            flash('User ID 1 must always be admin unless another admin exists.')
+        else:
+            flash('Cannot remove admin rights if only one admin remains.')
+        conn.close()
+        return redirect(url_for('profiles'))
+
+    c.execute('UPDATE users SET role = ? WHERE id = ?', (new_role, user_id))
+    conn.commit()
+    conn.close()
+
+    flash(f'User role updated to {new_role}!')
+    return redirect(url_for('profiles'))
+
+@app.route('/profiles/update_permissions/<int:user_id>', methods=['POST'])
+def update_permissions(user_id):
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('access_restricted'))
+
+    # Get list of permissions from checkboxes
+    permissions_list = request.form.getlist('permissions')
+    permissions = ','.join(permissions_list)
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('UPDATE users SET permissions = ? WHERE id = ?', (permissions, user_id))
+    conn.commit()
+    conn.close()
+
+    flash('User permissions updated!')
+    return redirect(url_for('profiles'))
+
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     message = ''
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
-        message = 'If this email is registered, a password reset link has been sent.'
+        if not email:
+            message = 'Please enter your email address.'
+        else:
+            conn = sqlite3.connect('users.db')
+            c = conn.cursor()
+            c.execute('SELECT id FROM users WHERE email = ?', (email,))
+            user = c.fetchone()
+            if user:
+                # Generate 6-digit verification code
+                verification_code = ''.join(secrets.choice('0123456789') for _ in range(6))
+                token_expiry = (datetime.now() + timedelta(minutes=10)).strftime('%Y-%m-%d %H:%M:%S')
+                c.execute('UPDATE users SET verification_code = ?, token_expiry = ? WHERE email = ?', (verification_code, token_expiry, email))
+                conn.commit()
+
+                # Send email with verification code
+                msg = Message('Your Verification Code', sender='noreply@goldenturf.com', recipients=[email])
+                msg.body = f'Your verification code is: {verification_code}'
+                mail.send(msg)  # Uncommented to enable email sending
+
+                conn.close()
+                return redirect(url_for('verify_code', email=email))
+            else:
+                message = 'If this email is registered, a verification code has been sent.'
+            conn.close()
     return render_template('forgotpassword.html', message=message)
+
+@app.route('/reset_password/<email>', methods=['GET', 'POST'])
+def reset_password(email):
+    message = ''
+    if request.method == 'POST':
+        new_password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+
+        if not new_password or not confirm_password:
+            message = 'Please fill in all fields.'
+        elif len(new_password) < 6:
+            message = 'Password must be at least 6 characters long.'
+        elif new_password != confirm_password:
+            message = 'Passwords do not match.'
+        else:
+            conn = sqlite3.connect('users.db')
+            c = conn.cursor()
+            c.execute('SELECT id FROM users WHERE email = ? AND token_expiry > ?', (email, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            user = c.fetchone()
+            if user:
+                c.execute('UPDATE users SET password = ?, verification_code = NULL, token_expiry = NULL WHERE id = ?', (new_password, user[0]))
+                conn.commit()
+                conn.close()
+                return redirect(url_for('login'))
+            else:
+                message = 'Invalid or expired reset token.'
+                conn.close()
+
+    return render_template('reset_password.html', message=message, email=email)
 
 @app.route('/invoice', methods=['GET', 'POST'])
 def invoice():
     if 'user_name' not in session:
         return redirect(url_for('login'))
+
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
+
+    # Fetch client list for autocomplete
+    c.execute('SELECT client_name FROM clients')
+    clients = [row[0] for row in c.fetchall()]
+
+    # Fetch product list for dropdown
+    c.execute('SELECT product_name FROM products')
+    products = [row[0] for row in c.fetchall()]
+
+    # Define price table for products
+    price_table = {
+        'Golden Imperial Lush': 15.0,
+        'Golden Green Lush': 19.0,
+        'Golden Natural 40mm': 17.0,
+        'Golden Golf Turf': 22.0,
+        'Golden Premium Turf': 20.0
+    }
+
     if request.method == 'POST':
-        client_name = request.form.get('client_name', '')
-        turf_type = request.form.get('turf_type', '')
-        area = request.form.get('area', '0')
-        extra_fee = request.form.get('extra_fee', '0')
-        extras = request.form.get('extras', 'none')
-        payment_status = request.form.get('payment_status', '')
-        gst = request.form.get('gst', 'no')
-        invoice_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        client_name = request.form.get('client_name', '').strip()
+        turf_type = request.form.get('turf_type', '').strip()
+        area_val = request.form.get('area', type=float)
+        payment_status = request.form.get('payment_status', '').strip()
+        gst = request.form.get('gst') == 'yes'
 
-        try:
-            area_val = float(area)
-        except ValueError:
-            area_val = 0.0
-        try:
-            extra_fee_val = float(extra_fee)
-        except ValueError:
-            extra_fee_val = 0.0
+        # Calculate base price
+        base_price = price_table.get(turf_type, 0) * area_val if area_val else 0
 
-        # Ensure numeric values for price calculation
-        price_table = {
-            'Golden Imperial Lush': 15,
-            'Golden Green Lush': 19,
-            'Golden Natural 40mm': 17,
-            'Golden Golf Turf': 22,
-            'Golden Premium Turf': 20,
-            'Peg (Upins/Nails)': 25 / 100,
-            'Artificial Hedges': 10 / 0.25,
-            'Black Pebbles': 18 / 20,
-            'White Pebbles': 15 / 20,
-            'Bamboo Products': 12
-        }
+        # Calculate extras cost
+        extras_cost = 0
+        extras_details = []
 
-        price = price_table.get(turf_type, 0) * area_val + extra_fee_val
-        gst_amount = price * 0.1 if gst == 'yes' else 0
+        # Artificial Hedges
+        hedges_qty = request.form.get('artificial_hedges_qty', type=int)
+        if hedges_qty and hedges_qty > 0:
+            extras_cost += 50 * hedges_qty
+            extras_details.append(f"Artificial Hedges: {hedges_qty}")
+
+        # Fountain
+        fountain_price = request.form.get('fountain_price', type=float)
+        if fountain_price and fountain_price > 0:
+            extras_cost += fountain_price
+            extras_details.append(f"Fountain: ${fountain_price}")
+
+        # Bamboo Products
+        bamboo_size = request.form.get('bamboo_products_size')
+        bamboo_qty = request.form.get('bamboo_products_qty', type=int)
+        if bamboo_size and bamboo_qty and bamboo_qty > 0:
+            bamboo_price = 75 if bamboo_size in ['2m', '2.4m', '1.8m'] else 0
+            extras_cost += bamboo_price * bamboo_qty
+            extras_details.append(f"Bamboo {bamboo_size}: {bamboo_qty}")
+
+        # Pebbles
+        pebbles_type = request.form.get('pebbles_type')
+        pebbles_qty = request.form.get('pebbles_qty', type=int)
+        if pebbles_type and pebbles_qty and pebbles_qty > 0:
+            pebbles_price = 40
+            extras_cost += pebbles_price * pebbles_qty
+            extras_details.append(f"{pebbles_type} Pebbles: {pebbles_qty}")
+
+        # Pegs
+        pegs_qty = request.form.get('pegs_qty', type=int)
+        if pegs_qty and pegs_qty > 0:
+            extras_cost += 20 * pegs_qty
+            extras_details.append(f"Pegs: {pegs_qty}")
+
+        # Adhesive Tape
+        tape_qty = request.form.get('adhesive_tape_qty', type=int)
+        if tape_qty and tape_qty > 0:
+            extras_cost += 15 * tape_qty
+            extras_details.append(f"Adhesive Tape: {tape_qty}")
+
+        # Total price calculation
+        price = base_price + extras_cost
+        gst_amount = price * 0.1 if gst else 0
         total_price = price + gst_amount
 
-        # Get client_id from client_name
+        # Get client_id from client_name and validate
         c.execute('SELECT id FROM clients WHERE client_name = ?', (client_name,))
         client_row = c.fetchone()
-        client_id = client_row[0] if client_row else None
+        if not client_row:
+            # Client not found, show error and do not save invoice
+            c.execute('SELECT client_name FROM clients')
+            clients = [row[0] for row in c.fetchall()]
+            c.execute('SELECT product_name FROM products')
+            products = [row[0] for row in c.fetchall()]
+            conn.close()
+            error = f"Client '{client_name}' not found. Please select a client from the list."
+            return render_template('invoice.html', error=error, clients=clients, products=products, client_name=client_name, turf_type=turf_type, area=area_val, payment_status=payment_status, gst='yes' if gst else '', summary=None)
 
-        c.execute('''INSERT INTO invoices (client_id, product, quantity, price, gst, total, status, created_date)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                     (client_id, turf_type, area_val, price, gst_amount, total_price, payment_status, invoice_date))
+        client_id = client_row[0]
+        import json
+        extras_json = json.dumps(extras_details)
+
+        # Save invoice to database
+        c.execute('''INSERT INTO invoices (client_id, product, quantity, price, gst, total, status, created_date, extras_json, owner_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?)''',
+                  (client_id, turf_type, area_val, price, gst_amount, total_price, payment_status, extras_json, session['user_id']))
         conn.commit()
 
+        # Fetch updated invoices
         c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
                       invoices.gst, invoices.total, invoices.status, invoices.created_date
                       FROM invoices
-                      LEFT JOIN clients ON invoices.client_id = clients.id''')
+                      LEFT JOIN clients ON invoices.client_id = clients.id
+                      WHERE invoices.owner_id = ? AND clients.owner_id = ?''', (session['user_id'], session['user_id']))
         invoices = c.fetchall()
         conn.close()
 
@@ -333,37 +1039,63 @@ def invoice():
             'client_name': client_name,
             'turf_type': turf_type,
             'area': area_val,
-            'extra_fee': extra_fee_val,
+            'extras_cost': extras_cost,
             'gst': gst_amount,
             'total_price': total_price
         })
-    else:
-        c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
-                      invoices.gst, invoices.total, invoices.status, invoices.created_date
-                      FROM invoices
-                      LEFT JOIN clients ON invoices.client_id = clients.id''')
-        invoices = c.fetchall()
-        conn.close()
 
-        return render_template('invoice.html', invoices=invoices)
+    conn.close()
+    return render_template('invoice.html', clients=clients, products=products, price_table=price_table)
 
 @app.route('/products_list')
 def products_list():
     if 'user_name' not in session:
         return redirect(url_for('login'))
 
+    if not has_permission('products_list'):
+        return redirect(url_for('access_restricted'))
+
     # Get products from database
+    import json
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('SELECT product_name, turf_type, description, stock FROM products')
-    products = c.fetchall()
+    c.execute('SELECT product_name, turf_type, description, stock, price, image_url, image_urls FROM products')
+    rows = c.fetchall()
     conn.close()
 
-    return render_template('products_list.html', products=products)
+    products = []
+    for row in rows:
+        # row: (product_name, turf_type, description, stock, price, image_url, image_urls)
+        image_urls = []
+        if row[6]:
+            try:
+                image_urls = json.loads(row[6])
+            except Exception:
+                image_urls = []
+        # Fallback to single image_url if image_urls is empty
+        if not image_urls and row[5]:
+            image_urls = [row[5]]
+        products.append({
+            'product_name': row[0],
+            'turf_type': row[1],
+            'description': row[2],
+            'stock': row[3],
+            'price': row[4],
+            'image_urls': image_urls
+        })
+
+    return render_template('products.html', products=products)
 
 @app.route('/quotes', methods=['GET', 'POST'])
 def quotes():
     if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    if not has_permission('quotes'):
+        return redirect(url_for('access_restricted'))
+
+    user_id = session.get('user_id')
+    if not user_id:
         return redirect(url_for('login'))
 
     if request.method == 'POST':
@@ -397,9 +1129,9 @@ def quotes():
         # Store in database
         conn = sqlite3.connect('users.db')
         c = conn.cursor()
-        c.execute('''INSERT INTO quotes (client_name, turf_type, area_in_sqm, other_products, total_price)
-                     VALUES (?, ?, ?, ?, ?)''',
-                     (client_name, turf_type, area_in_sqm, other_products, total_price))
+        c.execute('''INSERT INTO quotes (client_name, turf_type, area_in_sqm, other_products, total_price, owner_id)
+                     VALUES (?, ?, ?, ?, ?, ?)''',
+                     (client_name, turf_type, area_in_sqm, other_products, total_price, user_id))
         conn.commit()
         conn.close()
 
@@ -411,21 +1143,31 @@ def payments():
     if 'user_name' not in session:
         return redirect(url_for('login'))
 
-    # Get invoices data for payments
+    if not has_permission('payments'):
+        return redirect(url_for('access_restricted'))
+
+    import json
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+
+    # Get invoices data for payments including extras_json
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date,
-                  invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total
+                  invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total, invoices.extras_json
                   FROM invoices
-                  LEFT JOIN clients ON invoices.client_id = clients.id''')
+                  LEFT JOIN clients ON invoices.client_id = clients.id
+                  WHERE invoices.owner_id = ?''', (user_id,))
     invoices_data = c.fetchall()
 
     # Get clients data
-    c.execute('SELECT * FROM clients')
+    c.execute('SELECT * FROM clients WHERE owner_id = ?', (user_id,))
     clients_data = c.fetchall()
 
     # Get quotes data
-    c.execute('SELECT * FROM quotes')
+    c.execute('SELECT * FROM quotes WHERE owner_id = ?', (user_id,))
     quotes_data = c.fetchall()
 
     conn.close()
@@ -433,15 +1175,26 @@ def payments():
     # Format the data for the template
     invoices = []
     for invoice in invoices_data:
+        status = invoice[2]
+        # Parse extras_json
+        extras = {}
+        if invoice[9]:
+            try:
+                extras = json.loads(invoice[9])
+            except json.JSONDecodeError:
+                extras = {}
+
         invoices.append({
+            'id': invoice[0],
             'client_name': invoice[1],
-            'status': invoice[2],
+            'status': status,
             'due_date': invoice[3],
             'product': invoice[4],
             'quantity': invoice[5],
             'price': float(invoice[6]) if invoice[6] else 0.0,
             'gst': float(invoice[7]) if invoice[7] else 0.0,
-            'total': float(invoice[8]) if invoice[8] else 0.0
+            'total': float(invoice[8]) if invoice[8] else 0.0,
+            'extras': extras
         })
 
     # Format clients data
@@ -476,11 +1229,14 @@ def calendar():
     if 'user_name' not in session:
         return redirect(url_for('login'))
 
+    if not has_permission('calendar'):
+        return redirect(url_for('access_restricted'))
+
     # Get current date for calendar navigation
-    today = datetime.now()  # Use actual current date and time
-    current_year = request.args.get('year', today.year, type=int)
-    current_month = request.args.get('month', today.month, type=int)
-    current_day = request.args.get('day', today.day, type=int)
+    actual_today = datetime.now().date()
+    current_year = request.args.get('year', actual_today.year, type=int)
+    current_month = request.args.get('month', actual_today.month, type=int)
+    current_day = request.args.get('day', actual_today.day, type=int)
     view = request.args.get('view', 'month')
 
     # Create current date object
@@ -500,17 +1256,18 @@ def calendar():
     tasks_by_date = {}
     for task in tasks:
         task_date = datetime.strptime(task[3], '%Y-%m-%d').date()
-        task_color = status_colors.get(task[6], 'gray')  # Default to gray if status is invalid
+        task_color = status_colors.get(task[7], 'gray')  # task[7] is status
         task = list(task)
-        task[6] = task_color
+        task.append(task_color)  # task[9] = color
         if task_date not in tasks_by_date:
             tasks_by_date[task_date] = []
         tasks_by_date[task_date].append(task)
 
     # Prepare data for rendering based on view
     calendar_data = []
-    month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
+    month_names = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December']
+    full_day_tasks = []
 
     if view == 'month':
         cal = Calendar(firstweekday=6)  # Set Sunday as the first day of the week
@@ -526,17 +1283,17 @@ def calendar():
                 calendar_data.append({'day': day, 'tasks': tasks_by_date.get(date, []), 'is_today': is_today})
         header_text = month_names[current_month - 1]
     elif view == 'week':
-        # Adjust start_of_week to Sunday (weekday 6) instead of Monday (weekday 0)
+        # Fix weekly view to start on Sunday and show correct tasks
         # Python's weekday(): Monday=0, Sunday=6
-        # We want weeks to start on Sunday, so adjust accordingly
         weekday = current_date.weekday()
-        # Calculate days to subtract to get to Sunday
+        # Calculate days to subtract to get to Sunday (weekday 6)
         days_to_sunday = (weekday + 1) % 7
         start_of_week = current_date - timedelta(days=days_to_sunday)
         end_of_week = start_of_week + timedelta(days=6)
         for i in range(7):
             date = start_of_week + timedelta(days=i)
-            calendar_data.append({'day': date.day, 'tasks': tasks_by_date.get(date.date(), [])})
+            is_today = (date.date() == actual_today)
+            calendar_data.append({'day': date.day, 'tasks': tasks_by_date.get(date.date(), []), 'is_today': is_today})
         start_suffix = 'th' if 11 <= start_of_week.day <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(start_of_week.day % 10, 'th')
         end_suffix = 'th' if 11 <= end_of_week.day <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(end_of_week.day % 10, 'th')
         if start_of_week.month == end_of_week.month and start_of_week.year == end_of_week.year:
@@ -547,6 +1304,7 @@ def calendar():
             header_text = f"{month_names[start_of_week.month - 1]} ({start_of_week.day}{start_suffix}) - {month_names[end_of_week.month - 1]} ({end_of_week.day}{end_suffix})"
     elif view == 'day':
         tasks_by_hour = {hour: [] for hour in range(24)}
+        full_day_tasks = []
         for task in tasks_by_date.get(current_date.date(), []):
             if task[4]:  # task_time
                 try:
@@ -554,20 +1312,25 @@ def calendar():
                     tasks_by_hour[hour].append(task)
                 except ValueError:
                     pass
-        calendar_data = [{'hour': hour, 'tasks': tasks_by_hour[hour]} for hour in range(24)]
+            else:
+                full_day_tasks.append(task)
+        calendar_data = [{'hour': 'All Day', 'tasks': full_day_tasks}] + [{'hour': hour, 'tasks': tasks_by_hour[hour]} for hour in range(24)]
         # Fix the day view header to show correct day of week for the current_date
         day_of_week = current_date.strftime('%A')
         header_text = f"{month_names[current_month - 1]} {current_day} ({day_of_week})"
+        current_date_str = current_date.strftime('%Y-%m-%d')
 
-    return render_template('calendar.html', 
-                           calendar_data=calendar_data, 
-                           current_year=current_year, 
-                           current_month=current_month, 
+    return render_template('calendar.html',
+                           calendar_data=calendar_data,
+                           current_year=current_year,
+                           current_month=current_month,
                            current_day=current_day,
-                           header_text=header_text, 
-                           month_names=month_names, 
+                           header_text=header_text,
+                           month_names=month_names,
                            view=view,
-                           tasks=tasks)
+                           tasks=tasks,
+                           full_day_tasks=full_day_tasks,
+                           current_date=current_date_str if view == 'day' else None)
 
 
 
@@ -583,6 +1346,7 @@ def edit_client(client_id):
         account_type = request.form.get('account_type', '')
         company_name = request.form.get('company_name', '')
         email = request.form.get('email', '')
+        actions = request.form.get('actions', '').strip()
 
         # Validate input
         import re
@@ -600,8 +1364,8 @@ def edit_client(client_id):
             return render_template('edit_client.html', error='Invalid email format.', client=client)
 
         # Update client in database
-        c.execute('''UPDATE clients SET client_name=?, phone=?, account_type=?, company_name=?, email=? WHERE id=?''',
-                  (contact_name, phone_number, account_type, company_name, email, client_id))
+        c.execute('''UPDATE clients SET client_name=?, phone=?, account_type=?, company_name=?, email=?, actions=? WHERE id=?''',
+                  (contact_name, phone_number, account_type, company_name, email, actions, client_id))
         conn.commit()
         conn.close()
 
@@ -645,9 +1409,10 @@ def get_tasks():
             'description': task[2],
             'date': task[3],
             'time': task[4],
-            'location': task[5],
-            'status': task[6],
-            'created_at': task[7]
+            'end_time': task[5],
+            'location': task[6],
+            'status': task[7],
+            'created_at': task[8]
         })
     
     return jsonify(task_list)
@@ -665,6 +1430,7 @@ def add_task():
     description = data.get('description', '')
     task_date = data.get('date')
     task_time = data.get('time', '')
+    task_end_time = data.get('end_time', '')
     location = data.get('location', '')
     status = data.get('status', 'Not completed')
 
@@ -675,9 +1441,9 @@ def add_task():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     try:
-        c.execute('''INSERT INTO tasks (title, description, task_date, task_time, location, status)
-                     VALUES (?, ?, ?, ?, ?, ?)''', 
-                     (title, description, task_date, task_time, location, status))
+        c.execute('''INSERT INTO tasks (title, description, task_date, task_time, task_end_time, location, status)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                     (title, description, task_date, task_time, task_end_time, location, status))
         task_id = c.lastrowid  # Get the ID of the newly added task
         conn.commit()
         print(f"Task added successfully: {title} with ID {task_id}.")
@@ -689,30 +1455,57 @@ def add_task():
 
     return jsonify({'message': 'Task added successfully', 'task_id': task_id}), 201
 
+@app.route('/api/tasks/<int:task_id>', methods=['GET'])
+def get_task(task_id):
+    if 'user_name' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM tasks WHERE id = ?', (task_id,))
+    task = c.fetchone()
+    conn.close()
+
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+
+    return jsonify({
+        'id': task[0],
+        'title': task[1],
+        'description': task[2],
+        'date': task[3],
+        'time': task[4],
+        'end_time': task[5],
+        'location': task[6],
+        'status': task[7],
+        'created_at': task[8]
+    })
+
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
     if 'user_name' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
-    
+
     data = request.get_json()
     title = data.get('title')
     description = data.get('description', '')
     task_date = data.get('date')
     task_time = data.get('time', '')
+    task_end_time = data.get('end_time', '')
     location = data.get('location', '')
     status = data.get('status', 'Not completed')
-    
+
     if not title or not task_date:
         return jsonify({'error': 'Title and date are required'}), 400
-    
+
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('''UPDATE tasks SET title=?, description=?, task_date=?, task_time=?, location=?, status=?
-                 WHERE id=?''', 
-                 (title, description, task_date, task_time, location, status, task_id))
+    c.execute('''UPDATE tasks SET title=?, description=?, task_date=?, task_time=?, task_end_time=?, location=?, status=?
+                 WHERE id=?''',
+                 (title, description, task_date, task_time, task_end_time, location, status, task_id))
     conn.commit()
     conn.close()
-    
+
     return jsonify({'message': 'Task updated successfully'})
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
@@ -750,6 +1543,109 @@ def delete_client(client_id):
 
     return redirect(url_for('payments'))
 
+@app.route('/invoices/edit/<int:invoice_id>', methods=['GET', 'POST'])
+def edit_invoice(invoice_id):
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+
+    # Fetch client list for autocomplete
+    c.execute('SELECT client_name FROM clients')
+    clients = [row[0] for row in c.fetchall()]
+
+    # Fetch product list for dropdown
+    c.execute('SELECT product_name FROM products')
+    products = [row[0] for row in c.fetchall()]
+
+    # Define price table for products (ensure values are JSON serializable)
+    price_table = {
+        'Golden Imperial Lush': 15.0,
+        'Golden Green Lush': 19.0,
+        'Golden Natural 40mm': 17.0,
+        'Golden Golf Turf': 22.0,
+        'Golden Premium Turf': 20.0
+    }
+
+    if request.method == 'POST':
+        client_name = request.form.get('client_name', '').strip()
+        product = request.form.get('product', '').strip()
+        quantity = request.form.get('quantity', type=float)
+        price = request.form.get('price', type=float)
+        gst_checkbox = request.form.get('gst_checkbox') == 'yes'
+        status = request.form.get('status', '')
+
+        # Fetch invoice before validation to avoid UnboundLocalError
+        c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total, invoices.status, invoices.created_date
+                     FROM invoices
+                     LEFT JOIN clients ON invoices.client_id = clients.id
+                     WHERE invoices.id = ?''', (invoice_id,))
+        invoice = c.fetchone()
+
+        # Validate input
+        if not client_name or not product or quantity is None or price is None:
+            conn.close()
+            return render_template('edit_invoice.html', error='All fields are required.', invoice=invoice, clients=clients, products=products, price_table=price_table)
+        if status not in ['Paid', 'Unpaid']:
+            conn.close()
+            return render_template('edit_invoice.html', error='Invalid status.', invoice=invoice, clients=clients, products=products, price_table=price_table)
+
+        # Calculate GST and total
+        gst = price * 0.1 if gst_checkbox else 0
+        total = price + gst
+
+        # Get client_id from client_name
+        c.execute('SELECT id FROM clients WHERE client_name = ?', (client_name,))
+        client_row = c.fetchone()
+        client_id = client_row[0] if client_row else None
+
+        if not client_id:
+            conn.close()
+            return render_template('edit_invoice.html', error='Client not found.', invoice=invoice, clients=clients, products=products, price_table=price_table)
+
+        # Update invoice in database
+        c.execute('''UPDATE invoices SET client_id=?, product=?, quantity=?, price=?, gst=?, total=?, status=? WHERE id=?''',
+                  (client_id, product, quantity, price, gst, total, status, invoice_id))
+        conn.commit()
+        conn.close()
+
+        # Redirect to payments with invoices tab active
+        return redirect(url_for('payments') + '#invoices')
+
+    c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total, invoices.status, invoices.created_date
+                 FROM invoices
+                 LEFT JOIN clients ON invoices.client_id = clients.id
+                 WHERE invoices.id = ?''', (invoice_id,))
+    invoice = c.fetchone()
+
+    # Fetch client list for autocomplete
+    c.execute('SELECT client_name FROM clients')
+    clients = [row[0] for row in c.fetchall()]
+
+    # Fetch product list for dropdown
+    c.execute('SELECT product_name FROM products')
+    products = [row[0] for row in c.fetchall()]
+
+    conn.close()
+
+    if not invoice:
+        return render_template('edit_invoice.html', error="Invoice not found.")
+
+    return render_template('edit_invoice.html', invoice=invoice, clients=clients, products=products, price_table=price_table)
+
+@app.route('/invoices/delete/<int:invoice_id>', methods=['POST'])
+def delete_invoice(invoice_id):
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM invoices WHERE id = ?', (invoice_id,))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('payments'))
+
 @app.route('/add_task', methods=['POST'], endpoint='add_task_form')
 def add_task():
     if 'user_name' not in session:
@@ -759,17 +1655,66 @@ def add_task():
     description = request.form.get('description')
     task_date = request.form.get('task_date')
     task_time = request.form.get('task_time')
+    task_end_time = request.form.get('task_end_time')
     location = request.form.get('location')
     status = request.form.get('status')
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('''INSERT INTO tasks (title, description, task_date, task_time, location, status)
-                 VALUES (?, ?, ?, ?, ?, ?)''', (title, description, task_date, task_time, location, status))
+    c.execute('''INSERT INTO tasks (title, description, task_date, task_time, task_end_time, location, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)''', (title, description, task_date, task_time, task_end_time, location, status))
     conn.commit()
     conn.close()
 
     return redirect(url_for('calendar'))
+
+@app.route('/verify_code/<email>', methods=['GET', 'POST'])
+def verify_code(email):
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        if not code:
+            return render_template('verify_code.html', email=email, error='Please enter the verification code.')
+
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute('SELECT id, name, role, verification_code, token_expiry FROM users WHERE email = ?', (email,))
+        user = c.fetchone()
+        conn.close()
+
+        if user and user[3] == code and datetime.now().strftime('%Y-%m-%d %H:%M:%S') < user[4]:
+            # Successful verification
+            # Redirect to reset password page instead of logging in
+            return redirect(url_for('reset_password', email=email))
+        else:
+            return render_template('verify_code.html', email=email, error='Invalid or expired verification code.')
+
+    return render_template('verify_code.html', email=email)
+
+# Update user IDs to overwrite deleted ones
+@app.route('/profiles/update_ids', methods=['POST'])
+def update_user_ids():
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    if session.get('user_role') != 'admin':
+        return redirect(url_for('access_restricted'))
+
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+
+    # Fetch all users ordered by ID
+    c.execute('SELECT id FROM users ORDER BY id')
+    users = c.fetchall()
+
+    # Reassign IDs sequentially
+    for index, user in enumerate(users, start=1):
+        c.execute('UPDATE users SET id = ? WHERE id = ?', (index, user[0]))
+
+    conn.commit()
+    conn.close()
+
+    flash('User IDs updated successfully!')
+    return redirect(url_for('profiles'))
 
 if __name__ == "__main__":
     app.run(debug=True)

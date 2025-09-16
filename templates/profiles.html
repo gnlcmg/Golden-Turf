@@ -1,0 +1,162 @@
+hos<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>User Profiles - Golden Turf</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style>
+            .password-container {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+            .password-container input {
+                flex: 1;
+                padding-right: 40px;
+            }
+            .password-container .toggle-password {
+                position: absolute;
+                right: 10px;
+                cursor: pointer;
+                color: #666;
+                font-size: 16px;
+                z-index: 10;
+            }
+            .password-container .toggle-password:hover {
+                color: #333;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>User Profiles</h1>
+            </header>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('profiles') }}">
+                <section class="user-form">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" required />
+
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required />
+
+                    <label for="password">Password:</label>
+                    <div class="password-container">
+                        <input type="password" id="password" name="password" required />
+                        <i class="fa fa-eye toggle-password" id="togglePassword" title="Show/Hide Password"></i>
+                    </div>
+
+                    <button type="submit">Add User</button>
+                </section>
+            </form>
+
+            <script>
+                const togglePassword = document.querySelector('#togglePassword');
+                const passwordInput = document.querySelector('#password');
+
+                togglePassword.addEventListener('click', function () {
+                    // Toggle the type attribute
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+
+                    // Toggle the eye / eye-slash icon
+                    this.classList.toggle('fa-eye-slash');
+                });
+            </script>
+
+            <section class="user-list">
+                <h2>Existing Users</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user[0] }}</td>
+                            <td>{{ user[1] }}</td>
+                            <td>{{ user[2] }}</td>
+                            <td>{{ user[3] }}</td>
+                            <td>
+                                <form action="{{ url_for('toggle_admin', user_id=user[0]) }}" method="post" style="display:inline;">
+                                    <button type="submit" title="Toggle Admin Role">
+                                        {% if user[3] == 'admin' %}
+                                            Revoke Admin
+                                        {% else %}
+                                            Make Admin
+                                        {% endif %}
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('delete_user', user_id=user[0]) }}" method="post" style="display:inline;">
+                                    <button type="submit">Delete</button>
+                                </form>
+                                <a href="{{ url_for('edit_user', user_id=user[0]) }}">
+                                    <button type="button">Edit</button>
+                                </a>
+                                <form action="{{ url_for('update_permissions', user_id=user[0]) }}" method="post" style="display:inline; margin-left: 5px;">
+                                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                        {% set modules = ['dashboard', 'products', 'clients', 'quotes', 'payments', 'calendar'] %}
+                                        {% set user_permissions = user[4].split(',') if user[4] else [] %}
+                                        {% for module in modules %}
+                                            <label style="margin-bottom: 2px;">
+                                                <input type="checkbox" name="permissions" value="{{ module }}" {% if module in user_permissions %}checked{% endif %}>
+                                                Allow access to {{ module|capitalize }}
+                                            </label>
+                                        {% endfor %}
+                                        <span style="font-size: 12px; color: #888;">(Tick to allow access. Unticked = blocked.)</span>
+                                        <button type="submit" style="margin-top: 5px;">Save</button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+        </div>
+
+        <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+            <div style="width:100%;text-align:center;margin-bottom:20px;">
+                <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+            </div>
+            <h2 style="color: orange;">Golden Turf</h2>
+            <nav class="navbar">
+                <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+                <div class="nav-dropdown">
+                    <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                    <div class="dropdown-content">
+                        <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                        <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                        <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                    </div>
+                </div>
+                <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+                <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
+                <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+            </nav>
+            <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+                <p style="color: white; margin-bottom: 10px;">Logged in as: {{ session.get('user_name', 'Unknown') }}</p>
+                <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+                <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+            </div>
+        </div>
+    </body>
+</html>

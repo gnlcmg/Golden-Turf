@@ -1,70 +1,228 @@
+    <div class="sidebar">
+        <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo">
+        <h2>Golden Turf</h2>
+        <nav class="navbar">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn">Products</a>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('products_list') }}">Products List</a>
+                    <a href="{{ url_for('invoice') }}">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}">Client Details Form</a>
+                </div>
+            </div>
+            <a href="{{ url_for('quotes') }}">Quotes</a>
+            <a href="{{ url_for('payments') }}">Clients & Invoices List</a>
+            <a href="{{ url_for('calendar') }}">Calendar</a>
+        </nav>
+    </div>
+    <div class="container" style="margin-left:220px;">
+        <header>
+            <div class="products-list-header">
+                <img src="/static/logo.png" alt="Logo" class="products-logo">
+                <div>
+                    <h1 class="products-title">Products List</h1>
+                    <div class="products-desc">All available products and their details.</div>
+                </div>
+            </div>
+        </header>
+        <table class="products-list-table">
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Turf Type</th>
+                    <th>Description</th>
+                    <th>Stock</th>
+                    <th>Price</th>
+                    <th>Image</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.product_name }}</td>
+                    <td>{{ product.turf_type }}</td>
+                    <td>{{ product.description }}</td>
+                        <td>
+                            <form method="post" action="{{ url_for('update_stock') }}" style="display:inline;">
+                                <input type="hidden" name="product_name" value="{{ product.product_name }}">
+                                <input type="number" name="stock" value="{{ product.stock }}" min="0" style="width:60px;">
+                                <button type="submit" style="padding:2px 8px; font-size:1em;">Save</button>
+                            </form>
+                        </td>
+                    <td>${{ '%.2f'|format(product.price) }}</td>
+                    <td>
+                        {% if product.image_urls and product.image_urls|length > 0 %}
+                            {% for img_url in product.image_urls %}
+                                <img src="{{ img_url }}" alt="{{ product.product_name }}" style="height:60px; margin:2px;">
+                            {% endfor %}
+                        {% else %}-{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Products Page</title>
+    <title>Products List</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='products.css') }}">
-</head>
-<body>
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
-        <div style="width:100%;text-align:center;margin-bottom:20px;">
-            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
-        </div>
-        <h2 style="color: orange;">Golden Turf</h2>
-        <nav class="navbar">
-            <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
-            <div class="nav-dropdown">
-                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                <div class="dropdown-content">
-                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
-                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
-                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
-                </div>
-            </div>
-            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Payments</a>
-        </nav>
-    </div>
-    <div class="container" style="margin-left: 220px;">
-        <h1>Products</h1>
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <ul class="messages">
-            {% for message in messages %}
-              <li>{{ message }}</li>
-            {% endfor %}
-            </ul>
-          {% endif %}
-        {% endwith %}
-        <form method="post" class="product-form">
-            <label>Product Name (required):</label>
-            <input type="text" name="product_name" required><br>
-            <label>Turf Type:</label>
-            <select name="turf_type" required>
-                {% for t in turf_types %}
-                <option value="{{ t }}">{{ t }}</option>
-                {% endfor %}
-            </select><br>
-            <label>Description (optional):</label>
-            <input type="text" name="description"><br>
-            <label>Stock Amount (optional):</label>
-            <input type="number" name="stock" min="0"><br>
-            <button type="submit">Add Product</button>
-        </form>
-        <h2>Product List</h2>
-        <table class="product-table">
-            <tr>
-                <th>Name</th><th>Type</th><th>Description</th><th>Stock</th>
-            </tr>
-            {% for p in products %}
-            <tr>
-                <td>{{ p.product_name }}</td>
-                <td>{{ p.turf_type }}</td>
-                <td>{{ p.description }}</td>
-                <td>{{ p.stock if p.stock is not none else '' }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</body>
-</html>
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 100%;
+            background-color: #006400;
+            color: black;
+            display: flex;
+            flex-direction: column;
+            padding-top: 20px;
+            box-sizing: border-box;
+        }
+        .sidebar img {
+            width: 100px;
+            margin: 0 auto 20px auto;
+            display: block;
+        }
+        .sidebar h2 {
+            color: orange;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .navbar {
+            display: flex;
+            flex-direction: column;
+            padding-left: 0;
+            margin: 0;
+            list-style: none;
+        }
+        .navbar a {
+            color: black;
+            font-size: 16px;
+            text-decoration: none;
+            display: block;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .navbar a:hover {
+            background-color: #004d00;
+        }
+        .nav-dropdown {
+            position: relative;
+        }
+        .nav-dropdown .dropbtn {
+            color: white;
+            font-size: 16px;
+            text-decoration: none;
+            display: block;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #004d00;
+            min-width: 180px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 0 0 8px 8px;
+        }
+        .dropdown-content a {
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            display: block;
+        }
+        .dropdown-content a:hover {
+            background-color: #003300;
+        }
+        .nav-dropdown:hover .dropdown-content {
+            display: block;
+        }
+        /* Popup image modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+        }
+        .modal-content {
+            margin: 5% auto;
+            display: block;
+            max-width: 600px;
+            width: 90%;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
+        .close {
+            color: #fff;
+            position: absolute;
+            top: 30px;
+            right: 50px;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+        }
+        /* Remove bold from Products tab in sidebar */
+        .sidebar .dropbtn {
+            font-weight: 400 !important;
+        }
+        .product-info {
+            background: #f9f9f9;
+            border: 1.5px solid #222;
+            color: #111;
+            font-size: 1em;
+            margin: 0 10px 18px 10px;
+            padding: 18px;
+            text-align: left;
+        }
+        .products-list-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 30px;
+        }
+        .products-logo {
+            height: 60px;
+            margin-right: 30px;
+        }
+        .products-title {
+            font-size: 2.5em;
+            font-family: Arial, sans-serif;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 0;
+        }
+        .products-desc {
+            font-size: 1em;
+            color: #222;
+            margin-bottom: 10px;
+            margin-left: 10px;
+        }
+        .products-list-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .products-list-table tr {
+            border-bottom: 1px solid #222;
+        }
+        .products-list-table td {
+            font-size: 1.4em;
+            padding: 18px 0;
+            text-align: center;
+            color: #111;
+            font-family: Arial, sans-serif;
+            background: #fff;
+            border: 1.5px solid #222;

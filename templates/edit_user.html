@@ -1,0 +1,174 @@
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+        </div>
+        <h2 style="color: orange;">Golden Turf</h2>
+        <nav class="navbar">
+            <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                <div class="dropdown-content">
+                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                </div>
+            </div>
+            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
+            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+        </nav>
+        <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+            <p style="color: white; margin-bottom: 10px;">Logged in as: {{ session.get('user_name', 'Unknown') }}</p>
+            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+            <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+        </div>
+    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Edit User - Golden Turf</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-container input {
+            flex: 1;
+            padding-right: 40px;
+        }
+        .password-container .toggle-password {
+            position: absolute;
+            right: 10px;
+            cursor: pointer;
+            color: #666;
+            font-size: 16px;
+            z-index: 10;
+        }
+        .password-container .toggle-password:hover {
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #006400;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #004d00;
+        }
+        .error, .success {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+        .success {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Edit User</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('edit_user', user_id=user[0]) }}">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" value="{{ user[1] }}" required />
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="{{ user[2] }}" required />
+
+            <label for="password">Password: <small>(Leave blank to keep current password)</small></label>
+            <div class="password-container">
+                <input type="password" id="password" name="password" />
+                <i class="fa fa-eye toggle-password" id="togglePassword" title="Show/Hide Password"></i>
+            </div>
+
+            <label for="role">Role:</label>
+            {% set only_one_admin = user[3] == 'admin' and session['only_one_admin'] %}
+            <select id="role" name="role" required {% if user[0] == session['user_id'] or only_one_admin %}disabled{% endif %}>
+                <option value="user" {% if user[3] == 'user' %}selected{% endif %}>User</option>
+                <option value="admin" {% if user[3] == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
+            {% if user[0] == session['user_id'] %}
+            <input type="hidden" name="role" value="{{ user[3] }}" />
+            <small>You cannot change your own role.</small>
+            {% elif only_one_admin %}
+            <input type="hidden" name="role" value="admin" />
+            <small>There must always be at least one admin.</small>
+            {% endif %}
+
+            <label for="permissions">Permissions:</label>
+            {% if user[3] == 'user' %}
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                {% set modules = ['dashboard', 'products', 'clients', 'quotes', 'payments', 'calendar'] %}
+                {% set user_permissions = user[4].split(',') if user[4] else [] %}
+                {% for module in modules %}
+                    <label style="margin-bottom: 2px;">
+                        <input type="checkbox" name="permissions" value="{{ module }}" {% if module in user_permissions %}checked{% endif %}>
+                        Allow access to {{ module|capitalize }}
+                    </label>
+                {% endfor %}
+                <span style="font-size: 12px; color: #888;">(Tick to allow access. Unticked = blocked.)</span>
+            </div>
+            {% else %}
+            <div style="color: #888; font-size: 13px; margin-bottom: 10px;">Admin has full access to all modules.</div>
+            {% endif %}
+
+            <button type="submit">Save</button>
+        </form>
+    </div>
+
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const passwordInput = document.querySelector('#password');
+
+        togglePassword.addEventListener('click', function () {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.classList.toggle('fa-eye-slash');
+        });
+    </script>
+</body>
+</html>

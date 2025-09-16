@@ -1,3 +1,11 @@
+    <section class="admin-list" style="margin-bottom: 30px;">
+        <h2>Admin Users</h2>
+        <ul>
+            {% for admin in admins %}
+                <li><strong>{{ admin[0] }}</strong> &lt;{{ admin[1] }}&gt;</li>
+            {% endfor %}
+        </ul>
+    </section>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +15,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 <body>
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100vh; background-color: #006400; color: white; font-family: Arial, sans-serif;">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
             <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
@@ -16,7 +24,7 @@
             <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
             <div class="nav-dropdown">
                 <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                <div class="dropdown-content">
+                <div class="dropdown-content" style="background-color: #006400;">
                     <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
                     <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
                     <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
@@ -26,6 +34,11 @@
             <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
             <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
         </nav>
+            <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+                <p style="color: white; margin-bottom: 10px;">Logged in as: {{ session.get('user_name', 'Unknown') }}</p>
+                <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+                <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+            </div>
     </div>
     <div class="main-content">
         <h1>Golden Turf Dashboard</h1>
@@ -37,7 +50,7 @@
             </div>
             <div class="kpi-tile green">
                 <div class="kpi-label">Yesterday Sales ($)</div>
-                <div class="kpi-value">{{ "{:,.2f}".format(yesterday_sales) }}</div>
+                <div class="kpi-value">{{ yesterday_sales|default(0)|float|round(2) }}</div>
             </div>
             <div class="kpi-tile orange">
                 <div class="kpi-label">Total Services</div>
@@ -45,15 +58,19 @@
             </div>
             <div class="kpi-tile green">
                 <div class="kpi-label">Today Sales ($)</div>
-                <div class="kpi-value">{{ "{:,.2f}".format(today_sales) }}</div>
+                <div class="kpi-value">{{ today_sales|default(0)|float|round(2) }}</div>
             </div>
             <div class="kpi-tile green">
                 <div class="kpi-label">Last 7 Days Sales ($)</div>
-                <div class="kpi-value">{{ "{:,.2f}".format(last_7_days_sales) }}</div>
+                <div class="kpi-value">{{ last_7_days_sales|default(0)|float|round(2) }}</div>
             </div>
             <div class="kpi-tile orange">
-                <div class="kpi-label">Total Sales ($)</div>
-                <div class="kpi-value">{{ "{:,.2f}".format(total_sales) }}</div>
+                <div class="kpi-label">Paid Sales ($)</div>
+                <div class="kpi-value">{{ "{:,.2f}".format(paid_sales|default(0)|float) }}</div>
+            </div>
+            <div class="kpi-tile orange">
+                <div class="kpi-label">Total Sales (All Invoices) ($)</div>
+                <div class="kpi-value">{{ "{:,.2f}".format(total_sales|default(0)|float) }}</div>
             </div>
         </div>
 
@@ -68,8 +85,7 @@
 
         {% if user_role == 'admin' or user_role == 'owner' %}
         <div class="admin-buttons">
-            <button onclick="alert('Add Job clicked')">Add Job</button>
-            <button onclick="alert('Generate Quote clicked')">Generate Quote</button>
+            <button onclick="window.location.href='/quotes';">Generate Quote</button>
             <button onclick="window.location.href='/calendar';">View Calendar</button>
         </div>
         {% endif %}
