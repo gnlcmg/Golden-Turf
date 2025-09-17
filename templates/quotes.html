@@ -123,7 +123,7 @@
     </style>
 </head>
 <body>
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white; padding: 2rem; border-right: 1px solid #e2e8f0;">
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 150px; height: 100%; background-color: #006400; color: white; padding: 2rem; border-right: 1px solid #e2e8f0;">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
             <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
@@ -143,7 +143,41 @@
             <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
         </nav>
     </div>
-    <div class="container" style="margin-left: 220px; background-color: #f0f8f0; padding: 1rem; max-width: 900px;">
+
+    {% if quotes and quotes|length > 0 %}
+    <div class="quotes-list" style="margin-left:160px; max-width:1200px; padding:1rem; overflow-x:auto;">
+        <h2>All Quotes</h2>
+        <table style="width:100%; min-width:800px; border-collapse:collapse; background:#fff;">
+            <thead>
+                <tr style="background:#f0f0f0;">
+                    <th style="padding:8px; border:1px solid #ccc;">Client Name</th>
+                    <th style="padding:8px; border:1px solid #ccc;">Grass Type</th>
+                    <th style="padding:8px; border:1px solid #ccc;">Area (sqm)</th>
+                    <th style="padding:8px; border:1px solid #ccc;">Other Products</th>
+                    <th style="padding:8px; border:1px solid #ccc;">Total Price</th>
+                    <th style="padding:8px; border:1px solid #ccc;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in quotes %}
+                <tr>
+                    <td style="padding:8px; border:1px solid #ccc;">{{ q[1] }}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">{{ q[2] }}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">{{ q[3] }}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">{{ q[4] }}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">${{ '%.2f'|format(q[5]) }}</td>
+                    <td style="padding:8px; border:1px solid #ccc;">
+                        <form method="POST" action="{{ url_for('delete_quote', quote_id=q[0]) }}" onsubmit="return confirm('Are you sure you want to delete this quote?');">
+                            <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    <div class="container" style="margin-left: 160px; background-color: #f0f8f0; padding: 1rem; max-width: 1000px;">
         <header>
             <h1>Quotation Form</h1>
         </header>
@@ -165,18 +199,25 @@
                 <input type="number" id="area_in_sqm" name="area_in_sqm" min="0.01" step="0.01">
 
                 <label for="other_products">Other Products:</label>
+
                 <select id="other_products" name="other_products">
                     <option value="">None</option>
                     <option value="Peg">Peg (Upins/Nails)</option>
                     <option value="Fountain">Fountain</option>
                     <option value="Artificial Hedges">Artificial Hedges</option>
-                    <option value="Black Pebbles">Black Pebbles</option>
-                    <option value="White Pebbles">White Pebbles</option>
+                    <option value="Pebbles">Pebbles (20kg bag)</option>
                     <option value="Bamboo 2m">Bamboo Products (2m)</option>
                     <option value="Bamboo 2.4m">Bamboo Products (2.4m)</option>
                     <option value="Bamboo 1.8m">Bamboo Products (1.8m)</option>
                     <option value="Adhesive Tape">Adhesive Joining Tape</option>
                 </select>
+
+                <div id="pebbles-extra-container" style="display: none;">
+                    <label for="pebbles_custom_type">Pebbles Type (e.g. Black, White, Mixed):</label>
+                    <input type="text" id="pebbles_custom_type" name="pebbles_custom_type" placeholder="Type (e.g. Black, White, Mixed)">
+                    <label for="pebbles_qty">Quantity (bags):</label>
+                    <input type="number" id="pebbles_qty" name="pebbles_qty" min="1" step="1">
+                </div>
 
                 <div id="custom-price-container" style="display: none;">
                     <label for="custom_price">Custom Price for Selected Product:</label>
@@ -191,13 +232,13 @@
                 <button type="submit">Submit</button>
             </form>
 
-            <div class="quote-summary" id="quote-summary" style="display: none;">
+            <div class="quote-summary" id="quote-summary" {% if not summary %}style="display: none;"{% endif %}>
                 <h2>Quote Summary</h2>
-                <p><strong>Client Name:</strong> <span id="summary-client-name"></span></p>
-                <p><strong>Grass Type:</strong> <span id="summary-turf-type"></span></p>
-                <p><strong>Size:</strong> <span id="summary-size"></span> sq meters</p>
-                <p><strong>Other Product:</strong> <span id="summary-other-product">N/A</span></p>
-                <p><strong>Total Price:</strong> $<span id="summary-total-price"></span></p>
+                <p><strong>Client Name:</strong> <span id="summary-client-name">{% if summary %}{{ summary.client_name }}{% endif %}</span></p>
+                <p><strong>Grass Type:</strong> <span id="summary-turf-type">{% if summary %}{{ summary.turf_type }}{% endif %}</span></p>
+                <p><strong>Size:</strong> <span id="summary-size">{% if summary %}{{ summary.area_in_sqm }}{% endif %}</span> sq meters</p>
+                <p><strong>Other Product:</strong> <span id="summary-other-product">{% if summary %}{{ summary.other_products or 'N/A' }}{% endif %}</span></p>
+                <p><strong>Total Price:</strong> $<span id="summary-total-price">{% if summary %}{{ '%.2f'|format(summary.total_price) }}{% endif %}</span></p>
             </div>
             <button onclick="printSummary()">Print Summary</button>
         </div>
@@ -213,18 +254,26 @@
             if (otherProductsSelect.value === 'Fountain') {
                 customPriceContainer.style.display = 'block';
                 otherProductQuantityContainer.style.display = 'none';
+                pebblesExtraContainer.style.display = 'none';
+            } else if (otherProductsSelect.value === 'Pebbles') {
+                customPriceContainer.style.display = 'none';
+                otherProductQuantityContainer.style.display = 'none';
+                pebblesExtraContainer.style.display = 'block';
             } else if (otherProductsSelect.value) {
                 customPriceContainer.style.display = 'none';
                 otherProductQuantityContainer.style.display = 'block';
+                pebblesExtraContainer.style.display = 'none';
             } else {
                 customPriceContainer.style.display = 'none';
                 otherProductQuantityContainer.style.display = 'none';
+                pebblesExtraContainer.style.display = 'none';
             }
         });
 
+        const pebblesExtraContainer = document.getElementById('pebbles-extra-container');
         const form = document.querySelector('form');
         form.addEventListener('submit', (event) => {
-            event.preventDefault();
+            // event.preventDefault();
 
             const clientName = document.getElementById('client_name').value;
             const turfType = document.getElementById('turf_type').value;
@@ -232,6 +281,8 @@
             const otherProduct = otherProductsSelect.value || 'N/A';
             const customPrice = parseFloat(document.getElementById('custom_price').value || 0);
             const otherProductQuantity = parseInt(otherProductQuantityInput.value) || 0;
+            const pebblesCustomType = document.getElementById('pebbles_custom_type').value;
+            const pebblesQty = parseInt(document.getElementById('pebbles_qty').value) || 0;
 
             const pricePerUnit = {
                 'Golden Imperial Lush': 15,
@@ -244,22 +295,30 @@
             const otherProductPrices = {
                 'Peg': 25,
                 'Artificial Hedges': 10,
-                'Black Pebbles': 18,
-                'White Pebbles': 15,
+                'Pebbles': 40,
                 'Bamboo 2m': 40,
                 'Bamboo 2.4m': 38,
                 'Bamboo 1.8m': 38,
                 'Adhesive Tape': 25
             };
 
-            const otherProductPrice = otherProduct === 'Fountain' ? customPrice : (otherProductPrices[otherProduct] || 0) * otherProductQuantity;
+            let otherProductPrice = 0;
+            let otherProductDisplay = otherProduct;
+            if (otherProduct === 'Fountain') {
+                otherProductPrice = customPrice;
+            } else if (otherProduct === 'Pebbles') {
+                otherProductPrice = otherProductPrices['Pebbles'] * pebblesQty;
+                otherProductDisplay = `Pebbles (${pebblesCustomType}): ${pebblesQty}`;
+            } else if (otherProduct) {
+                otherProductPrice = (otherProductPrices[otherProduct] || 0) * otherProductQuantity;
+            }
 
             const totalPrice = (areaInSqm * pricePerUnit) + otherProductPrice;
 
             document.getElementById('summary-client-name').textContent = clientName;
             document.getElementById('summary-turf-type').textContent = turfType;
             document.getElementById('summary-size').textContent = areaInSqm;
-            document.getElementById('summary-other-product').textContent = otherProduct;
+            document.getElementById('summary-other-product').textContent = otherProductDisplay;
             document.getElementById('summary-total-price').textContent = totalPrice.toFixed(2);
 
             document.getElementById('quote-summary').style.display = 'block';

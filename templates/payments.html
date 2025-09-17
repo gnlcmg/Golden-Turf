@@ -7,6 +7,54 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='payments.css') }}" />
     <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
     <style>
+        @media print {
+            body, html {
+                background: white !important;
+                color: black !important;
+            }
+            .sidebar, .tab-container, .filter-buttons, .print-hide, .print-hide *, .main-wrapper > :not(.content-area) {
+                display: none !important;
+            }
+            .main-wrapper {
+                display: flex !important;
+                justify-content: center !important;
+                align-items: flex-start !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100vw !important;
+                min-height: 0 !important;
+            }
+            .content-area {
+                margin: 0 auto !important;
+                padding: 0.25in 0.1in !important;
+                max-width: 650px !important;
+                background: white !important;
+                box-shadow: none !important;
+                width: 100% !important;
+            }
+            h1#dynamic-heading {
+                display: block !important;
+                font-size: 1.5rem !important;
+                margin-top: 0 !important;
+                text-align: center !important;
+            }
+            table, th, td {
+                color: black !important;
+                background: white !important;
+                border: 1px solid #000 !important;
+                font-size: 12px !important;
+                page-break-inside: avoid !important;
+                padding: 2px 4px !important;
+            }
+            table {
+                width: 100% !important;
+                max-width: 650px !important;
+                margin: 0 auto !important;
+            }
+            tr, td, th {
+                page-break-inside: avoid !important;
+            }
+        }
         body { background-color: #f0f8f0; }
         .filters { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
         .filters select { padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; }
@@ -178,6 +226,7 @@
                 <div class="tab-container">
                     <button id="filter-invoices" class="filter-btn active">Invoices</button>
                     <button id="filter-clients" class="filter-btn">Clients</button>
+                    <button id="filter-quotes" class="filter-btn">Quotes</button>
                 </div>
                 <div class="filter-buttons">
                     <select id="sort-invoices">
@@ -212,6 +261,7 @@
                 <h1 id="dynamic-heading">Invoices</h1>
 
             <div id="invoices-section" class="section">
+                <button onclick="printSection('invoices-section')" class="print-hide" style="float:right;margin-bottom:10px;">Print Invoices</button>
                 <table>
                     <tr>
                         <th>Clients</th>
@@ -248,6 +298,40 @@
             </div>
 
             <div id="clients-section" class="section" style="display: none;">
+                <button onclick="printSection('clients-section')" class="print-hide" style="float:right;margin-bottom:10px;">Print Clients</button>
+            <div id="quotes-section" class="section" style="display: none;">
+                <button onclick="printSection('quotes-section')" class="print-hide" style="float:right;margin-bottom:10px;">Print Quotes</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client Name</th>
+                            <th>Turf Type</th>
+                            <th>Area (sqm)</th>
+                            <th>Other Products</th>
+                            <th>Total Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for quote in quotes %}
+                        <tr>
+                            <td>{{ quote.client_name }}</td>
+                            <td>{{ quote.turf_type }}</td>
+                            <td>{{ quote.area_in_sqm }}</td>
+                            <td>{{ quote.other_products }}</td>
+                            <td>${{ '%.2f'|format(quote.total_price) }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('delete_quote', quote_id=quote.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this quote?');">
+                                    <button type="submit" style="background: none; border: none; color: black; cursor: pointer; text-decoration: underline;">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6">No quotes found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
                 <table>
                     <thead>
                         <tr>
@@ -291,20 +375,15 @@
     </div>
 
     <script>
+
         const filterButtons = document.querySelectorAll('.filter-btn');
         const sections = document.querySelectorAll('.section');
         const dynamicHeading = document.getElementById('dynamic-heading');
 
         function switchTab(tabId) {
-            // Remove active class from all buttons
             filterButtons.forEach(btn => btn.classList.remove('active'));
-            // Add active class to the specified button
             document.getElementById(tabId).classList.add('active');
-
-            // Hide all sections
             sections.forEach(section => section.style.display = 'none');
-
-            // Show the corresponding section and update heading
             if (tabId === 'filter-invoices') {
                 document.getElementById('invoices-section').style.display = 'block';
                 document.getElementById('sort-invoices').style.display = 'inline-block';
@@ -319,7 +398,25 @@
                 document.getElementById('sort-clients').style.display = 'inline-block';
                 document.getElementById('filter-account-type').style.display = 'inline-block';
                 dynamicHeading.textContent = 'Clients';
+            } else if (tabId === 'filter-quotes') {
+                document.getElementById('quotes-section').style.display = 'block';
+                document.getElementById('sort-invoices').style.display = 'none';
+                document.getElementById('filter-status').style.display = 'none';
+                document.getElementById('sort-clients').style.display = 'none';
+                document.getElementById('filter-account-type').style.display = 'none';
+                dynamicHeading.textContent = 'Quotes';
             }
+        }
+
+        function printSection(sectionId) {
+            // Show all sections for printing, but only the selected one is visible
+            const allSections = document.querySelectorAll('.section');
+            allSections.forEach(section => section.style.display = 'none');
+            const section = document.getElementById(sectionId);
+            section.style.display = 'block';
+            window.print();
+            // Restore all sections after printing
+            allSections.forEach(section => section.style.display = '');
         }
 
         filterButtons.forEach(button => {

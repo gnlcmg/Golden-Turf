@@ -97,13 +97,20 @@ hos<!DOCTYPE html>
                             <td>{{ user[3] }}</td>
                             <td>
                                 <form action="{{ url_for('toggle_admin', user_id=user[0]) }}" method="post" style="display:inline;">
-                                    <button type="submit" title="Toggle Admin Role">
+                                    {% set is_id1 = user[0] == 1 %}
+                                    {% set only_one_admin = user[3] == 'admin' and session['only_one_admin'] %}
+                                    <button type="submit" title="Toggle Admin Role" {% if is_id1 or only_one_admin %}disabled style="background:#ccc;cursor:not-allowed;"{% endif %}>
                                         {% if user[3] == 'admin' %}
                                             Revoke Admin
                                         {% else %}
                                             Make Admin
                                         {% endif %}
                                     </button>
+                                    {% if is_id1 %}
+                                        <span style="font-size:11px;color:#888;">User ID 1 must always be admin.</span>
+                                    {% elif only_one_admin %}
+                                        <span style="font-size:11px;color:#888;">At least one admin required.</span>
+                                    {% endif %}
                                 </form>
                                 <form action="{{ url_for('delete_user', user_id=user[0]) }}" method="post" style="display:inline;">
                                     <button type="submit">Delete</button>

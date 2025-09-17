@@ -1,15 +1,92 @@
+.calendar-task.task-bg-not-completed {
+  background: #dc3545 !important;
+  color: #fff !important;
+  border: 2px solid #b71c1c !important;
+}
+.calendar-task.task-bg-in-progress {
+  background: #fd7e14 !important;
+  color: #222 !important;
+  border: 2px solid #b85c00 !important;
+}
+.calendar-task.task-bg-completed {
+  background: #28a745 !important;
+  color: #fff !important;
+  border: 2px solid #145c2c !important;
+}
+/* Calendar task background and text color for status */
+.task-bg-not-completed {
+  background: #dc3545 !important;
+}
+.task-bg-in-progress {
+  background: #fd7e14 !important;
+}
+.task-bg-completed {
+  background: #28a745 !important;
+}
+.task-txt-not-completed {
+  color: #fff !important;
+}
+.task-txt-in-progress {
+  color: #222 !important;
+}
+.task-txt-completed {
+  color: #fff !important;
+}
+/* Font color for calendar tasks by status */
+.task-font-not-completed {
+  color: #dc3545 !important;
+}
+.task-font-in-progress {
+  color: #fd7e14 !important;
+}
+.task-font-completed {
+  color: #28a745 !important;
+}
+/* Highlight effect for calendar task when sidebar task is clicked */
+.calendar-task-highlight {
+  outline: 3px solid #222;
+  box-shadow: 0 0 0 4px #ffd700;
+  z-index: 10;
+  transition: outline 0.2s, box-shadow 0.2s;
+}
+/* Text/3-dots color contrast for calendar tasks */
+.task-contrast-not-completed {
+  color: #fff !important;
+}
+.task-contrast-in-progress {
+  color: #222 !important;
+}
+.task-contrast-completed {
+  color: #222 !important;
+}
+.task-box .task-dots {
+  margin-left: 8px;
+  font-size: 18px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+/* Task status background fill for sidebar and calendar */
+.task-status-bg-not-completed {
+  background-color: #dc3545 !important;
+}
+.task-status-bg-in-progress {
+  background-color: #fd7e14 !important;
+}
+.task-status-bg-completed {
+  background-color: #28a745 !important;
+}
 /* Modal overlay */
+/* Modal overlay: full screen, centered */
 .modal {
   display: none;
   position: fixed;
-  z-index: 1050;
+  z-index: 2000;
   left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.5);
-  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.7);
   justify-content: center;
   align-items: center;
 }
@@ -19,9 +96,14 @@
   background-color: #fff;
   padding: 20px;
   border-radius: 8px;
-  width: 300px;
-  position: relative;
+  width: 400px;
+  max-width: 90vw;
+  margin: auto;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
 }
 
 /* Close button */
@@ -42,18 +124,65 @@
 
 /* Task status colors */
 .task-not-completed {
-  background-color: #f87171; /* red */
-  color: white;
+  background-color: #dc3545 !important;
+  color: #fff !important;
+  border: 2px solid #dc3545 !important;
 }
 
 .task-in-progress {
-  background-color: #fbbf24; /* orange */
-  color: white;
+  background-color: #fd7e14 !important;
+  color: #fff !important;
+  border: 2px solid #fd7e14 !important;
 }
 
 .task-completed {
-  background-color: #34d399; /* green */
-  color: white;
+  background-color: #28a745 !important;
+  color: #fff !important;
+  border: 2px solid #28a745 !important;
+}
+
+/* Fallback font color for status if box/outline not possible */
+.task-title-not-completed { color: #dc3545 !important; }
+.task-title-in-progress { color: #fd7e14 !important; }
+.task-title-completed { color: #28a745 !important; }
+
+/* Task box styling with font color instead of background */
+.task-box {
+    border: 1px solid transparent;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.task-box.not-completed {
+    color: #dc3545 !important;
+    border-color: #dc3545;
+}
+
+.task-box.in-progress {
+    color: #fd7e14 !important;
+    border-color: #fd7e14;
+}
+
+.task-box.completed {
+    color: #28a745 !important;
+    border-color: #28a745;
+}
+
+/* Center tasks in calendar date */
+.calendar-day .task-block {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2px 0;
+}
+
+/* Box around task text */
+.calendar-day .task-block .task-box {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.85rem;
 }
 
 /* Task dots (three vertical dots) */
@@ -63,6 +192,7 @@
   margin-left: 8px;
   color: #555;
   user-select: none;
+  position: relative;
 }
 
 /* Status circle for task list */
@@ -84,24 +214,37 @@
   cursor: pointer;
 }
 
-.task-content {
-  flex-grow: 1;
-}
-
-/* Task title */
-.task-title {
+/* Task box: always border and color by status */
+.task-box {
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 4px auto;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  width: 90%;
+  box-sizing: border-box;
+  text-align: center;
   font-weight: 600;
-  font-size: 1rem;
-  color: #333;
 }
-
-/* Task date */
-.task-date {
-  font-size: 0.85rem;
-  color: #666;
+.task-box.task-not-completed {
+  border: 2px solid #dc3545;
+  color: #dc3545;
+  background-color: transparent;
 }
-
-/* Task description */
+.task-box.task-in-progress {
+  border: 2px solid #fd7e14;
+  color: #fd7e14;
+  background-color: transparent;
+}
+.task-box.task-completed {
+  border: 2px solid #28a745;
+  color: #28a745;
+  background-color: transparent;
+}
 .task-description {
   font-size: 0.85rem;
   color: #444;
@@ -122,9 +265,10 @@
 .task-dots {
   font-size: 18px;
   cursor: pointer;
-  float: right;
-  color: #666;
+  margin-left: 8px;
+  color: #555;
   user-select: none;
+  position: relative;
 }
 
 /* Task content wrapper */

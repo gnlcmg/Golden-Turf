@@ -118,11 +118,8 @@
                     <div>
                         <label><input type="checkbox" id="pebbles_check"> Pebbles (20kg bag)</label>
                         <div id="pebbles_div" style="display:none;">
-                            <label for="pebbles_type">Type:</label>
-                            <select id="pebbles_type" name="pebbles_type">
-                                <option value="black" {% if pebbles_type == 'black' %}selected{% endif %}>Black</option>
-                                <option value="white" {% if pebbles_type == 'white' %}selected{% endif %}>White</option>
-                            </select>
+                            <label for="pebbles_custom_type">Type (e.g. Black, White, Mixed):</label>
+                            <input type="text" id="pebbles_custom_type" name="pebbles_custom_type" placeholder="Type (e.g. Black, White, Mixed)" value="{{ pebbles_custom_type or '' }}" />
                             <label for="pebbles_qty">Quantity:</label>
                             <input type="number" id="pebbles_qty" name="pebbles_qty" min="0" step="1" value="{{ pebbles_qty or 0 }}" />
                         </div>

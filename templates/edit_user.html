@@ -1,4 +1,4 @@
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+     <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
             <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
@@ -126,14 +126,18 @@
             </div>
 
             <label for="role">Role:</label>
+            {% set is_id1 = user[0] == 1 %}
             {% set only_one_admin = user[3] == 'admin' and session['only_one_admin'] %}
-            <select id="role" name="role" required {% if user[0] == session['user_id'] or only_one_admin %}disabled{% endif %}>
+            <select id="role" name="role" required {% if user[0] == session['user_id'] or only_one_admin or is_id1 %}disabled{% endif %}>
                 <option value="user" {% if user[3] == 'user' %}selected{% endif %}>User</option>
                 <option value="admin" {% if user[3] == 'admin' %}selected{% endif %}>Admin</option>
             </select>
             {% if user[0] == session['user_id'] %}
             <input type="hidden" name="role" value="{{ user[3] }}" />
             <small>You cannot change your own role.</small>
+            {% elif is_id1 %}
+            <input type="hidden" name="role" value="admin" />
+            <small>User ID 1 must always be admin.</small>
             {% elif only_one_admin %}
             <input type="hidden" name="role" value="admin" />
             <small>There must always be at least one admin.</small>

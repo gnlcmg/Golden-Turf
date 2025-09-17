@@ -1,11 +1,4 @@
-    <section class="admin-list" style="margin-bottom: 30px;">
-        <h2>Admin Users</h2>
-        <ul>
-            {% for admin in admins %}
-                <li><strong>{{ admin[0] }}</strong> &lt;{{ admin[1] }}&gt;</li>
-            {% endfor %}
-        </ul>
-    </section>
+    <!-- Admin details moved below buttons -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -83,11 +76,20 @@
         </div>
         {% endif %}
 
+
         {% if user_role == 'admin' or user_role == 'owner' %}
-        <div class="admin-buttons">
+        <div class="admin-buttons" style="margin-bottom: 20px;">
             <button onclick="window.location.href='/quotes';">Generate Quote</button>
             <button onclick="window.location.href='/calendar';">View Calendar</button>
         </div>
+        <section class="admin-list" style="margin-bottom: 30px;">
+            <h2>Admin Users</h2>
+            <ul>
+                {% for admin in admins %}
+                    <li><strong>{{ admin[0] }}</strong> &lt;{{ admin[1] }}&gt;</li>
+                {% endfor %}
+            </ul>
+        </section>
         {% endif %}
 
         <footer>
