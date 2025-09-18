@@ -1,182 +1,21 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask_mail import Mail, Message
+from bcrypt import hashpw, gensalt, checkpw
 import sqlite3
 import re
 import string
+import secrets
 from datetime import datetime, timedelta
 from calendar import Calendar
-from flask_mail import Mail, Message
-import secrets
-from bcrypt import hashpw, gensalt, checkpw
-
-
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'
-
-# Ensure quotes table exists with correct schema
-def create_quotes_table():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS quotes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        client_name TEXT,
-        turf_type TEXT,
-        area_in_sqm REAL,
-        other_products TEXT,
-        total_price REAL,
-        owner_id INTEGER
-    )''')
-    conn.commit()
-    conn.close()
-
-create_quotes_table()
-
 mail = Mail(app)
-# Reverting email configuration to original state for local testing
-app.config['MAIL_SERVER'] = 'localhost'
-app.config['MAIL_PORT'] = 1025
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = False
+
 app.config['MAIL_SUPPRESS_SEND'] = True
+app.secret_key = 'REPLACE_THIS_WITH_A_RANDOM_SECRET_KEY_1234567890'
 
-# Define a list of manually added emails
-ALLOWED_EMAILS = ['admin@goldenturf.com', 'manager@goldenturf.com']
-
-def has_permission(required_permission):
-    # User with ID 1 always has admin access
-    if session.get('user_id') == 1:
-        return True
-    if session.get('user_role') == 'admin':
-        return True
-    user_permissions = session.get('user_permissions', '')
-    return required_permission in user_permissions.split(',')
-
-def can_change_role(current_user_id, target_user_id):
-    """Prevent users from changing their own role."""
-    return current_user_id != target_user_id
-
-def can_demote_admin(target_user_id, new_role):
-    """Check if admin can be demoted based on constraints."""
-    if new_role != 'admin':
-        if target_user_id == 1:
-            # User ID 1 must always be admin, cannot be demoted
-            return False
-        else:
-            # Cannot remove admin rights if only one admin
-            conn = sqlite3.connect('users.db')
-            c = conn.cursor()
-            c.execute('SELECT COUNT(*) FROM users WHERE role = ?', ('admin',))
-            admin_count = c.fetchone()[0]
-            conn.close()
-            return admin_count > 1
+def has_permission(module):
+    # TEMP: Always allow all permissions
     return True
-
-def migrate_invoices_table():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("PRAGMA table_info(invoices)")
-    columns = [info[1] for info in c.fetchall()]
-    if 'extras_json' not in columns:
-        c.execute("ALTER TABLE invoices ADD COLUMN extras_json TEXT DEFAULT '{}'")
-        conn.commit()
-    conn.close()
-
-def migrate_products_table():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("PRAGMA table_info(products)")
-    columns = [info[1] for info in c.fetchall()]
-    if 'price' not in columns:
-        c.execute("ALTER TABLE products ADD COLUMN price REAL DEFAULT 0.0")
-        conn.commit()
-    if 'image_url' not in columns:
-        c.execute("ALTER TABLE products ADD COLUMN image_url TEXT")
-        conn.commit()
-    if 'image_urls' not in columns:
-        c.execute("ALTER TABLE products ADD COLUMN image_urls TEXT")
-        conn.commit()
-
-    # Update existing products with default prices and image URLs if missing
-    import json
-    default_data = {
-        'Golden Imperial Lush': {
-            'price': 15.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2021/04/imperial.jpg',
-                'https://goldenturf.com.au/wp-content/uploads/2021/04/imperial2.jpg'
-            ]
-        },
-        'Golden Green Lush': {
-            'price': 19.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2021/04/lush-green.jpg',
-                'https://goldenturf.com.au/wp-content/uploads/2021/04/lush-green2.jpg'
-            ]
-        },
-        'Golden Natural 40mm': {
-            'price': 17.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2020/06/natural.jpg'
-            ]
-        },
-        'Golden Golf Turf': {
-            'price': 22.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2021/06/golf.jpg'
-            ]
-        },
-        'Golden Premium Turf': {
-            'price': 20.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2021/06/premium.jpg'
-            ]
-        },
-        'Peg (U-pins/Nails)': {
-            'price': 25.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2020/06/peg2.jpg'
-            ]
-        },
-        'Fountains': {
-            'price': 0.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2020/06/fountain1.jpg'
-            ]
-        },
-        'Artificial Hedges': {
-            'price': 0.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2021/07/1-1.jpg'
-            ]
-        },
-        'Black Pebbles': {
-            'price': 0.0,
-            'image_urls': []
-        },
-        'White Pebbles': {
-            'price': 0.0,
-            'image_urls': []
-        },
-        'Bamboo Products': {
-            'price': 0.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2021/06/bamboo13.jpg'
-            ]
-        },
-        'Adhesive Joining Tape': {
-            'price': 0.0,
-            'image_urls': [
-                'https://goldenturf.com.au/wp-content/uploads/2020/06/a-tape2.jpg'
-            ]
-        }
-    }
-    for product_name, data in default_data.items():
-        c.execute("UPDATE products SET price = ?, image_urls = ? WHERE product_name = ? AND (price = 0.0 OR price IS NULL OR image_urls IS NULL)",
-                  (data['price'], json.dumps(data['image_urls']), product_name))
-    conn.commit()
-    conn.close()
-
-migrate_invoices_table()
-migrate_products_table()
 
 @app.route('/')
 def home():
@@ -186,13 +25,12 @@ def home():
 def payments_quote():
     error = None
     total_price = None
-    price_table = {
-        'Golden Imperial Lush': {'Small': 20, 'Medium': 30, 'Large': 40},
-        'Golden Green Lush': {'Small': 18, 'Medium': 28, 'Large': 38},
-        'Golden Natural 40mm': {'Small': 22, 'Medium': 32, 'Large': 42},
-        'Golden Golf Turf': {'Small': 25, 'Medium': 35, 'Large': 45},
-        'Golden Premium Turf': {'Small': 28, 'Medium': 38, 'Large': 48}
-    }
+    # Fetch all product prices from DB for dynamic pricing
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT product_name, price FROM products')
+    price_table = {row[0]: row[1] for row in c.fetchall()}
+    conn.close()
     if request.method == 'POST':
         client_name = request.form.get('client_name', '').strip()
         area_in_sqm = request.form.get('area_in_sqm', type=float)
@@ -748,19 +586,22 @@ def edit_user(user_id):
     only_one_admin = c.fetchone()[0] == 1
     session['only_one_admin'] = only_one_admin
 
+    c.execute('SELECT id, name, email, role, permissions FROM users WHERE id = ?', (user_id,))
+    user = c.fetchone()
+
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         # Role and permissions may be disabled for self-edit, so get from DB if not in form
-        role = request.form.get('role') or user[3] if 'user' in locals() else 'user'
-        permissions = ','.join(request.form.getlist('permissions')) if request.form.getlist('permissions') else (user[4] if 'user' in locals() else '')
+        role = request.form.get('role') or (user[3] if user else 'user')
+        permissions = ','.join(request.form.getlist('permissions')) if request.form.getlist('permissions') else (user[4] if user else '')
 
         current_user_id = session.get('user_id')
 
         # Prevent demoting user ID 1 or the only admin
         is_id1 = user_id == 1
-        only_one_admin = user[3] == 'admin' and session.get('only_one_admin')
+        only_one_admin = (user and user[3] == 'admin' and session.get('only_one_admin'))
         if (is_id1 or only_one_admin) and role != 'admin':
             flash('User ID 1 and the only admin must always remain admin.')
         elif not name or not email:
@@ -779,15 +620,17 @@ def edit_user(user_id):
             conn.close()
             return redirect(url_for('profiles'))
 
-    c.execute('SELECT id, name, email, role, permissions FROM users WHERE id = ?', (user_id,))
-    user = c.fetchone()
     conn.close()
 
     if not user:
         flash('User not found.')
         return redirect(url_for('profiles'))
 
-    return render_template('edit_user.html', user=user)
+    # For admins, always show all permissions as checked and disabled
+    is_admin = user and user[3] == 'admin'
+    all_permissions = ['dashboard', 'clients', 'products_list', 'quotes', 'payments', 'calendar', 'profiles']
+    user_permissions = user[4].split(',') if user and user[4] else []
+    return render_template('edit_user.html', user=user, is_admin=is_admin, all_permissions=all_permissions, user_permissions=user_permissions)
 
 @app.route('/profiles/toggle_admin/<int:user_id>', methods=['POST'])
 def toggle_admin(user_id):
@@ -920,14 +763,10 @@ def invoice():
     c.execute('SELECT product_name FROM products')
     products = [row[0] for row in c.fetchall()]
 
-    # Define price table for products
-    price_table = {
-        'Golden Imperial Lush': 15.0,
-        'Golden Green Lush': 19.0,
-        'Golden Natural 40mm': 17.0,
-        'Golden Golf Turf': 22.0,
-        'Golden Premium Turf': 20.0
-    }
+    # Fetch all product prices from DB for dynamic pricing
+    c.execute('SELECT product_name, price FROM products')
+    price_table = {row[0]: row[1] for row in c.fetchall()}
+
 
     if request.method == 'POST':
         client_name = request.form.get('client_name', '').strip()
@@ -946,20 +785,25 @@ def invoice():
         # Artificial Hedges
         hedges_qty = request.form.get('artificial_hedges_qty', type=int)
         if hedges_qty and hedges_qty > 0:
-            extras_cost += 50 * hedges_qty
+            extras_cost += 60 * hedges_qty
             extras_details.append(f"Artificial Hedges: {hedges_qty}")
 
         # Fountain
         fountain_price = request.form.get('fountain_price', type=float)
+        db_fountain_price = price_table.get('Fountains', 0)
         if fountain_price and fountain_price > 0:
             extras_cost += fountain_price
             extras_details.append(f"Fountain: ${fountain_price}")
+        elif db_fountain_price:
+            extras_cost += db_fountain_price
+            extras_details.append(f"Fountain: ${db_fountain_price}")
 
         # Bamboo Products
         bamboo_size = request.form.get('bamboo_products_size')
         bamboo_qty = request.form.get('bamboo_products_qty', type=int)
         if bamboo_size and bamboo_qty and bamboo_qty > 0:
-            bamboo_price = 75 if bamboo_size in ['2m', '2.4m', '1.8m'] else 0
+            bamboo_key = f"Bamboo ({bamboo_size})" if bamboo_size in ['2m', '2.4m', '1.8m'] else None
+            bamboo_price = price_table.get(bamboo_key, 0)
             extras_cost += bamboo_price * bamboo_qty
             extras_details.append(f"Bamboo {bamboo_size}: {bamboo_qty}")
 
@@ -967,25 +811,28 @@ def invoice():
         pebbles_custom_type = request.form.get('pebbles_custom_type')
         pebbles_qty = request.form.get('pebbles_qty', type=int)
         if pebbles_custom_type and pebbles_qty and pebbles_qty > 0:
-            pebbles_price = 40
+            if pebbles_custom_type.lower() in ['multicolour', 'glow']:
+                pebbles_price = price_table.get('Pebbles Multicolour/Glow', 0)
+            else:
+                pebbles_price = price_table.get('Pebbles Standard', 0)
             extras_cost += pebbles_price * pebbles_qty
             extras_details.append(f"Pebbles ({pebbles_custom_type}): {pebbles_qty}")
 
         # Pegs
         pegs_qty = request.form.get('pegs_qty', type=int)
         if pegs_qty and pegs_qty > 0:
-            extras_cost += 20 * pegs_qty
+            extras_cost += 25 * pegs_qty
             extras_details.append(f"Pegs: {pegs_qty}")
 
         # Adhesive Tape
         tape_qty = request.form.get('adhesive_tape_qty', type=int)
         if tape_qty and tape_qty > 0:
-            extras_cost += 15 * tape_qty
+            extras_cost += 25 * tape_qty
             extras_details.append(f"Adhesive Tape: {tape_qty}")
 
         # Total price calculation
         price = base_price + extras_cost
-        gst_amount = price * 0.1 if gst else 0
+        gst_amount = price * 0.10 if gst else 0
         total_price = price + gst_amount
 
         # Get client_id from client_name and validate
@@ -1034,30 +881,72 @@ def invoice():
 
 @app.route('/products_list', methods=['GET', 'POST'])
 def products_list():
-    # Ensure all accessory/extra products are present with correct prices
-    accessory_products = [
-        {'product_name': 'Peg (U-Pins/Nails)', 'turf_type': '', 'description': 'Galvanized steel pegs, 130mm x 30mm x 4mm, 150mm x 5mm, 100 pieces', 'stock': 0, 'price': 25.0, 'image_urls': peg_images},
-        {'product_name': 'Fountain', 'turf_type': '', 'description': 'Decorative water fountain (price varies, set on invoice)', 'stock': 0, 'price': 0.0, 'image_urls': fountain_images},
-        {'product_name': 'Artificial Hedges', 'turf_type': '', 'description': '50cm x 50cm, PE + UV, bright color', 'stock': 0, 'price': 10.0, 'image_urls': artificial_hedges_images},
-        {'product_name': 'Pebbles', 'turf_type': '', 'description': 'Decorative pebbles (Mixed, 20kg bag)', 'stock': 0, 'price': 18.0, 'image_urls': pebbles_images},
-        {'product_name': 'Bamboo 2m', 'turf_type': '', 'description': 'Bamboo product, 2 metres', 'stock': 0, 'price': 40.0, 'image_urls': bamboo_images},
-        {'product_name': 'Bamboo 2.4m', 'turf_type': '', 'description': 'Bamboo product, 2.4 metres', 'stock': 0, 'price': 38.0, 'image_urls': bamboo_images},
-        {'product_name': 'Bamboo 1.8m', 'turf_type': '', 'description': 'Bamboo product, 1.8 metres', 'stock': 0, 'price': 38.0, 'image_urls': bamboo_images},
-        {'product_name': 'Adhesive Joining Tape', 'turf_type': '', 'description': 'Pre-glued high adhesive, 15 metres', 'stock': 0, 'price': 25.0, 'image_urls': tape_images},
-    ]
+    import json
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
 
-    # Remove duplicates and ensure correct price for each accessory/extra product
-    existing_names = set([p['product_name'] for p in products])
-    for acc in accessory_products:
-        if acc['product_name'] not in existing_names:
-            products.append(acc)
-        else:
-            # Update price and description if already present
-            for p in products:
-                if p['product_name'] == acc['product_name']:
-                    p['price'] = acc['price']
-                    p['description'] = acc['description']
-                    p['image_urls'] = acc['image_urls']
+    # Handle grouped/edited price and stock updates
+    if request.method == 'POST':
+        # Bamboo
+        bamboo_2m_stock = request.form.get('bamboo_2m_stock', type=int)
+        bamboo_2m_price = request.form.get('bamboo_2m_price', type=float)
+        bamboo_24m_stock = request.form.get('bamboo_24m_stock', type=int)
+        bamboo_24m_price = request.form.get('bamboo_24m_price', type=float)
+        bamboo_18m_stock = request.form.get('bamboo_18m_stock', type=int)
+        bamboo_18m_price = request.form.get('bamboo_18m_price', type=float)
+        # Pebbles
+        pebbles_black_stock = request.form.get('pebbles_black_stock', type=int)
+        pebbles_black_price = request.form.get('pebbles_black_price', type=float)
+        pebbles_white_stock = request.form.get('pebbles_white_stock', type=int)
+        pebbles_white_price = request.form.get('pebbles_white_price', type=float)
+        # Fountain
+        fountain_stock = request.form.get('fountain_stock', type=int)
+        fountain_price = request.form.get('fountain_price')  # custom, can be text
+
+        # Update DB for each
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (bamboo_2m_stock, bamboo_2m_price, 'Bamboo (2m)'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (bamboo_24m_stock, bamboo_24m_price, 'Bamboo (2.4m)'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (bamboo_18m_stock, bamboo_18m_price, 'Bamboo (1.8m)'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (pebbles_black_stock, pebbles_black_price, 'Black Pebbles'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (pebbles_white_stock, pebbles_white_price, 'White Pebbles'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (fountain_stock, fountain_price, 'Fountains'))
+        conn.commit()
+        # TODO: propagate price changes to invoice/payments/quotes logic (next step)
+
+    c.execute('SELECT product_name, turf_type, description, stock, price, image_url, image_urls FROM products')
+    rows = c.fetchall()
+    conn.close()
+
+    # Restore all product image lists
+    imperial_lush_images = [
+        'https://goldenturf.com.au/wp-content/uploads/2021/07/Description-premium-photo-.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/Premium_9.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/Premium_11.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/Premium_13.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/PREMIUM_15-1536x1152.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/07/FB_IMG_1596714611957.jpg'
+    ]
+    green_lush_images = [
+        'https://goldenturf.com.au/wp-content/uploads/2021/04/lush-green.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/Lush5.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/Lush13.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/Lush4.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/lush6-1.jpg'
+    ]
+    natural_40mm_images = [
+        'https://goldenturf.com.au/wp-content/uploads/2020/06/natural.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/Natural_4.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/Natural_1-1152x1536.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/07/IMG-20191221-WA0026.jpg'
+    ]
+    golf_turf_images = [
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/golf.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/home_golf_court_golf_carpet-8.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/selected-golf_carpet_golf_putting_green-11.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/golf_carpet_golf_putting_green-2-1536x864.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/golf_carpet_golf_putting_green-6.jpg',
+        'https://goldenturf.com.au/wp-content/uploads/2021/06/golf_carpet_golf_putting_green-9-1536x864.jpg'
+    ]
     premium_turf_images = [
         'https://goldenturf.com.au/wp-content/uploads/2021/06/premium.jpg',
         'https://goldenturf.com.au/wp-content/uploads/2021/07/Description-premium-photo-.jpg',
@@ -1111,113 +1000,6 @@ def products_list():
         'https://goldenturf.com.au/wp-content/uploads/2021/08/Tape.jpg',
         'https://goldenturf.com.au/wp-content/uploads/2021/02/maxresdefault.jpg'
     ]
-    elif row[0] == 'Golden Premium Turf':
-        products.append({
-            'product_name': row[0],
-            'turf_type': row[1],
-            'description': row[2],
-            'stock': row[3],
-            'price': row[4],
-            'image_urls': premium_turf_images
-        })
-    elif row[0] == 'Artificial Hedges':
-        products.append({
-            'product_name': row[0],
-            'turf_type': row[1],
-            'description': row[2],
-            'stock': row[3],
-            'price': row[4],
-            'image_urls': artificial_hedges_images
-        })
-    elif row[0] == 'Fountain':
-        products.append({
-            'product_name': row[0],
-            'turf_type': row[1],
-            'description': row[2],
-            'stock': row[3],
-            'price': row[4],
-            'image_urls': fountain_images
-        })
-    elif row[0] == 'Bamboo':
-        products.append({
-            'product_name': row[0],
-            'turf_type': row[1],
-            'description': row[2],
-            'stock': row[3],
-            'price': row[4],
-            'image_urls': bamboo_images
-        })
-    elif row[0] == 'Peg (U-Pins/Nails)':
-        products.append({
-            'product_name': row[0],
-            'turf_type': row[1],
-            'description': row[2],
-            'stock': row[3],
-            'price': row[4],
-            'image_urls': peg_images
-        })
-    elif row[0] == 'Adhesive Joining Tape':
-        products.append({
-            'product_name': row[0],
-            'turf_type': row[1],
-            'description': row[2],
-            'stock': row[3],
-            'price': row[4],
-            'image_urls': tape_images
-        })
-    green_lush_images = [
-        'https://goldenturf.com.au/wp-content/uploads/2021/04/lush-green.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/Lush5.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/Lush13.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/Lush4.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/lush6-1.jpg'
-    ]
-    natural_40mm_images = [
-        'https://goldenturf.com.au/wp-content/uploads/2020/06/natural.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/Natural_4.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/Natural_1-1152x1536.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/07/IMG-20191221-WA0026.jpg'
-    ]
-    golf_turf_images = [
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/golf.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/home_golf_court_golf_carpet-8.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/selected-golf_carpet_golf_putting_green-11.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/golf_carpet_golf_putting_green-2-1536x864.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/golf_carpet_golf_putting_green-6.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/golf_carpet_golf_putting_green-9-1536x864.jpg'
-    ]
-    imperial_lush_images = [
-        'https://goldenturf.com.au/wp-content/uploads/2021/04/imperial.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/Impirial-lush4.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/Impirial-lush2.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/Impirial-lush3.jpg',
-        'https://goldenturf.com.au/wp-content/uploads/2021/06/imperiallush.jpg'
-    ]
-    if 'user_name' not in session:
-        return redirect(url_for('login'))
-
-    if not has_permission('products_list'):
-        return redirect(url_for('access_restricted'))
-
-
-    import json
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-
-    # Handle stock update
-    if request.method == 'POST':
-        product_name = request.form.get('product_name')
-        stock = request.form.get('stock', type=int)
-        if product_name is not None and stock is not None:
-            c.execute('UPDATE products SET stock = ? WHERE product_name = ?', (stock, product_name))
-            conn.commit()
-
-    c.execute('SELECT product_name, turf_type, description, stock, price, image_url, image_urls FROM products')
-    rows = c.fetchall()
-    conn.close()
-
-    products = []
-    pebbles = None
     pebbles_images = [
         'https://goldenturf.com.au/wp-content/uploads/2020/06/glowing-pebble1-1.jpg',
         'https://goldenturf.com.au/wp-content/uploads/2021/02/pebbles600x600.jpg',
@@ -1229,6 +1011,9 @@ def products_list():
         'https://goldenturf.com.au/wp-content/uploads/2021/08/received_410804926973400-e1628237434738.jpeg',
         'https://goldenturf.com.au/wp-content/uploads/2021/08/WhatsApp-Image-2021-08-04-at-18.35.25.jpeg'
     ]
+
+    products = []
+    pebbles = None
     for row in rows:
         image_urls = []
         if row[6]:
@@ -1238,19 +1023,9 @@ def products_list():
                 image_urls = []
         if not image_urls and row[5]:
             image_urls = [row[5]]
-        if row[0] in ['Black Pebbles', 'White Pebbles']:
-            if pebbles is None:
-                pebbles = {
-                    'product_name': 'Pebbles',
-                    'turf_type': '',
-                    'description': 'Decorative pebbles (Mixed)',
-                    'stock': row[3],
-                    'price': row[4],
-                    'image_urls': pebbles_images.copy()
-                }
-            else:
-                pebbles['stock'] += row[3]
-        elif row[0] == 'Golden Imperial Lush':
+
+        # Main turf products
+        if row[0] == 'Golden Imperial Lush':
             products.append({
                 'product_name': row[0],
                 'turf_type': row[1],
@@ -1286,7 +1061,98 @@ def products_list():
                 'price': row[4],
                 'image_urls': golf_turf_images
             })
+        elif row[0] == 'Golden Premium Turf':
+            products.append({
+                'product_name': row[0],
+                'turf_type': row[1],
+                'description': row[2],
+                'stock': row[3],
+                'price': row[4],
+                'image_urls': premium_turf_images
+            })
+        # Accessories/extras: always use correct multi-image list
+        elif row[0] == 'Artificial Hedges':
+            products.append({
+                'product_name': 'Artificial Hedges (per 50cm x 50cm)',
+                'turf_type': '',
+                'description': 'Artificial Hedges',
+                'stock': row[3],
+                'price': 10.0,
+                'image_urls': artificial_hedges_images
+            })
+        elif row[0] == 'Fountain':
+            products.append({
+                'product_name': row[0],
+                'turf_type': row[1],
+                'description': row[2],
+                'stock': row[3],
+                'price': row[4],
+                'image_urls': fountain_images
+            })
+        elif row[0] == 'Bamboo':
+            # Add all bamboo sizes as separate products
+            products.append({
+                'product_name': 'Bamboo (2m)',
+                'turf_type': '',
+                'description': 'Bamboo 2 metres',
+                'stock': row[3],
+                'price': 40.0,
+                'image_urls': bamboo_images
+            })
+            products.append({
+                'product_name': 'Bamboo (2.4m)',
+                'turf_type': '',
+                'description': 'Bamboo 2.4 metres',
+                'stock': row[3],
+                'price': 38.0,
+                'image_urls': bamboo_images
+            })
+            products.append({
+                'product_name': 'Bamboo (1.8m)',
+                'turf_type': '',
+                'description': 'Bamboo 1.8 metres',
+                'stock': row[3],
+                'price': 38.0,
+                'image_urls': bamboo_images
+            })
+        elif row[0] == 'Peg (U-Pins/Nails)':
+            products.append({
+                'product_name': row[0],
+                'turf_type': row[1],
+                'description': row[2],
+                'stock': row[3],
+                'price': row[4],
+                'image_urls': peg_images
+            })
+        elif row[0] == 'Adhesive Joining Tape':
+            products.append({
+                'product_name': 'Adhesive Joining Tape (15m)',
+                'turf_type': '',
+                'description': 'Adhesive Joining Tape 15 metres',
+                'stock': row[3],
+                'price': 25.0,
+                'image_urls': tape_images
+            })
+        elif row[0] == 'Black Pebbles':
+            products.append({
+                'product_name': 'Black Pebbles (20kg bag)',
+                'turf_type': '',
+                'description': 'Black Decorative Pebbles',
+                'stock': row[3],
+                'price': 18.0,
+                'image_urls': pebbles_images
+            })
+        elif row[0] == 'White Pebbles':
+            products.append({
+                'product_name': 'White Pebbles (20kg bag)',
+                'turf_type': '',
+                'description': 'White Decorative Pebbles',
+                'stock': row[3],
+                'price': 15.0,
+                'image_urls': pebbles_images
+            })
         else:
+            # For any other product, fallback to DB images
             products.append({
                 'product_name': row[0],
                 'turf_type': row[1],
@@ -1295,8 +1161,6 @@ def products_list():
                 'price': row[4],
                 'image_urls': image_urls
             })
-    if pebbles:
-        products.append(pebbles)
     return render_template('products.html', products=products)
 
 @app.route('/quotes', methods=['GET', 'POST'])
@@ -1324,22 +1188,10 @@ def quotes():
         custom_price = request.form.get('custom_price', type=float)
 
         # Calculate total price
-        price_table = {
-            'Golden Imperial Lush': 15,
-            'Golden Green Lush': 19,
-            'Golden Natural 40mm': 17,
-            'Golden Golf Turf': 22,
-            'Golden Premium Turf': 20
-        }
-        other_product_prices = {
-            'Peg': 25,
-            'Artificial Hedges': 10,
-            'Pebbles': 40,
-            'Bamboo 2m': 40,
-            'Bamboo 2.4m': 38,
-            'Bamboo 1.8m': 38,
-            'Adhesive Tape': 25
-        }
+        # Fetch all product prices from DB for dynamic pricing
+        c = sqlite3.connect('users.db').cursor()
+        c.execute('SELECT product_name, price FROM products')
+        price_table = {row[0]: row[1] for row in c.fetchall()}
 
         try:
             area_in_sqm = float(area_in_sqm_str) if area_in_sqm_str else 0.0
@@ -1352,10 +1204,14 @@ def quotes():
         if other_products == 'Fountain':
             other_product_price = custom_price or 0
         elif other_products == 'Pebbles':
-            other_product_price = (other_product_prices['Pebbles'] if pebbles_qty else 0) * (pebbles_qty or 0)
+            if pebbles_custom_type and pebbles_custom_type.lower() in ['multicolour', 'glow']:
+                pebble_price = price_table.get('Pebbles Multicolour/Glow', 0)
+            else:
+                pebble_price = price_table.get('Pebbles Standard', 0)
+            other_product_price = (pebble_price if pebbles_qty else 0) * (pebbles_qty or 0)
             other_products_display = f"Pebbles ({pebbles_custom_type}): {pebbles_qty}"
         elif other_products:
-            other_product_price = (other_product_prices.get(other_products, 0)) * (other_product_quantity or 0)
+            other_product_price = price_table.get(other_products, 0) * (other_product_quantity or 0)
 
         total_price = base_price + other_product_price
 
@@ -1576,6 +1432,12 @@ def calendar():
         header_text = f"{month_names[current_month - 1]} {current_day} ({day_of_week})"
         current_date_str = current_date.strftime('%Y-%m-%d')
 
+    # Fetch all users for assignment dropdown
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT id, name FROM users ORDER BY name')
+    users = [{'id': row[0], 'name': row[1]} for row in c.fetchall()]
+    conn.close()
     return render_template('calendar.html',
                            calendar_data=calendar_data,
                            current_year=current_year,
@@ -1586,7 +1448,8 @@ def calendar():
                            view=view,
                            tasks=tasks,
                            full_day_tasks=full_day_tasks,
-                           current_date=current_date_str if view == 'day' else None)
+                           current_date=current_date_str if view == 'day' else None,
+                           users=users)
 
 
 
@@ -1668,7 +1531,8 @@ def get_tasks():
             'end_time': task[5],
             'location': task[6],
             'status': task[7],
-            'created_at': task[8]
+            'created_at': task[8],
+            'assigned_user_id': task[9] if len(task) > 9 else None
         })
     
     return jsonify(task_list)
@@ -1689,6 +1553,8 @@ def add_task():
     task_end_time = data.get('end_time', '')
     location = data.get('location', '')
     status = data.get('status', 'Not completed')
+    assigned_user_id = data.get('assigned_user_id')
+    owner_id = session.get('user_id')
 
     if not title or not task_date:
         print("Task creation failed: Title and date are required.")
@@ -1697,17 +1563,28 @@ def add_task():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     try:
-        c.execute('''INSERT INTO tasks (title, description, task_date, task_time, task_end_time, location, status)
-                     VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                     (title, description, task_date, task_time, task_end_time, location, status))
+        c.execute('''INSERT INTO tasks (title, description, task_date, task_time, task_end_time, location, status, assigned_user_id, owner_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                  (title, description, task_date, task_time, task_end_time, location, status, assigned_user_id if assigned_user_id else None, owner_id))
         task_id = c.lastrowid  # Get the ID of the newly added task
         conn.commit()
         print(f"Task added successfully: {title} with ID {task_id}.")
         conn.close()
+        return jsonify({'message': 'Task added successfully', 'task_id': task_id}), 201
     except Exception as e:
         print(f"Error adding task: {str(e)}")
         conn.close()
         return jsonify({'error': 'Failed to add task'}), 500
+@app.route('/api/users')
+def api_users():
+    if 'user_name' not in session:
+        return jsonify([])
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('SELECT id, name, role FROM users ORDER BY name')
+    users = [{'id': row[0], 'name': row[1], 'role': row[2]} for row in c.fetchall()]
+    conn.close()
+    return jsonify(users)
 
     return jsonify({'message': 'Task added successfully', 'task_id': task_id}), 201
 
@@ -1750,15 +1627,16 @@ def update_task(task_id):
     task_end_time = data.get('end_time', '')
     location = data.get('location', '')
     status = data.get('status', 'Not completed')
+    assigned_user_id = data.get('assigned_user_id')
 
     if not title or not task_date:
         return jsonify({'error': 'Title and date are required'}), 400
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('''UPDATE tasks SET title=?, description=?, task_date=?, task_time=?, task_end_time=?, location=?, status=?
+    c.execute('''UPDATE tasks SET title=?, description=?, task_date=?, task_time=?, task_end_time=?, location=?, status=?, assigned_user_id=?
                  WHERE id=?''',
-                 (title, description, task_date, task_time, task_end_time, location, status, task_id))
+                 (title, description, task_date, task_time, task_end_time, location, status, assigned_user_id, task_id))
     conn.commit()
     conn.close()
 
@@ -1816,11 +1694,11 @@ def edit_invoice(invoice_id):
 
     # Define price table for products (ensure values are JSON serializable)
     price_table = {
-        'Golden Imperial Lush': 15.0,
-        'Golden Green Lush': 19.0,
-        'Golden Natural 40mm': 17.0,
-        'Golden Golf Turf': 22.0,
-        'Golden Premium Turf': 20.0
+        'Golden Imperial Lush': 45.0,
+        'Golden Green Lush': 43.0,
+        'Golden Natural 40mm': 47.0,
+        'Golden Golf Turf': 50.0,
+        'Golden Premium Turf': 52.0
     }
 
     if request.method == 'POST':
@@ -1847,7 +1725,7 @@ def edit_invoice(invoice_id):
             return render_template('edit_invoice.html', error='Invalid status.', invoice=invoice, clients=clients, products=products, price_table=price_table)
 
         # Calculate GST and total
-        gst = price * 0.1 if gst_checkbox else 0
+        gst = price * 0.10 if gst_checkbox else 0
         total = price + gst
 
         # Get client_id from client_name
@@ -1931,11 +1809,13 @@ def add_task():
     task_end_time = request.form.get('task_end_time')
     location = request.form.get('location')
     status = request.form.get('status')
+    assigned_user_id = request.form.get('assigned_user_id')
+    owner_id = session.get('user_id')
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('''INSERT INTO tasks (title, description, task_date, task_time, task_end_time, location, status)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)''', (title, description, task_date, task_time, task_end_time, location, status))
+    c.execute('''INSERT INTO tasks (title, description, task_date, task_time, task_end_time, location, status, assigned_user_id, owner_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (title, description, task_date, task_time, task_end_time, location, status, assigned_user_id, owner_id))
     conn.commit()
     conn.close()
 

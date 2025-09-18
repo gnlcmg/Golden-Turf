@@ -69,12 +69,15 @@
 /* Task status background fill for sidebar and calendar */
 .task-status-bg-not-completed {
   background-color: #dc3545 !important;
+  color: #fff !important;
 }
 .task-status-bg-in-progress {
   background-color: #fd7e14 !important;
+  color: #fff !important;
 }
 .task-status-bg-completed {
   background-color: #28a745 !important;
+  color: #fff !important;
 }
 /* Modal overlay */
 /* Modal overlay: full screen, centered */
@@ -176,6 +179,24 @@
     align-items: center;
     margin: 2px 0;
 }
+.task-block.task-not-completed {
+    background-color: #dc3545;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+.task-block.task-in-progress {
+    background-color: #fd7e14;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+.task-block.task-completed {
+    background-color: #28a745;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
 
 /* Box around task text */
 .calendar-day .task-block .task-box {
@@ -231,19 +252,19 @@
   font-weight: 600;
 }
 .task-box.task-not-completed {
-  border: 2px solid #dc3545;
-  color: #dc3545;
-  background-color: transparent;
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
 }
 .task-box.task-in-progress {
-  border: 2px solid #fd7e14;
-  color: #fd7e14;
-  background-color: transparent;
+  background-color: #fd7e14;
+  color: #fff;
+  border: none;
 }
 .task-box.task-completed {
-  border: 2px solid #28a745;
-  color: #28a745;
-  background-color: transparent;
+  background-color: #28a745;
+  color: #fff;
+  border: none;
 }
 .task-description {
   font-size: 0.85rem;

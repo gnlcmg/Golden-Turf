@@ -56,6 +56,10 @@ def get_all_jobs():
 def index():
     return render_template("calendar.html")
 
+@app.route("/calendar")
+def calendar():
+    return render_template("calendar.html")
+
 @app.route("/events")
 def events():
     return jsonify(get_all_jobs())

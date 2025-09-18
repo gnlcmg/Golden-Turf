@@ -1,3 +1,4 @@
+le b                <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
 <!DOCTYPE html>
 <html>
 <head>
@@ -103,6 +104,34 @@
             background: #dcfce7;
         }
         
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-close {
+            float: right;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
         /* Task box on calendar day */
         .calendar-task-box {
             border: 2px solid black;
@@ -160,6 +189,7 @@
                         <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
                     </div>
                 </div>
+
                 <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
                 <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
                 <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
@@ -253,62 +283,37 @@
             </div>
             
     <div class="tasks-list" id="tasksList">
-        <!-- Tasks will be populated by JavaScript -->
-    </div>
-    <script>
-        // Function to render tasks in the task list
-        function renderTasks() {
-            const tasksList = document.getElementById('tasksList');
-            tasksList.innerHTML = ''; // Clear existing tasks
 
+        <!-- Only show task title in sidebar, clicking redirects to correct calendar view for that task -->
+        <script>
+        function renderSidebarTasks() {
+            const tasksList = document.getElementById('tasksList');
+            tasksList.innerHTML = '';
             allTasks.forEach(task => {
                 const taskItem = document.createElement('div');
                 taskItem.className = 'task-item';
-                taskItem.innerHTML = `
-                    <div class="task-title">${task.title}</div>
-                    <div class="task-date">${formatDate(task.date)}${task.time ? ', ' + formatTime(task.time) : ''}</div>
-                    ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
-                `;
+                // Only show the title
+                taskItem.innerHTML = `<div class="task-title">${task.title}</div>`;
+                // On click, redirect to the correct calendar view for the task's date
+                taskItem.onclick = function() {
+                    // Get the current view from the template variable
+                    const currentView = '{{ view }}';
+                    // Parse the task date
+                    const dateObj = new Date(task.date);
+                    const year = dateObj.getFullYear();
+                    const month = dateObj.getMonth() + 1; // JS months 0-based
+                    const day = dateObj.getDate();
+                    let targetView = currentView;
+                    // If on month view, go to month view for that month; if on week, go to week; if on day, go to day
+                    // (You can adjust this logic if you want to always go to day view, etc.)
+                    window.location.href = `/calendar?view=${targetView}&year=${year}&month=${month}&day=${day}`;
+                };
                 tasksList.appendChild(taskItem);
             });
         }
-    </script>
-
-    <script>
-        // New function to render tasks with status, dots, and color preview
-        function renderTasksWithStatus() {
-            const tasksList = document.getElementById('tasksList');
-            tasksList.innerHTML = ''; // Clear existing tasks
-
-            allTasks.forEach(task => {
-                const taskItem = document.createElement('div');
-                taskItem.className = 'task-item';
-
-                // Determine status class for color coding
-                let statusClass = '';
-                if (task.status === 'Completed') {
-                    statusClass = 'task-completed';
-                } else if (task.status.toLowerCase() === 'in progress') {
-                    statusClass = 'task-in-progress';
-                } else {
-                    statusClass = 'task-not-completed';
-                }
-
-                taskItem.innerHTML = `
-                    <div class="status-circle ${statusClass}" title="${task.status}"></div>
-                    <div class="task-content">
-                        <div class="task-title">${task.title}</div>
-                        <div class="task-date">${formatDate(task.date)}${task.time ? ', ' + formatTime(task.time) : ''}</div>
-                        ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
-                    </div>
-                    <div class="task-dots" title="Options">&#8942;</div>
-                `;
-                tasksList.appendChild(taskItem);
-            });
-        }
-
-        // Call the new render function instead of the old one
-        renderTasksWithStatus();
+        // Call the new sidebar render function
+        renderSidebarTasks();
+        </script>
 
         // Function to render tasks on calendar days with color-coded boxes and three dots
         function renderTasksOnCalendar() {
@@ -413,28 +418,8 @@
 
                         const innerBox = document.createElement('div');
                         innerBox.className = 'task-text-inner';
-                        innerBox.textContent = task.title;
-
+                        innerBox.innerHTML = `<span style='color:white; font-size:1.1em; font-weight:bold;'>${task.title}</span><br><span style='color:white; font-size:1em;'>${task.status}</span><br><span style='color:white; font-size:1em;'>${formatDate(task.date)}</span>`;
                         taskBox.appendChild(innerBox);
-
-                        taskBox.title = `Status: ${task.status}\nDate: ${task.date}\nTime: ${task.time || 'N/A'}\nDescription: ${task.description || 'N/A'}`;
-
-                        taskBox.addEventListener('click', () => {
-                            openTaskDetailModal(task);
-                        });
-
-                        const dots = document.createElement('span');
-                        dots.className = 'task-dots';
-                        dots.innerHTML = '&#8942;';
-                        dots.title = 'Options';
-
-                        dots.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            // TODO: Implement options menu (edit, print, delete)
-                            alert('Options menu not implemented yet.');
-                        });
-
-                        taskBox.appendChild(dots);
                         taskContainer.appendChild(taskBox);
                     }
                 });
@@ -646,6 +631,13 @@
                     <input type="text" id="taskLocation" name="taskLocation" placeholder="Enter location">
                 </div>
                 <div class="form-group">
+                    <label for="assignedUser">Assign to (optional):</label>
+                    <input type="text" id="assignedUserSearch" placeholder="Search user..." autocomplete="off">
+                    <select id="assignedUser" name="assignedUser">
+                        <option value="">-- None --</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="taskStatus">Status:</label>
                     <select id="taskStatus" name="taskStatus" required>
                         <option value="Not completed">Not completed</option>
@@ -655,6 +647,171 @@
                 </div>
                 <button type="submit" class="add-task-btn">Add Task</button>
             </form>
+            <script>
+            // Intercept form submit to send assigned_user_id
+            document.getElementById('addTaskForm').onsubmit = function(e) {
+                e.preventDefault();
+                const data = {
+                    title: document.getElementById('taskTitle').value,
+                    date: document.getElementById('taskDate').value,
+                    time: document.getElementById('taskTime').value,
+                    description: document.getElementById('taskDescription').value,
+                    location: document.getElementById('taskLocation').value,
+                    status: document.getElementById('taskStatus').value,
+                    assigned_user_id: document.getElementById('assignedUser').value
+                };
+                fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+                .then(res => res.json())
+                .then(resp => {
+                    if (resp.task_id) {
+                        // Reload tasks and close modal
+                        closeAddTaskModal();
+                        // Optionally reload page or fetch tasks again
+                        location.reload();
+                    } else {
+                        alert(resp.error || 'Failed to add task');
+                    }
+                });
+            };
+            // Fetch users for dropdowns
+            function fetchUsersForDropdown() {
+                fetch('/api/users')
+                    .then(res => res.json())
+                    .then(users => {
+                        // Populate assign dropdown
+                        const assignedUser = document.getElementById('assignedUser');
+                        if (assignedUser) {
+                            assignedUser.innerHTML = '<option value="">-- None --</option>';
+                            users.forEach(u => {
+                                const opt = document.createElement('option');
+                                opt.value = u.id;
+                                opt.textContent = `${u.name} (${u.role})`;
+                                assignedUser.appendChild(opt);
+                            });
+                        }
+                        // Sidebar filter
+                        window.allUsers = users;
+                        renderUserFilter();
+                    });
+            }
+            // Searchable dropdown for assign user
+            document.addEventListener('DOMContentLoaded', function() {
+                fetchUsersForDropdown();
+                const searchInput = document.getElementById('assignedUserSearch');
+                const assignedUser = document.getElementById('assignedUser');
+                if (searchInput && assignedUser) {
+                    searchInput.addEventListener('input', function() {
+                        const val = this.value.toLowerCase();
+                        for (let i = 0; i < assignedUser.options.length; i++) {
+                            const opt = assignedUser.options[i];
+                            if (opt.textContent.toLowerCase().includes(val) || opt.value === '') {
+                                opt.style.display = '';
+                            } else {
+                                opt.style.display = 'none';
+                            }
+                        }
+                    });
+                }
+            });
+            // Sidebar filter for assigned user
+            let currentUserFilter = '';
+            function renderSidebarTasks() {
+                const tasksList = document.getElementById('tasksList');
+                tasksList.innerHTML = '';
+                let filteredTasks = allTasks;
+                if (currentUserFilter) {
+                    filteredTasks = allTasks.filter(task => String(task.assigned_user_id) === String(currentUserFilter));
+                }
+                filteredTasks.forEach(task => {
+                    const taskItem = document.createElement('div');
+                    taskItem.className = 'task-item';
+                    taskItem.innerHTML = `<div class="task-title">${task.title}</div>`;
+                    taskItem.onclick = function() {
+                        const currentView = '{{ view }}';
+                        const dateObj = new Date(task.date);
+                        const year = dateObj.getFullYear();
+                        const month = dateObj.getMonth() + 1;
+                        const day = dateObj.getDate();
+                        let targetView = currentView;
+                        window.location.href = `/calendar?view=${targetView}&year=${year}&month=${month}&day=${day}`;
+                    };
+                    tasksList.appendChild(taskItem);
+                });
+            }
+            function renderUserFilter() {
+                const sidebar = document.querySelector('.tasks-sidebar');
+                let filterDiv = document.getElementById('userFilterDiv');
+                if (!filterDiv) {
+                    filterDiv = document.createElement('div');
+                    filterDiv.id = 'userFilterDiv';
+                    filterDiv.style.margin = '10px 0';
+                    sidebar.insertBefore(filterDiv, sidebar.children[1]);
+                }
+                let html = '<label for="userFilter">Filter by user:</label> <select id="userFilter"><option value="">All</option>';
+                (window.allUsers || []).forEach(u => {
+                    html += `<option value="${u.id}">${u.name} (${u.role})</option>`;
+                });
+                html += '</select>';
+                filterDiv.innerHTML = html;
+                document.getElementById('userFilter').onchange = function() {
+                    currentUserFilter = this.value;
+                    renderSidebarTasks();
+                };
+            }
+
+            // Fetch tasks and set allTasks
+            fetch('/api/tasks')
+            .then(res => res.json())
+            .then(tasks => {
+                window.allTasks = tasks;
+                renderSidebarTasks();
+                renderTasksOnCalendar();
+            });
+
+            // Modal functions
+            function openAddTaskModal() {
+                const modal = document.getElementById('addTaskModal');
+                modal.style.display = 'flex';
+            }
+
+            function closeAddTaskModal() {
+                const modal = document.getElementById('addTaskModal');
+                modal.style.display = 'none';
+            }
+
+            function openAddTaskModalForDate(year, month, day) {
+                if (day == 0) return; // inactive cell
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                document.getElementById('taskDate').value = dateStr;
+                openAddTaskModal();
+            }
+
+            // Hover button functions
+            function showAddButton(cell) {
+                const btn = cell.querySelector('.add-task-hover');
+                if (btn) btn.style.display = 'flex';
+            }
+
+            function hideAddButton(cell) {
+                const btn = cell.querySelector('.add-task-hover');
+                if (btn) btn.style.display = 'none';
+            }
+
+            // Utility functions
+            function formatDate(dateStr) {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString();
+            }
+
+            function toggleTimeFormat() {
+                // Placeholder for time format toggle
+                alert('Time format toggle not implemented yet.');
+            }
+            </script>
         </div>
     </div>
 

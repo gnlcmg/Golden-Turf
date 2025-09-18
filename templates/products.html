@@ -1,3 +1,4 @@
+            
     <!-- Image expand modal -->
     <div id="img-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
         <span onclick="closeImgModal()" style="position:absolute; top:30px; right:50px; color:#fff; font-size:40px; font-weight:bold; cursor:pointer; z-index:10000;">&times;</span>
@@ -23,7 +24,7 @@
         }
     });
     </script>
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background-color: #006400; color: white; font-family: Arial, sans-serif;">
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100vh; background-color: #006400; color: white; padding: 2rem; border-right: 1px solid #e2e8f0;">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
             <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
@@ -32,7 +33,7 @@
             <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
             <div class="nav-dropdown">
                 <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                <div class="dropdown-content" style="background-color: #006400;">
+                <div class="dropdown-content" style="position: absolute; background-color: #006400; min-width: 160px; z-index: 1; border-radius: 4px;">
                     <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
                     <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
                     <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
@@ -42,6 +43,10 @@
             <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
             <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
         </nav>
+        <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+            <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+        </div>
     </div>
     <div class="main-content" style="margin-left:220px; color: #222; min-height:100vh; background: linear-gradient(135deg, #2e7d32 60%, #F28F2B 40%);">
         <div class="products-list-header" style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:30px;">
@@ -51,7 +56,8 @@
                 <div class="products-desc" style="font-size:1em;color:white;margin-bottom:10px;margin-left:10px;">All available products and their details.</div>
             </div>
         </div>
-    <table class="products-list-table" style="width:100%;border-collapse:collapse;margin-top:10px; font-size:0.95em;">
+        <div style="overflow-x:auto; min-width:600px; padding-bottom:30px;">
+            <table class="products-list-table" style="min-width:900px;width:100%;border-collapse:collapse;margin-top:10px; font-size:0.95em;">
             <thead>
                 <tr style="background:#2e7d32; color:white;">
                     <th>Product Name</th>
@@ -100,7 +106,8 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
 <!DOCTYPE html>
 <html>

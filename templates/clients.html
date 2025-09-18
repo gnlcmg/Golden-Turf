@@ -1,3 +1,4 @@
+            
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -8,7 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
     </head>
 <body>
-    <div class="container">
+    <div class="container" style="margin-left: 220px;">
         <header>
             <h1>Client Details Form</h1>
         </header>
@@ -34,7 +35,6 @@
                     <option value="Active" {% if request.form.account_type == 'Active' %}selected{% endif %}>Active</option>
                     <option value="Deactivated" {% if request.form.account_type == 'Deactivated' %}selected{% endif %}>Deactivated</option>
                 </select>
- a
                 <label for="company_name">Company Name (optional):</label>
                 <input type="text" id="company_name" name="company_name" value="{{ request.form.company_name or '' }}" />
 
@@ -90,7 +90,7 @@
         </section>
     </div>
 
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white; padding: 2rem; border-right: 1px solid #e2e8f0;">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
             <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>

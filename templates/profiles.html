@@ -121,6 +121,7 @@ hos<!DOCTYPE html>
                                 <form action="{{ url_for('update_permissions', user_id=user[0]) }}" method="post" style="display:inline; margin-left: 5px;">
                                     <div style="display: flex; flex-direction: column; align-items: flex-start;">
                                         {% set modules = ['dashboard', 'products', 'clients', 'quotes', 'payments', 'calendar'] %}
+                <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
                                         {% set user_permissions = user[4].split(',') if user[4] else [] %}
                                         {% for module in modules %}
                                             <label style="margin-bottom: 2px;">
@@ -155,7 +156,7 @@ hos<!DOCTYPE html>
                         <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
                     </div>
                 </div>
-                <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+
                 <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
                 <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
             </nav>

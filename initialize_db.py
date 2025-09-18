@@ -1,4 +1,4 @@
-import sqlite3
+aimport sqlite3
 
 def initialize_database():
     conn = sqlite3.connect('users.db')
