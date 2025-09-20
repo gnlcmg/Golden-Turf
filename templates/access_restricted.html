@@ -29,6 +29,7 @@
         </nav>
         <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
             <p style="color: white; margin-bottom: 10px;">Logged in as: {{ session.get('user_name', 'Unknown') }}</p>
+            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
             <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
         </div>
     </div>

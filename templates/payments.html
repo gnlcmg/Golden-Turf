@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Payments</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Payments - Golden Turf</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='payments.css') }}" />
     <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
@@ -65,170 +66,74 @@
         .overdue { color: red; font-weight: bold; }
         .content-area { flex: 1; padding: 1rem; }
         .content-area h1 { margin: 0 0 1rem 0; font-size: 1.5rem; }
-        
-        /* Main wrapper and sidebar styles */
-        .main-wrapper {
-            display: flex;
-            min-height: 100vh;
-        }
-        
-        .sidebar {
-            width: 250px;
-            background: #f8fafc;
-            padding: 2rem;
-            border-right: 1px solid #e2e8f0;
-        }
-        
-        .sidebar h2 {
-            color: #1e293b;
-            margin-bottom: 2rem;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-        
-        .sidebar nav {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .sidebar nav a {
-            color: #fafafa;
-            text-decoration: none;
-            padding: 0.75rem 1rem;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-        
-        .sidebar nav a:hover {
-            background: #e2e8f0;
-            color: #1e293b;
-        }
-        
-        .nav-dropdown {
-            position: relative;
-        }
-        
-        .dropbtn {
-            color: #64748b;
-            text-decoration: none;
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            transition: all 0.2s;
-            font-weight: 500;
-            display: block;
-            cursor: pointer;
-        }
-        
-        .dropbtn:hover {
-            background: #e2e8f0;
-            color: #1e293b;
-        }
-        
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background: #006400;
-            min-width: 200px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-radius: 6px;
-            z-index: 1;
-            left: 100%;
-            top: 0;
-        }
 
-        .dropdown-content a {
-            color: white;
-            padding: 0.75rem 1rem;
-            text-decoration: none;
-            display: block;
-            border-radius: 0;
+        .responsive-container {
+            max-width: 100vw;
+            overflow-x: auto;
+            margin: 0 auto;
+            padding: 0 10px;
         }
-        
-        .dropdown-content a:hover {
-            background: #f1f5f9;
-            color: #1e293b;
+        .responsive-table {
+            width: 100%;
+            max-width: 900px;
+            font-size: 0.95em;
+            border-collapse: collapse;
+            margin: 0 auto;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-        
-        .nav-dropdown:hover .dropdown-content {
-            display: block;
+        .responsive-table th, .responsive-table td {
+            padding: 6px 8px;
+            text-align: left;
+            border: 1px solid #e0e0e0;
+            white-space: nowrap;
         }
-        
-        .content-area {
-            flex: 1;
-            padding: 2rem;
+        .responsive-table th {
+            background: #f7f7f7;
+            font-weight: 600;
         }
-
-        .filter-buttons {
-            margin-bottom: 1rem;
-        }
-
-        .filter-buttons select {
-            margin-right: 0.5rem;
-            padding: 0.5rem;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-
-        .filter-btn {
-            background-color: #006400;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            margin-right: 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .filter-btn:hover {
-            background-color: #004d00;
-        }
-
-        .filter-btn.active {
-            background-color: #f0a500;
-            color: black;
-        }
-
-        .section {
-            display: block;
+        @media (max-width: 600px) {
+            .responsive-table {
+                font-size: 0.85em;
+            }
+            .responsive-container {
+                padding: 0 2px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="main-wrapper">
-        <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
-            <div style="width:100%;text-align:center;margin-bottom:20px;">
-                <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
-            </div>
-            <h2 style="color: orange;">Golden Turf</h2>
-            <nav class="navbar">
-                <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
-                <div class="nav-dropdown">
-                    <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                    <div class="dropdown-content" style="background-color: #006400;">
-                        <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
-                        <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
-                        <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
-                    </div>
-                </div>
-                
-                <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-                <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
-                <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-            </nav>
-            <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
-                <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
-                <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
-            </div>
+        <div class="sidebar">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
+        <nav class="navbar">
+            <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                <div class="dropdown-content" style="position: absolute; background-color: #006400; min-width: 160px; z-index: 1; border-radius: 4px;">
+                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                </div>
+            </div>
+            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
+            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+    <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
+            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+            <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+        </div>
+    </nav>
+    </div>
 
-            <div class="content-area" style="background: linear-gradient(135deg, #006400 50%, #f58220 50%); padding: 2rem;">
-                <div class="tab-container">
+            <div class="content-area" style="background: linear-gradient(135deg, #006400 50%, #f58220 50%); padding: 2rem; margin-left:220px; width: calc(100vw - 220px); min-height: 100vh; box-sizing: border-box;">
+                <div class="tab-container" style="max-width: 900px; margin: 0 auto; text-align: center; margin-bottom: 1rem;">
                     <button id="filter-invoices" class="filter-btn active">Invoices</button>
                     <button id="filter-clients" class="filter-btn">Clients</button>
                 </div>
-                <div class="filter-buttons">
+                <div class="filter-buttons" style="max-width: 900px; margin: 0 auto 1rem auto; display: flex; align-items: center; gap: 1rem; justify-content: center; flex-wrap: wrap;">
                     <select id="sort-invoices">
                         <option value="status-asc">Status ▲</option>
                         <option value="status-desc">Status ▼</option>
@@ -258,11 +163,13 @@
                         <option value="Deactivated">Deactivated</option>
                     </select>
                 </div>
-                <h1 id="dynamic-heading">Invoices</h1>
+                <div style="max-width: 900px; margin: 0 auto; text-align: center; margin-bottom: 2rem;">
+                    <h1 id="dynamic-heading" style="color: white; font-size: 2rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Invoices</h1>
+                </div>
 
-            <div id="invoices-section" class="section">
+            <div id="invoices-section" class="section" style="max-width: 900px; margin: 0 auto;">
                 <button onclick="printSection('invoices-section')" class="print-hide" style="float:right;margin-bottom:10px;">Print Invoices</button>
-                <table>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
                     <tr>
                         <th>Clients</th>
                         <th>Status</th>
@@ -283,9 +190,9 @@
                         <td>{{ invoice.price }}</td>
                         <td>{{ "%.2f"|format(invoice.gst) }}</td>
                         <td>
-                            <a href="{{ url_for('edit_invoice', invoice_id=invoice.id) }}" style="color: black; text-decoration: underline; margin-right: 10px;">Edit</a>
+                            <a href="{{ url_for('edit_invoice', invoice_id=invoice.id) }}" style="color: black; text-decoration: none; margin-right: 10px; padding: 4px 8px; background: #f0f0f0; border-radius: 4px; border: 1px solid #ccc;">Edit</a>
                             <form method="POST" action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this invoice?');" class="delete-invoice-form">
-                                <button type="submit" style="background: none; border: none; color: black; cursor: pointer; text-decoration: underline;">Delete</button>
+                                <button type="submit" style="background: #ff4757; border: none; color: white; cursor: pointer; text-decoration: none; padding: 4px 8px; border-radius: 4px; margin-left: 5px;">Delete</button>
                             </form>
                         </td>
                     </tr>
@@ -297,10 +204,10 @@
                 </table>
             </div>
 
-            <div id="clients-section" class="section" style="display: none;">
+            <div id="clients-section" class="section" style="display: none; max-width: 900px; margin: 0 auto;">
                 <button onclick="printSection('clients-section')" class="print-hide" style="float:right;margin-bottom:10px;">Print Clients</button>
 
-                <table>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
                     <thead>
                         <tr>
                             <th>Account ID</th>
@@ -323,10 +230,12 @@
                             <td>{{ client.company_name or '' }}</td>
                             <td>{{ client.email or '' }}</td>
                         <td>
-                            <a href="{{ url_for('edit_client', client_id=client.id) }}" style="color: black; text-decoration: none; margin-right: 10px;">Edit</a>
-                            <form method="POST" action="{{ url_for('delete_client', client_id=client.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this client?');" class="delete-client-form">
-                                <button type="submit" style="background: none; border: none; color: black; cursor: pointer; text-decoration: none;">Delete</button>
-                            </form>
+                            <div style="display: inline-block; white-space: nowrap;">
+                                <a href="{{ url_for('edit_client', client_id=client.id) }}" style="color: black; text-decoration: none; margin-right: 10px; padding: 4px 8px; background: #f0f0f0; border-radius: 4px; border: 1px solid #ccc; display: inline-block;">Edit</a>
+                                <form method="POST" action="{{ url_for('delete_client', client_id=client.id) }}" style="display: inline-block; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this client?');" class="delete-client-form">
+                                    <button type="submit" style="background: #ff4757; border: none; color: white; cursor: pointer; text-decoration: none; padding: 4px 8px; border-radius: 4px; margin-left: 5px;">Delete</button>
+                                </form>
+                            </div>
                         </td>
                         <td>{{ client.actions or '' }}</td>
                         </tr>
@@ -343,7 +252,6 @@
     </div>
 
     <script>
-
         const filterButtons = document.querySelectorAll('.filter-btn');
         const sections = document.querySelectorAll('.section');
         const dynamicHeading = document.getElementById('dynamic-heading');

@@ -193,7 +193,11 @@ le b                <a href="{{ url_for('quotes') }}" style="color: white; font-
                 <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
                 <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
                 <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-            </nav>
+            <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
+                <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+                <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+            </div>
+        </nav>
         </div>
 
         <div class="calendar-container">

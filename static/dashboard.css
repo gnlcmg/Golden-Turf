@@ -5,30 +5,21 @@ body {
     color: #333;
 }
 .sidebar {
-    width: 240px;
+    width: 220px;
     background-color: #006400;
     color: white;
     height: 100vh;
     position: fixed;
-    padding-top: 20px;
-    .sidebar {
-        width: 240px;
-        background: #006400;
-        color: white;
-        padding: 0;
-        border-right: 1px solid #e2e8f0;
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        min-height: 100vh;
-        z-index: 100;
-        box-shadow: none;
-        margin: 0;
-        overflow: hidden;
-    }
+    top: 0;
+    left: 0;
+    padding: 2rem;
+    border-right: 1px solid #e2e8f0;
     font-size: 18px;
     transition: background-color 0.3s ease;
+    z-index: 100;
+    box-shadow: none;
+    margin: 0;
+    overflow: hidden;
 }
 
 /* Tab buttons background orange, white font */
@@ -108,7 +99,7 @@ body {
 
 /* Dropdown button */
 .dropbtn {
-    color: black;
+    color: white;
     padding: 12px 20px;
     text-decoration: none;
     font-size: 18px;
@@ -160,14 +151,8 @@ body {
     margin-left: 220px;
     padding: 30px 40px;
 }
-.sidebar {
-    color: black;
-}
 .sidebar h2 {
-    color: black;
-}
-.sidebar nav a {
-    color: black;
+    color: orange;
 }
 
 .main-wrapper .content-area {
@@ -401,4 +386,38 @@ footer {
 .product-box strong {
     font-size: 1.2em;
     color: #f0a500;
+}
+
+/* Layout fixes for sidebar and content */
+.main-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.content-area {
+    margin-left: 220px;
+    padding: 2rem;
+    width: calc(100vw - 220px);
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.container {
+    margin-left: 220px;
+    padding: 2rem;
+    width: calc(100vw - 220px);
+    box-sizing: border-box;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+
+    .content-area,
+    .container {
+        margin-left: 200px;
+        width: calc(100vw - 200px);
+    }
 }

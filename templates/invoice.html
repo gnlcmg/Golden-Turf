@@ -20,36 +20,39 @@
 </style>
 </head>
 <body>
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white; padding: 2rem; border-right: 1px solid #e2e8f0;">
-        <div style="width:100%;text-align:center;margin-bottom:20px;">
-            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
-        </div>
-        <h2 style="color: orange;">Golden Turf</h2>
-        <nav class="navbar">
-            <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
-            <div class="nav-dropdown">
-                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                <div class="dropdown-content">
-                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
-                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
-                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
-                </div>
+    <div class="main-wrapper">
+        <div class="sidebar">
+            <div style="width:100%;text-align:center;margin-bottom:20px;">
+                <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
             </div>
-            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
-            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-        </nav>
-        <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
-            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
-            <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
-        </div>
-    </div>
-    <div class="container" style="margin-left: 220px; min-height: 100vh;">
-        <header>
-            <h1>Invoice Form</h1>
-        </header>
 
-        <form method="POST" action="{{ url_for('invoice') }}" style="max-width: 500px; width: 100%; background: #fff; padding: 32px 32px 24px 32px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin: 32px auto;">
+            <nav class="navbar">
+                <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+                <div class="nav-dropdown">
+                    <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                    <div class="dropdown-content" style="background-color: #006400;">
+                        <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                        <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                        <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                    </div>
+                </div>
+                <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+                <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
+                <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+        <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
+                <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+                <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+            </div>
+        </nav>
+        </div>
+
+        <div class="content-area" style="background: linear-gradient(135deg, #006400 50%, #f58220 50%); padding: 2rem; margin-left:220px; width: calc(100vw - 220px); min-height: 100vh; box-sizing: border-box;">
+
+        <div style="max-width: 500px; margin: 0 auto; text-align: center; margin-bottom: 2rem;">
+            <h1 style="color: white; font-size: 2rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Invoice Form</h1>
+        </div>
+
+        <form method="POST" action="{{ url_for('invoice') }}" style="max-width: 500px; width: 100%; background: #fff; padding: 32px 32px 24px 32px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin: 0 auto;">
             <section class="client-info">
                 <label for="client_name">Client Name:</label>
                 <input type="text" id="client_name" name="client_name" value="{{ client_name or '' }}" autocomplete="off" required placeholder="Start typing to search clients..." oninput="filterClients()" list="client_list" />
@@ -70,6 +73,41 @@
                     }
                 }
                 </script>
+                        <style>
+                          .responsive-container {
+                            max-width: 100vw;
+                            overflow-x: auto;
+                            margin: 0 auto;
+                            padding: 0 10px;
+                          }
+                          .responsive-table {
+                            width: 100%;
+                            max-width: 900px;
+                            font-size: 0.95em;
+                            border-collapse: collapse;
+                            margin: 0 auto;
+                            background: #fff;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                          }
+                          .responsive-table th, .responsive-table td {
+                            padding: 6px 8px;
+                            text-align: left;
+                            border: 1px solid #e0e0e0;
+                            white-space: nowrap;
+                          }
+                          .responsive-table th {
+                            background: #f7f7f7;
+                            font-weight: 600;
+                          }
+                          @media (max-width: 600px) {
+                            .responsive-table {
+                              font-size: 0.85em;
+                            }
+                            .responsive-container {
+                              padding: 0 2px;
+                            }
+                          }
+                        </style>
 
                 <label for="turf_type">Turf Type:</label>
                 <select id="turf_type" name="turf_type" required>

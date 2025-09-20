@@ -12,32 +12,27 @@
     </style>
 </head>
 <body>
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white; padding: 2rem; border-right: 1px solid #e2e8f0;">
+    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100vh; background-color: #006400; color: white; padding: 2rem; border-right: 1px solid #e2e8f0;">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
             <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
         <h2 style="color: orange;">Golden Turf</h2>
         <nav class="navbar">
             <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
-            <div class="nav-dropdown">
-                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                <div class="dropdown-content" style="position: absolute; background-color: #006400; min-width: 160px; z-index: 1; border-radius: 4px;">
-                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
-                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
-                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
-                </div>
-            </div>
+            <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+            <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+            <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
             <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
             <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
             <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-        </nav>
-        <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+    <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
             <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
             <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
         </div>
+    </nav>
     </div>
 
-    <main style="display: flex; gap: 48px; margin-left: 220px; max-width: calc(100vw - 220px); overflow: visible; position: relative; z-index: 1; padding: 48px 48px 48px 48px;">
+<main style="margin-left: 220px; width: calc(100% - 220px); overflow: visible; position: relative; z-index: 1; padding: 48px; display: flex; justify-content: space-between; align-items: flex-start;">
         <section class="calendar" style="flex: 1 1 60%; max-width: 60%;">
             <div class="year-header" style="text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 20px; color: #006400;">{{ current_year }}</div>
             <div class="view-options" style="display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;">
@@ -134,13 +129,13 @@
                                 <span style="margin-left: 10px;">Date: {{ task[3] }}</span>
                             </div>
                         </div>
-                        <span class="task-dots" style="margin-left: 8px; font-size: 18px; cursor: pointer; user-select: none; position: relative;" onclick="event.stopPropagation(); toggleTaskMenu(this)">&#8942;
-                            <span class="dropdown-menu" style="display: none; position: absolute; right: 0; top: 22px; background: white; border: 1px solid #ccc; border-radius: 4px; z-index: 10; min-width: 100px;">
-                                <span onclick="event.stopPropagation(); printTask('{{ task[0] }}')" style="display:block; padding: 8px; cursor: pointer;">Print</span>
-                                <span onclick="event.stopPropagation(); editTask('{{ task[0] }}')" style="display:block; padding: 8px; cursor: pointer;">Edit</span>
-                                <span onclick="event.stopPropagation(); deleteTaskFromList('{{ task[0] }}')" style="display:block; padding: 8px; cursor: pointer;">Delete</span>
-                            </span>
-                        </span>
+                                <span class="task-dots" style="margin-left: 8px; font-size: 18px; cursor: pointer; user-select: none; position: relative;" onclick="event.stopPropagation(); toggleTaskMenu(this)">&#8942;
+                                    <span class="dropdown-menu" style="display: none; position: absolute; right: 0; top: 22px; background: white; border: 1px solid #ccc; border-radius: 4px; z-index: 10; min-width: 100px;">
+                                        <span onclick="event.stopPropagation(); printTask('{{ task[0] }}')" style="display:block; padding: 8px; cursor: pointer;">Print</span>
+                                        <!-- Edit button removed as requested -->
+                                        <span onclick="event.stopPropagation(); deleteTaskFromList('{{ task[0] }}')" style="display:block; padding: 8px; cursor: pointer;">Delete</span>
+                                    </span>
+                                </span>
                     </li>
                 {% endfor %}
             </ul>

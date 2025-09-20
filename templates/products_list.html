@@ -1,4 +1,3 @@
-            
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,7 +5,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 <body style="margin:0;">
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100vh; background-color: #006400; color: white; padding: 2rem; border-right: 1px solid #e2e8f0;">
+    <div class="sidebar">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
             <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
@@ -15,7 +14,7 @@
             <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
             <div class="nav-dropdown">
                 <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                <div class="dropdown-content">
+                <div class="dropdown-content" style="background-color: #006400;">
                     <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
                     <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
                     <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
@@ -24,17 +23,13 @@
             <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
             <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
             <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-        </nav>
-        <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+    <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
             <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
             <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
         </div>
+    </nav>
     </div>
-    <div class="main-content" style="margin-left:200px; color: #222; padding: 48px 48px 48px 48px; max-width: calc(100vw - 200px); background: #fff; min-height: 100vh; box-sizing: border-box;">
-    <div style="position: fixed; bottom: 20px; left: 0; width: 200px; text-align: center;">
-        <a href="/profiles" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
-        <a href="/logout" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
-    </div>
+    <div class="main-content" style="margin-left: 220px; color: #222; padding: 48px 48px 48px 48px; max-width: calc(100vw - 220px); background: #fff; min-height: 100vh; box-sizing: border-box;">
         <div class="products-list-header">
             <!-- Logo already in sidebar -->
         </div>
@@ -44,7 +39,6 @@
         <table class="products-list-table" style="min-width: 900px;">
             <tr>
                 <th>Product Name</th>
-                <th>Sub-Type/Option</th>
                 <th>Description</th>
                 <th>Stock</th>
                 <th>Price</th>
@@ -67,19 +61,28 @@
                                 <td>Bamboo 2.0m</td>
                                 <td>Standard length</td>
                                 <td><input type="number" name="bamboo_2m_stock" value="{{ bamboo_2m_stock }}" min="0" style="width:60px;"></td>
-                                <td><input type="number" name="bamboo_2m_price" value="{{ bamboo_2m_price }}" step="0.01" style="width:80px;"></td>
+                                <td>
+                                    <input type="number" name="bamboo_2m_price" value="{{ bamboo_2m_price if bamboo_2m_price is defined else 40 }}" step="0.01" style="width:80px;">
+                                    <span style="margin-left:8px; color:#28a745; font-weight:bold; font-size:16px; background:#e8f5e8; padding:2px 6px; border-radius:3px;">$40</span>
+                                </td>
                             </tr>
                             <tr>
                                 <td>Bamboo 2.4m</td>
                                 <td>Longer, for fencing/screens</td>
                                 <td><input type="number" name="bamboo_24m_stock" value="{{ bamboo_24m_stock }}" min="0" style="width:60px;"></td>
-                                <td><input type="number" name="bamboo_24m_price" value="{{ bamboo_24m_price }}" step="0.01" style="width:80px;"></td>
+                                <td>
+                                    <input type="number" name="bamboo_24m_price" value="{{ bamboo_24m_price if bamboo_24m_price is defined else 38 }}" step="0.01" style="width:80px;">
+                                    <span style="margin-left:8px; color:#28a745; font-weight:bold; font-size:16px; background:#e8f5e8; padding:2px 6px; border-radius:3px;">$38</span>
+                                </td>
                             </tr>
                             <tr>
                                 <td>Bamboo 1.8m</td>
                                 <td>Shorter, for borders/edging</td>
                                 <td><input type="number" name="bamboo_18m_stock" value="{{ bamboo_18m_stock }}" min="0" style="width:60px;"></td>
-                                <td><input type="number" name="bamboo_18m_price" value="{{ bamboo_18m_price }}" step="0.01" style="width:80px;"></td>
+                                <td>
+                                    <input type="number" name="bamboo_18m_price" value="{{ bamboo_18m_price if bamboo_18m_price is defined else 38 }}" step="0.01" style="width:80px;">
+                                    <span style="margin-left:8px; color:#28a745; font-weight:bold; font-size:16px; background:#e8f5e8; padding:2px 6px; border-radius:3px;">$38</span>
+                                </td>
                             </tr>
                             <!-- Pebbles -->
                             <tr>
@@ -140,7 +143,19 @@
                             <input type="number" name="stock" value="{{ product[3] }}" min="0" style="width:60px;">
                     </td>
                     <td>
-                            <input type="number" name="price" value="{{ product[4] }}" step="0.01" style="width:80px;">
+                                {% if 'Bamboo' in product[0] %}
+                                    {% if '2.0' in product[0] or '2m' in product[0] %}
+                                        <input type="number" name="price" value="{{ product[4] if product[4] != 0 else 40 }}" step="0.01" style="width:80px;">
+                                    {% elif '2.4' in product[0] %}
+                                        <input type="number" name="price" value="{{ product[4] if product[4] != 0 else 38 }}" step="0.01" style="width:80px;">
+                                    {% elif '1.8' in product[0] %}
+                                        <input type="number" name="price" value="{{ product[4] if product[4] != 0 else 38 }}" step="0.01" style="width:80px;">
+                                    {% else %}
+                                        <input type="number" name="price" value="{{ product[4] }}" step="0.01" style="width:80px;">
+                                    {% endif %}
+                                {% else %}
+                                    <input type="number" name="price" value="{{ product[4] }}" step="0.01" style="width:80px;">
+                                {% endif %}
                             <button type="submit" style="margin-left:8px; padding:4px 12px; background:#006400; color:#fff; border:none; border-radius:4px; cursor:pointer;">Edit</button>
                         </form>
                     </td>

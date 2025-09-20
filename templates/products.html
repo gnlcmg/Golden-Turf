@@ -33,7 +33,7 @@
             <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
             <div class="nav-dropdown">
                 <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                <div class="dropdown-content" style="position: absolute; background-color: #006400; min-width: 160px; z-index: 1; border-radius: 4px;">
+                <div class="dropdown-content" style="position: absolute; background-color: #006400; min-width: 160px; z-index: 1000; border-radius: 4px;">
                     <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
                     <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
                     <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
@@ -42,18 +42,18 @@
             <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
             <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
             <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-        </nav>
-        <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+    <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
             <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
             <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
         </div>
+    </nav>
     </div>
     <div class="main-content" style="margin-left:220px; color: #222; min-height:100vh; background: linear-gradient(135deg, #2e7d32 60%, #F28F2B 40%);">
         <div class="products-list-header" style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:30px;">
             <img src="/static/logo.png" alt="Logo" class="products-logo" style="height:60px;margin-right:30px;">
             <div>
                 <h1 class="products-title" style="font-size:2.5em;font-family:Arial,sans-serif;font-weight:700;color:white;margin-bottom:0;">Products List</h1>
-                <div class="products-desc" style="font-size:1em;color:white;margin-bottom:10px;margin-left:10px;">All available products and their details.</div>
+
             </div>
         </div>
         <div style="overflow-x:auto; min-width:600px; padding-bottom:30px;">
@@ -61,7 +61,6 @@
             <thead>
                 <tr style="background:#2e7d32; color:white;">
                     <th>Product Name</th>
-                    <th>Turf Type</th>
                     <th>Description</th>
                     <th>Stock</th>
                     <th>Price</th>
@@ -72,7 +71,6 @@
                 {% for product in products %}
                 <tr>
                     <td>{{ product.product_name }}</td>
-                    <td>{{ product.turf_type }}</td>
                     <td>{{ product.description }}</td>
                     <td>
                         <form method="post" action="{{ url_for('products_list') }}" style="display:inline;">
@@ -251,7 +249,10 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
-        }
+        }- 2 metres - $40
+- 2.4 metres - $38
+- 1.8m - $38
+
         .products-list-table tr {
             border-bottom: 1px solid #222;
         }
@@ -259,7 +260,8 @@
             font-size: 1.4em;
             padding: 18px 0;
             text-align: center;
-            color: #111;
+            color: #111111;
             font-family: Arial, sans-serif;
             background: #fff;
             border: 1.5px solid #222;
+        }
