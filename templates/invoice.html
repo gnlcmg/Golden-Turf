@@ -1,4 +1,3 @@
-            
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,212 +20,219 @@
 </head>
 <body>
     <div class="main-wrapper">
-        <div class="sidebar">
-            <div style="width:100%;text-align:center;margin-bottom:20px;">
-                <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
-            </div>
+        {% include '_sidebar.html' %}
 
-            <nav class="navbar">
-                <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
-                <div class="nav-dropdown">
-                    <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                    <div class="dropdown-content" style="background-color: #006400;">
-                        <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
-                        <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
-                        <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
-                    </div>
-                </div>
-                <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-                <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
-                <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-        <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
-                <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
-                <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
-            </div>
-        </nav>
-        </div>
-
-        <div class="content-area" style="background: linear-gradient(135deg, #006400 50%, #f58220 50%); padding: 2rem; margin-left:220px; width: calc(100vw - 220px); min-height: 100vh; box-sizing: border-box;">
+        <div class="content-area" style="background: linear-gradient(135deg, #006400 50%, #f58220 50%); padding: 2rem; margin-left: 280px; width: calc(100vw - 300px); min-height: 100vh; box-sizing: border-box;">
 
         <div style="max-width: 500px; margin: 0 auto; text-align: center; margin-bottom: 2rem;">
             <h1 style="color: white; font-size: 2rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Invoice Form</h1>
         </div>
 
-        <form method="POST" action="{{ url_for('invoice') }}" style="max-width: 500px; width: 100%; background: #fff; padding: 32px 32px 24px 32px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin: 0 auto;">
-            <section class="client-info">
-                <label for="client_name">Client Name:</label>
-                <input type="text" id="client_name" name="client_name" value="{{ client_name or '' }}" autocomplete="off" required placeholder="Start typing to search clients..." oninput="filterClients()" list="client_list" />
-                <datalist id="client_list">
-                    {% for client in clients %}
-                        <option value="{{ client }}">{{ client }}</option>
-                    {% endfor %}
-                </datalist>
-                <script>
-                function filterClients() {
-                    var input = document.getElementById('client_name');
-                    var filter = input.value.toLowerCase();
-                    var datalist = document.getElementById('client_list');
-                    var options = datalist.options;
-                    for (var i = 0; i < options.length; i++) {
-                        var txt = options[i].value.toLowerCase();
-                        options[i].style.display = txt.includes(filter) ? '' : 'none';
+        <div>
+        <div>
+            <form method="POST" action="{{ url_for('invoice') }}" style="max-width: 500px; width: 100%; background: #fff; padding: 32px 32px 24px 32px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin: 0 auto;">
+                <section class="client-info">
+                    <label for="client_name">Client Name:</label>
+                    <input type="text" id="client_name" name="client_name" value="{{ client_name or '' }}" autocomplete="off" required placeholder="Start typing to search clients..." oninput="filterClients()" list="client_list" />
+                    <datalist id="client_list">
+                        {% for client in clients %}
+                            <option value="{{ client }}">{{ client }}</option>
+                        {% endfor %}
+                    </datalist>
+                    <script>
+                    function filterClients() {
+                        var input = document.getElementById('client_name');
+                        var filter = input.value.toLowerCase();
+                        var datalist = document.getElementById('client_list');
+                        var options = datalist.options;
+                        for (var i = 0; i < options.length; i++) {
+                            var txt = options[i].value.toLowerCase();
+                            options[i].style.display = txt.includes(filter) ? '' : 'none';
+                        }
                     }
-                }
-                </script>
-                        <style>
-                          .responsive-container {
-                            max-width: 100vw;
-                            overflow-x: auto;
-                            margin: 0 auto;
-                            padding: 0 10px;
-                          }
-                          .responsive-table {
-                            width: 100%;
-                            max-width: 900px;
-                            font-size: 0.95em;
-                            border-collapse: collapse;
-                            margin: 0 auto;
-                            background: #fff;
-                            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-                          }
-                          .responsive-table th, .responsive-table td {
-                            padding: 6px 8px;
-                            text-align: left;
-                            border: 1px solid #e0e0e0;
-                            white-space: nowrap;
-                          }
-                          .responsive-table th {
-                            background: #f7f7f7;
-                            font-weight: 600;
-                          }
-                          @media (max-width: 600px) {
-                            .responsive-table {
-                              font-size: 0.85em;
-                            }
-                            .responsive-container {
-                              padding: 0 2px;
-                            }
-                          }
-                        </style>
+                    </script>
+                            <style>
+                              .responsive-container {
+                                max-width: 100vw;
+                                overflow-x: auto;
+                                margin: 0 auto;
+                                padding: 0 10px;
+                              }
+                              .responsive-table {
+                                width: 100%;
+                                max-width: 900px;
+                                font-size: 0.95em;
+                                border-collapse: collapse;
+                                margin: 0 auto;
+                                background: #fff;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                              }
+                              .responsive-table th, .responsive-table td {
+                                padding: 6px 8px;
+                                text-align: left;
+                                border: 1px solid #e0e0e0;
+                                white-space: nowrap;
+                              }
+                              .responsive-table th {
+                                background: #f7f7f7;
+                                font-weight: 600;
+                              }
+                              @media (max-width: 600px) {
+                                .responsive-table {
+                                  font-size: 0.85em;
+                                }
+                                .responsive-container {
+                                  padding: 0 2px;
+                                }
+                              }
+                            </style>
 
-                <label for="turf_type">Turf Type:</label>
-                <select id="turf_type" name="turf_type" required>
-                    <option value="none" {% if turf_type == 'none' %}selected{% endif %}>None</option>
-                    <option value="Golden Imperial Lush" {% if turf_type == 'Golden Imperial Lush' %}selected{% endif %}>Golden Imperial Lush</option>
-                    <option value="Golden Green Lush" {% if turf_type == 'Golden Green Lush' %}selected{% endif %}>Golden Green Lush</option>
-                    <option value="Golden Natural 40mm" {% if turf_type == 'Golden Natural 40mm' %}selected{% endif %}>Golden Natural 40mm</option>
-                    <option value="Golden Golf Turf" {% if turf_type == 'Golden Golf Turf' %}selected{% endif %}>Golden Golf Turf</option>
-                    <option value="Golden Premium Turf" {% if turf_type == 'Golden Premium Turf' %}selected{% endif %}>Golden Premium Turf</option>
-                </select>
+                    <label for="turf_type">Turf Type:</label>
+                    <select id="turf_type" name="turf_type" required>
+                        <option value="none" {% if turf_type == 'none' %}selected{% endif %}>None</option>
+                        <option value="Golden Imperial Lush" {% if turf_type == 'Golden Imperial Lush' %}selected{% endif %}>Golden Imperial Lush</option>
+                        <option value="Golden Green Lush" {% if turf_type == 'Golden Green Lush' %}selected{% endif %}>Golden Green Lush</option>
+                        <option value="Golden Natural 40mm" {% if turf_type == 'Golden Natural 40mm' %}selected{% endif %}>Golden Natural 40mm</option>
+                        <option value="Golden Golf Turf" {% if turf_type == 'Golden Golf Turf' %}selected{% endif %}>Golden Golf Turf</option>
+                        <option value="Golden Premium Turf" {% if turf_type == 'Golden Premium Turf' %}selected{% endif %}>Golden Premium Turf</option>
+                    </select>
 
-                <label for="area">Area (sq meters):</label>
-                <input type="number" id="area" name="area" min="0.01" step="0.01" value="{{ area or '' }}" required />
+                    <label for="area">Area (sq meters):</label>
+                    <input type="number" id="area" name="area" min="0.01" step="0.01" value="{{ area or '' }}" required />
 
-                <!-- Removed single extra_fee input -->
+                    <!-- Removed single extra_fee input -->
 
-                <fieldset>
-                    <legend>Extras</legend>
+                    <fieldset>
+                        <legend>Extras</legend>
 
-                    <div>
-                        <label><input type="checkbox" id="artificial_hedges_check"> Artificial Hedges (per 50cm x 50cm)</label>
-                        <div id="artificial_hedges_div" style="display:none;">
-                            <label for="artificial_hedges_qty">Quantity:</label>
-                            <input type="number" id="artificial_hedges_qty" name="artificial_hedges_qty" min="0" step="1" value="{{ artificial_hedges_qty or 0 }}" />
+                        <div>
+                            <label><input type="checkbox" id="artificial_hedges_check"> Artificial Hedges (per 50cm x 50cm)</label>
+                            <div id="artificial_hedges_div" style="display:none;">
+                                <label for="artificial_hedges_qty">Quantity:</label>
+                                <input type="number" id="artificial_hedges_qty" name="artificial_hedges_qty" min="0" step="1" value="{{ artificial_hedges_qty or 0 }}" />
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label><input type="checkbox" id="fountain_check"> Fountain</label>
-                        <div id="fountain_div" style="display:none;">
-                            <label for="fountain_price">Price:</label>
-                            <input type="number" id="fountain_price" name="fountain_price" min="0" step="0.01" value="{{ fountain_price or 0 }}" />
+                        <div>
+                            <label><input type="checkbox" id="fountain_check"> Fountain</label>
+                            <div id="fountain_div" style="display:none;">
+                                <label for="fountain_price">Price:</label>
+                                <input type="number" id="fountain_price" name="fountain_price" min="0" step="0.01" value="{{ fountain_price or 0 }}" />
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label><input type="checkbox" id="bamboo_check"> Bamboo Products (various sizes)</label>
-                        <div id="bamboo_div" style="display:none;">
-                            <label for="bamboo_products_size">Size:</label>
-                            <select id="bamboo_products_size" name="bamboo_products_size">
-                                <option value="none" {% if bamboo_products_size == 'none' %}selected{% endif %}>None</option>
-                                <option value="2m" {% if bamboo_products_size == '2m' %}selected{% endif %}>2 metres</option>
-                                <option value="2.4m" {% if bamboo_products_size == '2.4m' %}selected{% endif %}>2.4 metres</option>
-                                <option value="1.8m" {% if bamboo_products_size == '1.8m' %}selected{% endif %}>1.8 metres</option>
-                            </select>
-                            <label for="bamboo_products_qty">Quantity:</label>
-                            <input type="number" id="bamboo_products_qty" name="bamboo_products_qty" min="0" step="1" value="{{ bamboo_products_qty or 0 }}" />
+                        <div>
+                            <label><input type="checkbox" id="bamboo_check"> Bamboo Products (various sizes)</label>
+                            <div id="bamboo_div" style="display:none;">
+                                <label for="bamboo_products_size">Size:</label>
+                                <select id="bamboo_products_size" name="bamboo_products_size">
+                                    <option value="none" {% if bamboo_products_size == 'none' %}selected{% endif %}>None</option>
+                                    <option value="2m" {% if bamboo_products_size == '2m' %}selected{% endif %}>2 metres</option>
+                                    <option value="2.4m" {% if bamboo_products_size == '2.4m' %}selected{% endif %}>2.4 metres</option>
+                                    <option value="1.8m" {% if bamboo_products_size == '1.8m' %}selected{% endif %}>1.8 metres</option>
+                                </select>
+                                <label for="bamboo_products_qty">Quantity:</label>
+                                <input type="number" id="bamboo_products_qty" name="bamboo_products_qty" min="0" step="1" value="{{ bamboo_products_qty or 0 }}" />
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label><input type="checkbox" id="pebbles_check"> Pebbles (20kg bag)</label>
-                        <div id="pebbles_div" style="display:none;">
-                            <label for="pebbles_custom_type">Type (e.g. Black, White, Mixed):</label>
-                            <input type="text" id="pebbles_custom_type" name="pebbles_custom_type" placeholder="Type (e.g. Black, White, Mixed)" value="{{ pebbles_custom_type or '' }}" />
-                            <label for="pebbles_qty">Quantity:</label>
-                            <input type="number" id="pebbles_qty" name="pebbles_qty" min="0" step="1" value="{{ pebbles_qty or 0 }}" />
+                        <div>
+                            <label><input type="checkbox" id="pebbles_check"> Pebbles (20kg bag)</label>
+                            <div id="pebbles_div" style="display:none;">
+                                <label for="pebbles_custom_type">Type (e.g. Black, White, Mixed):</label>
+                                <input type="text" id="pebbles_custom_type" name="pebbles_custom_type" placeholder="Type (e.g. Black, White, Mixed)" value="{{ pebbles_custom_type or '' }}" />
+                                <label for="pebbles_qty">Quantity:</label>
+                                <input type="number" id="pebbles_qty" name="pebbles_qty" min="0" step="1" value="{{ pebbles_qty or 0 }}" />
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label><input type="checkbox" id="pegs_check"> Pegs (U-pins/Nails)</label>
-                        <div id="pegs_div" style="display:none;">
-                            <label for="pegs_qty">Quantity:</label>
-                            <input type="number" id="pegs_qty" name="pegs_qty" min="0" step="1" value="{{ pegs_qty or 0 }}" />
+                        <div>
+                            <label><input type="checkbox" id="pegs_check"> Pegs (U-pins/Nails)</label>
+                            <div id="pegs_div" style="display:none;">
+                                <label for="pegs_qty">Quantity:</label>
+                                <input type="number" id="pegs_qty" name="pegs_qty" min="0" step="1" value="{{ pegs_qty or 0 }}" />
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label><input type="checkbox" id="adhesive_tape_check"> Adhesive Joining Tape (15 metres)</label>
-                        <div id="adhesive_tape_div" style="display:none;">
-                            <label for="adhesive_tape_qty">Quantity:</label>
-                            <input type="number" id="adhesive_tape_qty" name="adhesive_tape_qty" min="0" step="1" value="{{ adhesive_tape_qty or 0 }}" />
+                        <div>
+                            <label><input type="checkbox" id="adhesive_tape_check"> Adhesive Joining Tape (15 metres)</label>
+                            <div id="adhesive_tape_div" style="display:none;">
+                                <label for="adhesive_tape_qty">Quantity:</label>
+                                <input type="number" id="adhesive_tape_qty" name="adhesive_tape_qty" min="0" step="1" value="{{ adhesive_tape_qty or 0 }}" />
+                            </div>
                         </div>
-                    </div>
-                </fieldset>
+                    </fieldset>
 
-                {% set extras_costs = {
-                    'none': 0,
-                    'artificial_hedges': 10,
-                    'fountain': 150,
-                    'bamboo_2m': 40,
-                    'bamboo_2_4m': 38,
-                    'bamboo_1_8m': 38,
-                    'black_pebbles': 18,
-                    'white_pebbles': 15,
-                    'adhesive_tape': 25,
-                    'pegs': 20
-                } %}
+                    {% set extras_costs = {
+                        'none': 0,
+                        'artificial_hedges': 10,
+                        'fountain': 150,
+                        'bamboo_2m': 40,
+                        'bamboo_2_4m': 38,
+                        'bamboo_1_8m': 38,
+                        'black_pebbles': 18,
+                        'white_pebbles': 15,
+                        'adhesive_tape': 25,
+                        'pegs': 20
+                    } %}
 
-                <label for="payment_status">Payment Status:</label>
-                <select id="payment_status" name="payment_status" required>
-                    <option value="" disabled selected>Select payment status</option>
-                    <option value="Paid" {% if payment_status == 'Paid' %}selected{% endif %}>Paid</option>
-                    <option value="Unpaid" {% if payment_status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
-                </select>
+                    <label for="payment_status">Payment Status:</label>
+                    <select id="payment_status" name="payment_status" required>
+                        <option value="" disabled selected>Select payment status</option>
+                        <option value="Paid" {% if payment_status == 'Paid' %}selected{% endif %}>Paid</option>
+                        <option value="Unpaid" {% if payment_status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
+                    </select>
 
-                <label for="gst">Apply GST (10%):</label>
-                <input type="checkbox" id="gst" name="gst" value="yes" {% if gst == 'yes' %}checked{% endif %} />
-            </section>
+                    <label for="gst">Apply GST (10%):</label>
+                    <input type="checkbox" id="gst" name="gst" value="yes" {% if gst == 'yes' %}checked{% endif %} />
+                </section>
 
-            <div class="form-actions">
-                <button type="submit">Submit Invoice (GST 10% applies)</button>
-                <button type="button" onclick="window.print()">Print Invoice</button>
-            </div>
+                <div class="form-actions">
+                    <button type="submit">Submit Invoice (GST 10% applies)</button>
+                    <button type="button" onclick="window.print()">Print Invoice</button>
+                </div>
             </form>
         </div>
 
-        {% if summary %}
-        <div class="invoice-summary">
-            <h2>Invoice Summary</h2>
-            <p>Client Name: {{ summary.client_name }}</p>
-            <p>Turf Type: {{ summary.turf_type }}</p>
-            <p>Area: {{ summary.area }} sq m</p>
-            <p>Extras Cost: ${{ "%.2f"|format(summary.extras_cost) }}</p>
-            <p>GST: ${{ "%.2f"|format(summary.gst) }}</p>
-            <p>Total Price: ${{ "%.2f"|format(summary.total_price) }}</p>
+
+
+        <div class="responsive-container" style="margin-top: 2rem; max-width: 900px; margin-left: auto; margin-right: auto;">
+            <h2 style="color: white; text-align: center; margin-bottom: 1rem;">Invoices List</h2>
+            {% if invoices and invoices|length > 0 %}
+            <table class="responsive-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Client Name</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>GST</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr>
+                        <td>{{ invoice[0] }}</td>
+                        <td>{{ invoice[1] }}</td>
+                        <td>{{ invoice[2] }}</td>
+                        <td>{{ invoice[3] }}</td>
+                        <td>${{ "%.2f"|format(invoice[4]) }}</td>
+                        <td>${{ "%.2f"|format(invoice[5]) }}</td>
+                        <td>${{ "%.2f"|format(invoice[6]) }}</td>
+                        <td>{{ invoice[7] }}</td>
+                        <td>{{ invoice[8] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color: white; text-align: center;">No invoices found.</p>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
     <script>

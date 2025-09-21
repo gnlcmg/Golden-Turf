@@ -1,35 +1,25 @@
-<!DOCTYPE html>
+<!D    <title>Products List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <style>
+        /* Push sidebar bottom section down by 4px on products page */
+        .sidebar div[style*="position: absolute; bottom: 70px"] {
+            bottom: 66px !important;
+        }
+    </style>tml>
 <html>
 <head>
     <title>Products List</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <style>
+        /* Push sidebar bottom section down by 2px on products page */
+        .sidebar div[style*="position: absolute; bottom: 70px"] {
+            bottom: 68px !important;
+        }
+    </style>
 </head>
 <body style="margin:0;">
-    <div class="sidebar">
-        <div style="width:100%;text-align:center;margin-bottom:20px;">
-            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
-        </div>
-        <h2 style="color: orange;">Golden Turf</h2>
-        <nav class="navbar">
-            <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
-            <div class="nav-dropdown">
-                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                <div class="dropdown-content" style="background-color: #006400;">
-                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
-                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
-                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
-                </div>
-            </div>
-            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
-            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-    <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
-            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
-            <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
-        </div>
-    </nav>
-    </div>
-    <div class="main-content" style="margin-left: 220px; color: #222; padding: 48px 48px 48px 48px; max-width: calc(100vw - 220px); background: #fff; min-height: 100vh; box-sizing: border-box;">
+    {% include '_sidebar.html' %}
+    <div class="main-content" style="margin-left: 280px; color:#222; padding:48px 24px 48px 24px; width: calc(100vw - 300px); background:#fff; min-height:100vh; box-sizing:border-box;">
         <div class="products-list-header">
             <!-- Logo already in sidebar -->
         </div>
@@ -62,8 +52,7 @@
                                 <td>Standard length</td>
                                 <td><input type="number" name="bamboo_2m_stock" value="{{ bamboo_2m_stock }}" min="0" style="width:60px;"></td>
                                 <td>
-                                    <input type="number" name="bamboo_2m_price" value="{{ bamboo_2m_price if bamboo_2m_price is defined else 40 }}" step="0.01" style="width:80px;">
-                                    <span style="margin-left:8px; color:#28a745; font-weight:bold; font-size:16px; background:#e8f5e8; padding:2px 6px; border-radius:3px;">$40</span>
+                                    <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span>
                                 </td>
                             </tr>
                             <tr>
@@ -71,8 +60,7 @@
                                 <td>Longer, for fencing/screens</td>
                                 <td><input type="number" name="bamboo_24m_stock" value="{{ bamboo_24m_stock }}" min="0" style="width:60px;"></td>
                                 <td>
-                                    <input type="number" name="bamboo_24m_price" value="{{ bamboo_24m_price if bamboo_24m_price is defined else 38 }}" step="0.01" style="width:80px;">
-                                    <span style="margin-left:8px; color:#28a745; font-weight:bold; font-size:16px; background:#e8f5e8; padding:2px 6px; border-radius:3px;">$38</span>
+                                    <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span>
                                 </td>
                             </tr>
                             <tr>
@@ -80,8 +68,7 @@
                                 <td>Shorter, for borders/edging</td>
                                 <td><input type="number" name="bamboo_18m_stock" value="{{ bamboo_18m_stock }}" min="0" style="width:60px;"></td>
                                 <td>
-                                    <input type="number" name="bamboo_18m_price" value="{{ bamboo_18m_price if bamboo_18m_price is defined else 38 }}" step="0.01" style="width:80px;">
-                                    <span style="margin-left:8px; color:#28a745; font-weight:bold; font-size:16px; background:#e8f5e8; padding:2px 6px; border-radius:3px;">$38</span>
+                                    <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span>
                                 </td>
                             </tr>
                             <!-- Pebbles -->
@@ -120,8 +107,8 @@
                 <td>Fountains</td>
                 <td>-</td>
                 <td>Fountain</td>
-                <td><input type="number" name="fountain_stock" value="{{ fountain_stock }}" min="0"></td>
-                <td><input type="text" name="fountain_price" value="Custom"></td>
+                <td><input type="text" name="fountain_stock" value="{{ fountain_stock }}" min="Prices will vary"></td>
+                <td><span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span></td>
                 <td>
                     <div class="image-slider" data-images='{{ fountain_images|tojson }}'>
                         <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
@@ -133,46 +120,63 @@
 
             <!-- Other products (default loop) -->
             {% for product in products %}
-                {% if product[0] not in ['Bamboo Products', 'Pebbles', 'Fountains'] %}
+                {% if product[0] == 'Bamboo Products' %}
                 <tr>
                     <td>{{ product[0] }}</td>
                     <td>{{ product[1] }}</td>
                     <td>{{ product[2] }}</td>
-                    <td>
-                        <form method="POST" action="{{ url_for('update_product_price', product_id=product[6]) }}" style="display:inline;">
-                            <input type="number" name="stock" value="{{ product[3] }}" min="0" style="width:60px;">
-                    </td>
-                    <td>
-                                {% if 'Bamboo' in product[0] %}
-                                    {% if '2.0' in product[0] or '2m' in product[0] %}
-                                        <input type="number" name="price" value="{{ product[4] if product[4] != 0 else 40 }}" step="0.01" style="width:80px;">
-                                    {% elif '2.4' in product[0] %}
-                                        <input type="number" name="price" value="{{ product[4] if product[4] != 0 else 38 }}" step="0.01" style="width:80px;">
-                                    {% elif '1.8' in product[0] %}
-                                        <input type="number" name="price" value="{{ product[4] if product[4] != 0 else 38 }}" step="0.01" style="width:80px;">
-                                    {% else %}
-                                        <input type="number" name="price" value="{{ product[4] }}" step="0.01" style="width:80px;">
-                                    {% endif %}
-                                {% else %}
-                                    <input type="number" name="price" value="{{ product[4] }}" step="0.01" style="width:80px;">
-                                {% endif %}
-                            <button type="submit" style="margin-left:8px; padding:4px 12px; background:#006400; color:#fff; border:none; border-radius:4px; cursor:pointer;">Edit</button>
-                        </form>
-                    </td>
-                    <td>
-                        {% if product[5] %}
-                        <div class="image-slider" data-images='["{{ product[5] }}"]'>
-                            <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                            <img src="{{ product[5] }}" alt="{{ product[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                            <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                        </div>
-                        {% else %}
-                        No image
-                        {% endif %}
-                    </td>
-                </tr>
+            <td>
+                <form method="POST" action="{{ url_for('update_product_price', product_id=product[6]) }}" style="display:inline;">
+                    <input type="number" name="stock" value="{{ product[3] }}" min="0" style="width:60px;">
+            </td>
+            <td>
+                <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span>
+            </td>
+            <td>
+                {% if product[5] %}
+                <div class="image-slider" data-images='["{{ product[5] }}"]'>
+                    <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                    <img src="{{ product[5] }}" alt="{{ product[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                    <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                </div>
+                {% else %}
+                No image
                 {% endif %}
-            {% endfor %}
+            </td>
+        </tr>
+        {% elif product[0] not in ['Pebbles', 'Fountains'] %}
+        <tr>
+            <td>{{ product[0] }}</td>
+            <td>{{ product[1] }}</td>
+            <td>{{ product[2] }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('update_product_price', product_id=product[6]) }}" style="display:inline;">
+                    <input type="number" name="stock" value="{{ product[3] }}" min="0" style="width:60px;">
+            </td>
+            <td>
+                {% if product[0].startswith('Bamboo') or 'Fountain' in product[0] or product[4] == 0 %}
+                    <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Price varies</span>
+                {% else %}
+                    ${{ '%.2f'|format(product[4]) }}
+                {% endif %}
+                <form method="POST" action="{{ url_for('update_product_price', product_id=product[6]) }}" style="display:inline;">
+                    <button type="submit" style="margin-left:8px; padding:4px 12px; background:#006400; color:#fff; border:none; border-radius:4px; cursor:pointer;">Edit</button>
+                </form>
+            </td>
+            <td>
+                {% if product[5] %}
+                <div class="image-slider" data-images='["{{ product[5] }}"]'>
+                    <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                    <img src="{{ product[5] }}" alt="{{ product[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                    <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                </div>
+                {% else %}
+                No image
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+    {% endfor %}
         </table>
 
         <style>

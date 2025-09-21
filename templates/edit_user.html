@@ -1,8 +1,7 @@
-     <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #006400; color: white;">
+    <div class="sidebar" style="border-right: 1px solid #e2e8f0; min-width: 200px; max-width: 200px; background: #006400; color: white; height: 100vh; position: fixed;">
         <div style="width:100%;text-align:center;margin-bottom:20px;">
             <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
         </div>
-        <h2 style="color: orange;">Golden Turf</h2>
         <nav class="navbar">
             <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
             <div class="nav-dropdown">
@@ -16,12 +15,12 @@
             <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
             <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
             <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+            <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
+                <p style="color: white; margin-bottom: 10px;">Logged in as: {{ session.get('user_name', 'Unknown') }}</p>
+                <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+                <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+            </div>
         </nav>
-        <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
-            <p style="color: white; margin-bottom: 10px;">Logged in as: {{ session.get('user_name', 'Unknown') }}</p>
-            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
-            <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
-        </div>
     </div>
 <!DOCTYPE html>
 <html lang="en">
@@ -149,16 +148,21 @@
 
             <label for="permissions">Permissions:</label>
             {% if user[3] == 'user' %}
-            <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                {% set modules = ['dashboard', 'products', 'clients', 'quotes', 'payments', 'calendar'] %}
+            <div style="margin-top: 6px;">
+                {% set modules = [
+                    ('products_list', 'Products List'),
+                    ('invoice', 'Invoices Form'),
+                    ('clients', 'Clients Form'),
+                    ('quotes', 'Quotation Form'),
+                    ('clients_invoices', 'Clients & Invoices List'),
+                    ('calendar', 'Calendar')
+                ] %}
                 {% set user_permissions = user[4].split(',') if user[4] else [] %}
-                {% for module in modules %}
-                    <label style="margin-bottom: 2px;">
-                        <input type="checkbox" name="permissions" value="{{ module }}" {% if module in user_permissions %}checked{% endif %}>
-                        Allow access to {{ module|capitalize }}
-                    </label>
+                {% for module, label in modules %}
+                    <input type="checkbox" name="permissions" value="{{ module }}" id="perm_{{ module }}" style="margin-right: 8px; vertical-align: middle;" {% if module in user_permissions %}checked{% endif %}>
+                    <label for="perm_{{ module }}" style="margin: 0 0 4px 0; cursor: pointer; vertical-align: middle;">{{ label }}</label><br>
                 {% endfor %}
-                <span style="font-size: 12px; color: #888;">(Tick to allow access. Unticked = blocked.)</span>
+                <span style="font-size: 12px; color: #888; margin-top: 4px;">(Tick to allow access. Unticked = blocked.)</span>
             </div>
             {% else %}
             <div style="color: #888; font-size: 13px; margin-bottom: 10px;">Admin has full access to all modules.</div>

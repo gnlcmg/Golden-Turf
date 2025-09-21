@@ -40,22 +40,5 @@ body {
     margin-left: 8px;
 }
 
-/* Sidebar styles for payments page */
-.sidebar {
-    background-color: #2f6f2f !important; /* Change to green */
-    color: #FFFFFF !important; /* Change font color to white */
-    padding: 20px;
-}
-
-.sidebar h2 {
-    color: white;
-}
-
-.sidebar nav a {
-    color: #FFFFFF; 
-    text-decoration: none;
-}
-
-.sidebar nav a:hover {
-    color: #f0f0f0;
-}
+/* Sidebar styles removed to avoid conflicts */
+/* Sidebar styles should be in dashboard.css only */

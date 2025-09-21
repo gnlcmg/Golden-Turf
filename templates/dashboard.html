@@ -14,36 +14,12 @@
     </style>
 </head>
 <body>
-    <div class="sidebar" style="position: fixed; top: 0; left: 0; width: 200px; height: 100vh; background-color: #006400; color: white; padding: 2rem; border-right: 1px solid #e2e8f0;">
-        <div style="width:100%;text-align:center;margin-bottom:20px;">
-            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
-        </div>
-        <h2 style="color: orange;">Golden Turf</h2>
-        <nav class="navbar">
-            <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
-            <div class="nav-dropdown">
-                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
-                <div class="dropdown-content" style="position: absolute; background-color: #006400; min-width: 160px; z-index: 1; border-radius: 4px;">
-                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
-                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
-                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
-                </div>
-            </div>
-            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
-            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
-            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
-    <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
-            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
-            <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
-        </div>
-    </nav>
-    </div>
-    </div>
-    <div class="main-content" style="margin-left:220px; padding: 48px 48px 48px 48px; max-width: calc(100vw - 220px);">
+    {% include '_sidebar.html' %}
+    <div class="main-content" style="margin-left: 280px; padding: 20px; width: calc(100vw - 300px); box-sizing: border-box;">
         <h1>Golden Turf Dashboard</h1>
 
         <div class="kpi-grid">
-            <div class="kpi-tile green">
+            <div class="kpi-tile orange">
                 <div class="kpi-label">Total Clients</div>
                 <div class="kpi-value">{{ total_clients }}</div>
             </div>
@@ -52,20 +28,12 @@
                 <div class="kpi-value">{{ yesterday_sales|default(0)|float|round(2) }}</div>
             </div>
             <div class="kpi-tile orange">
-                <div class="kpi-label">Total Services</div>
-                <div class="kpi-value">{{ total_services }}</div>
-            </div>
-            <div class="kpi-tile green">
                 <div class="kpi-label">Today Sales ($)</div>
                 <div class="kpi-value">{{ today_sales|default(0)|float|round(2) }}</div>
             </div>
             <div class="kpi-tile green">
                 <div class="kpi-label">Last 7 Days Sales ($)</div>
                 <div class="kpi-value">{{ last_7_days_sales|default(0)|float|round(2) }}</div>
-            </div>
-            <div class="kpi-tile orange">
-                <div class="kpi-label">Paid Sales ($)</div>
-                <div class="kpi-value">{{ "{:,.2f}".format(paid_sales|default(0)|float) }}</div>
             </div>
             <div class="kpi-tile orange">
                 <div class="kpi-label">Total Sales (All Invoices) ($)</div>
@@ -83,10 +51,11 @@
         {% endif %}
 
 
-        {% if user_role == 'admin' or user_role == 'owner' %}
         <div class="admin-buttons" style="margin-bottom: 20px;">
+            {% if user_role == 'admin' or user_role == 'owner' %}
             <button onclick="window.location.href='/quotes';">Generate Quote</button>
             <button onclick="window.location.href='/calendar';">View Calendar</button>
+            {% endif %}
         </div>
         <section class="admin-list" style="margin-bottom: 30px;">
             <h2>Admin Users</h2>
@@ -96,10 +65,13 @@
                 {% endfor %}
             </ul>
         </section>
-        {% endif %}
 
         <footer>
         </footer>
     </div>
 </body>
 </html>
+
+
+
+

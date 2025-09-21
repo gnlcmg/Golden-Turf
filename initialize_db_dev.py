@@ -1,7 +1,7 @@
 import sqlite3
 
 def initialize_database():
-    conn = sqlite3.connect('users.db')
+    conn = sqlite3.connect('dev_users.db')
     c = conn.cursor()
 
     # Create users table
@@ -99,7 +99,7 @@ def initialize_database():
 
     conn.commit()
     conn.close()
-    print("Database initialized successfully.")
+    print("Development database initialized successfully.")
 
 if __name__ == "__main__":
     initialize_database()

@@ -16,43 +16,100 @@ app.config['MAIL_SUPPRESS_SEND'] = True
 app.secret_key = 'REPLACE_THIS_WITH_A_RANDOM_SECRET_KEY_1234567890'
 
 def has_permission(module):
-    # TEMP: Always allow all permissions
+    """
+    Check if the current user has permission for a specific module.
+    Returns True if user is admin, user_id is 1, or has specific permission.
+    Handles both old permission names and new granular permissions.
+    """
+    if 'user_role' not in session:
+        return False
+    if session.get('user_role') == 'admin' or session.get('user_id') == 1:
+        return True
+    user_permissions = session.get('user_permissions', '')
+    if not user_permissions:
+        return False
+    permissions_list = [p.strip() for p in user_permissions.split(',') if p.strip()]
+
+    # Handle backward compatibility for old permission names
+    if module == 'products':
+        # Old 'products' permission now maps to multiple product permissions
+        product_permissions = ['turf_products', 'artificial_hedges', 'fountains', 'bamboo_products', 'pebbles', 'pegs', 'adhesive_tape']
+        return any(perm in permissions_list for perm in product_permissions)
+
+    return module in permissions_list
+
+def can_change_role(current_user_id, target_user_id):
+    """
+    Check if current user can change the role of target user.
+    Users cannot change their own role.
+    """
+    if current_user_id == target_user_id:
+        return False
     return True
 
-@app.route('/')
-def home():
-    return redirect(url_for('register'))
+def can_demote_admin(target_user_id, new_role):
+    """
+    Check if it's safe to demote an admin user.
+    Cannot demote if this would leave no admins. Any admin, including ID 1, can be demoted as long as at least one admin remains after.
+    """
+    if new_role != 'admin':
+        # Check if this would leave at least one admin after demotion
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+        admin_count = c.fetchone()[0]
+        conn.close()
 
-@app.route('/payments-quote', methods=['GET', 'POST'])
-def payments_quote():
-    error = None
-    total_price = None
-    # Fetch all product prices from DB for dynamic pricing
+        # If this user is currently admin and we're demoting them,
+        # and there would be zero admins left, prevent the demotion
+        if admin_count == 1:
+            return False
+
+    return True
+
+def migrate_users_table():
+    """
+    Migrate users table to add missing columns.
+    """
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('SELECT product_name, price FROM products')
-    price_table = {row[0]: row[1] for row in c.fetchall()}
+    c.execute("PRAGMA table_info(users)")
+    columns = [info[1] for info in c.fetchall()]
+
+    if 'reset_token' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN reset_token TEXT")
+        print("Added reset_token column to users table")
+
+    if 'token_expiry' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN token_expiry TEXT")
+        print("Added token_expiry column to users table")
+
+    if 'role' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
+        # Set first user as admin if exists
+        c.execute("SELECT id FROM users ORDER BY id LIMIT 1")
+        first_user = c.fetchone()
+        if first_user:
+            c.execute("UPDATE users SET role = 'admin' WHERE id = ?", (first_user[0],))
+        print("Added role column to users table")
+
+    if 'permissions' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT ''")
+        print("Added permissions column to users table")
+
+    if 'verification_code' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN verification_code TEXT")
+        print("Added verification_code column to users table")
+
+    conn.commit()
     conn.close()
-    if request.method == 'POST':
-        client_name = request.form.get('client_name', '').strip()
-        area_in_sqm = request.form.get('area_in_sqm', type=float)
-        turf_type = request.form.get('turf_type')
-        size_option = request.form.get('size_option')
-        quantity = request.form.get('quantity', type=int)
-        if not client_name:
-            error = 'Please enter your name'
-        elif not area_in_sqm or area_in_sqm <= 0:
-            error = 'Area must be more than zero'
-        elif not turf_type or turf_type not in price_table:
-            error = 'Please select a valid turf type'
-        elif not size_option or size_option not in price_table[turf_type]:
-            error = 'Please select a valid size option'
-        elif not quantity or quantity <= 0:
-            error = 'Quantity must be at least 1'
-        else:
-            price = price_table[turf_type][size_option]
-            total_price = round(area_in_sqm * price * quantity, 2)
-    return render_template('payments_quote.html', error=error, total_price=total_price)
+
+
+
+@app.route('/', methods=['GET'])
+def home():
+    """Root route - redirect to login page"""
+    return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -75,11 +132,13 @@ def register():
         c = conn.cursor()
         c.execute('SELECT COUNT(*) FROM users')
         user_count = c.fetchone()[0]
-        # Ensure first user is admin, and if only one user exists, always admin
-        role = 'admin' if user_count == 0 else 'user'
+        # All manually added users start as 'user' role
+        # Only user ID 1 (first user) will be admin by default
+        role = 'user'
+        permissions = ''  # No permissions by default
         try:
-            c.execute('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-                      (name, email, hashed_password.decode('utf-8'), role))
+            c.execute('INSERT INTO users (name, email, password, role, permissions) VALUES (?, ?, ?, ?, ?)',
+                      (name, email, hashed_password.decode('utf-8'), role, permissions))
             conn.commit()
             flash('Registration successful!')
             conn.close()
@@ -217,10 +276,47 @@ def dashboard():
     total_clients = len(clients)
     total_services = sum(1 for job in jobs if job[3] == 'Completed')
 
-    total_sales = sum(float(payment[8]) for payment in payments if payment[2] == 'Paid')
-    today_sales = sum(float(payment[8]) for payment in payments if payment[2] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d %H:%M:%S').date() == today)
-    yesterday_sales = sum(float(payment[8]) for payment in payments if payment[2] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d %H:%M:%S').date() == yesterday)
-    last_7_days_sales = sum(float(payment[8]) for payment in payments if payment[2] == 'Paid' and datetime.strptime(payment[3], '%Y-%m-%d %H:%M:%S').date() >= last_7_days)
+    # Fix sales calculations to use proper invoice data  
+    # Query result format: [id, client_name, status, created_date, product, quantity, price, gst, total, owner_id]
+    # Index 8 is the total amount, index 2 is the status, index 3 is created_date
+    
+    # Calculate sales only from PAID invoices
+    # Filter for paid invoices only (status != 'Unpaid')
+    paid_payments = [payment for payment in payments if payment[2] != 'Unpaid']
+    
+    total_sales_paid_only = sum(float(payment[8]) for payment in paid_payments if payment[8] is not None)
+    
+    # Calculate time-based sales (only from PAID invoices)
+    today_sales = 0
+    yesterday_sales = 0
+    last_7_days_sales = 0
+    
+    for payment in paid_payments:  # Only iterate through paid invoices
+        if payment[8] is not None and payment[3]:  # Has total and date
+            try:
+                invoice_date = datetime.strptime(payment[3], '%Y-%m-%d %H:%M:%S').date()
+                amount = float(payment[8])
+                
+                if invoice_date == today:
+                    today_sales += amount
+                elif invoice_date == yesterday:
+                    yesterday_sales += amount
+                    
+                if invoice_date >= last_7_days:
+                    last_7_days_sales += amount
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Date parsing error for payment {payment[0]}: {e}")
+                continue
+    
+    # Debug output
+    print(f"DEBUG - Dashboard calculations (PAID invoices only):")
+    print(f"  Found {len(payments)} total invoices ({len(paid_payments)} paid)")
+    print(f"  Total sales (paid only): ${total_sales_paid_only}")
+    print(f"  Today sales: ${today_sales}")
+    print(f"  Yesterday sales: ${yesterday_sales}") 
+    print(f"  Last 7 days sales: ${last_7_days_sales}")
+    print(f"  Date ranges: today={today}, yesterday={yesterday}, last_7_days={last_7_days}")
 
     upcoming_jobs = [job for job in jobs if datetime.strptime(job[2], '%Y-%m-%d').date() >= today]
     overdue_jobs = [job for job in jobs if datetime.strptime(job[2], '%Y-%m-%d').date() < today and job[3] != 'Completed']
@@ -245,7 +341,7 @@ def dashboard():
     return render_template('dashboard.html',
                            total_clients=total_clients,
                            total_services=total_services,
-                           total_sales=total_sales,
+                           total_sales=total_sales_paid_only,  # Show only paid invoices
                            today_sales=today_sales,
                            yesterday_sales=yesterday_sales,
                            last_7_days_sales=last_7_days_sales,
@@ -283,10 +379,13 @@ def query_all_jobs(user_id):
 def query_all_payments(user_id):
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date, invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total
+    # Updated query to ensure we get owner_id and all invoice data properly
+    c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date, 
+                        invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total, invoices.owner_id
                   FROM invoices
                   LEFT JOIN clients ON invoices.client_id = clients.id
-                  WHERE invoices.owner_id = ?''', (user_id,))
+                  WHERE invoices.owner_id = ?
+                  ORDER BY invoices.created_date DESC''', (user_id,))
     payments = c.fetchall()
     conn.close()
     return payments
@@ -341,33 +440,6 @@ def migrate_tasks_table():
         conn.commit()
     if 'assigned_user_id' not in columns:
         c.execute("ALTER TABLE tasks ADD COLUMN assigned_user_id INTEGER")
-        conn.commit()
-    conn.close()
-
-def migrate_users_table():
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    c.execute("PRAGMA table_info(users)")
-    columns = [info[1] for info in c.fetchall()]
-    if 'reset_token' not in columns:
-        c.execute("ALTER TABLE users ADD COLUMN reset_token TEXT")
-        conn.commit()
-    if 'token_expiry' not in columns:
-        c.execute("ALTER TABLE users ADD COLUMN token_expiry TEXT")
-        conn.commit()
-    if 'role' not in columns:
-        c.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
-        # Set first user as admin if exists
-        c.execute("SELECT id FROM users ORDER BY id LIMIT 1")
-        first_user = c.fetchone()
-        if first_user:
-            c.execute("UPDATE users SET role = 'admin' WHERE id = ?", (first_user[0],))
-        conn.commit()
-    if 'permissions' not in columns:
-        c.execute("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT ''")
-        conn.commit()
-    if 'verification_code' not in columns:
-        c.execute("ALTER TABLE users ADD COLUMN verification_code TEXT")
         conn.commit()
     conn.close()
 
@@ -448,7 +520,6 @@ def clients():
 
     if not has_permission('clients'):
         return redirect(url_for('access_restricted'))
-
     user_id = session.get('user_id')
     if not user_id:
         return redirect(url_for('login'))
@@ -510,9 +581,7 @@ def profiles():
     if 'user_name' not in session:
         return redirect(url_for('login'))
 
-    # User with ID 1 always has access to profiles
-    if session.get('user_id') != 1 and session.get('user_role') != 'admin':
-        return redirect(url_for('access_restricted'))
+    # Allow all users to access profiles page, but restrict admin actions below
 
     if request.method == 'POST':
         name = request.form['name']
@@ -526,8 +595,9 @@ def profiles():
         else:
             conn = sqlite3.connect('users.db')
             c = conn.cursor()
+            permissions = ''  # No permissions by default for new users
             try:
-                c.execute('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)', (name, email, password, 'admin'))
+                c.execute('INSERT INTO users (name, email, password, role, permissions) VALUES (?, ?, ?, ?, ?)', (name, email, password, 'user', permissions))
                 conn.commit()
                 flash('User added successfully!')
             except sqlite3.IntegrityError:
@@ -536,16 +606,18 @@ def profiles():
 
         return redirect(url_for('profiles'))
 
-
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    # Ensure user with ID 1 is always admin
-    c.execute('UPDATE users SET role = "admin" WHERE id = 1')
-    conn.commit()
+    # Do not forcibly set user ID 1 as admin; allow demotion if at least one admin remains
     c.execute('SELECT id, name, email, role, permissions FROM users ORDER BY id')
     users = c.fetchall()
+    # Find all admin users
+    c.execute('SELECT id FROM users WHERE role = "admin"')
+    admin_ids = [row[0] for row in c.fetchall()]
     conn.close()
-    return render_template('profiles.html', users=users)
+    # If only one admin, pass that admin's id for disabling
+    only_admin_id = admin_ids[0] if len(admin_ids) == 1 else None
+    return render_template('profiles.html', users=users, only_admin_id=only_admin_id)
 
 @app.route('/profiles/delete/<int:user_id>', methods=['POST'])
 def delete_user(user_id):
@@ -557,6 +629,9 @@ def delete_user(user_id):
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
+    # Check if the user being deleted is the current user
+    is_self_delete = user_id == session.get('user_id')
+    # Delete the user
     c.execute('DELETE FROM users WHERE id = ?', (user_id,))
     conn.commit()
 
@@ -570,7 +645,24 @@ def delete_user(user_id):
     # Reset the sqlite_sequence to ensure next insert uses sequential ID
     c.execute("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM users) WHERE name='users'")
     conn.commit()
+
+    # After deletion, check if any admins remain
+    c.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+    admin_count = c.fetchone()[0]
+    if admin_count == 0:
+        # Promote user ID 1 to admin if exists
+        c.execute('SELECT id FROM users WHERE id = 1')
+        user1 = c.fetchone()
+        if user1:
+            c.execute('UPDATE users SET role = "admin" WHERE id = 1')
+            conn.commit()
+
     conn.close()
+
+    if is_self_delete:
+        session.clear()
+        flash('Your account was deleted. If no admins remained, user ID 1 is now admin.')
+        return redirect(url_for('login'))
 
     flash('User deleted successfully!')
     return redirect(url_for('profiles'))
@@ -658,16 +750,28 @@ def toggle_admin(user_id):
     new_role = 'user' if current_role == 'admin' else 'admin'
 
     if not can_demote_admin(user_id, new_role):
-        if user_id == 1:
-            flash('User ID 1 must always be admin unless another admin exists.')
-        else:
+        # Check admin count for error message
+        conn2 = sqlite3.connect('users.db')
+        c2 = conn2.cursor()
+        c2.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+        admin_count = c2.fetchone()[0]
+        conn2.close()
+        if admin_count == 1:
             flash('Cannot remove admin rights if only one admin remains.')
+        else:
+            flash('Cannot remove admin rights.')
         conn.close()
         return redirect(url_for('profiles'))
 
     c.execute('UPDATE users SET role = ? WHERE id = ?', (new_role, user_id))
     conn.commit()
     conn.close()
+
+    # If the current user is revoking their own admin, update session and redirect
+    if user_id == current_user_id and new_role == 'user':
+        session['user_role'] = 'user'
+        flash('You have revoked your own admin rights. Access is now restricted.')
+        return redirect(url_for('access_restricted'))
 
     flash(f'User role updated to {new_role}!')
     return redirect(url_for('profiles'))
@@ -688,6 +792,10 @@ def update_permissions(user_id):
     c.execute('UPDATE users SET permissions = ? WHERE id = ?', (permissions, user_id))
     conn.commit()
     conn.close()
+
+    # If the current user's permissions were updated, update session immediately
+    if user_id == session.get('user_id'):
+        session['user_permissions'] = permissions
 
     flash('User permissions updated!')
     return redirect(url_for('profiles'))
@@ -754,6 +862,11 @@ def reset_password(email):
 
 @app.route('/invoice', methods=['GET', 'POST'])
 def invoice():
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    if not has_permission('invoice'):
+        return redirect(url_for('access_restricted'))
     if 'user_name' not in session:
         return redirect(url_for('login'))
 
@@ -857,10 +970,27 @@ def invoice():
         import json
         extras_json = json.dumps(extras_details)
 
-        # Save invoice to database
-        c.execute('''INSERT INTO invoices (client_id, product, quantity, price, gst, total, status, created_date, extras_json, owner_id)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?)''',
-                  (client_id, turf_type, area_val, price, gst_amount, total_price, payment_status, extras_json, session['user_id']))
+        # Save invoice to database with sequential ID
+        current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"DEBUG: Creating invoice with date: {current_date}")
+        
+        # Find the next available sequential ID starting from 1
+        c.execute('SELECT id FROM invoices WHERE owner_id = ? ORDER BY id', (session['user_id'],))
+        existing_ids = [row[0] for row in c.fetchall()]
+        
+        # Find the first gap or next number
+        next_id = 1
+        for existing_id in existing_ids:
+            if existing_id == next_id:
+                next_id += 1
+            else:
+                break
+        
+        print(f"DEBUG: Assigning invoice ID: {next_id}")
+        
+        c.execute('''INSERT INTO invoices (id, client_id, product, quantity, price, gst, total, status, created_date, extras_json, owner_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                  (next_id, client_id, turf_type, area_val, price, gst_amount, total_price, payment_status, current_date, extras_json, session['user_id']))
         conn.commit()
 
         # Fetch updated invoices
@@ -881,11 +1011,28 @@ def invoice():
             'total_price': total_price
         })
 
+    # For GET request, fetch existing invoices for this user
+    user_id = session.get('user_id')
+    if user_id:
+        c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
+                      invoices.gst, invoices.total, invoices.status, invoices.created_date
+                      FROM invoices
+                      LEFT JOIN clients ON invoices.client_id = clients.id
+                      WHERE invoices.owner_id = ?''', (user_id,))
+        invoices = c.fetchall()
+    else:
+        invoices = []
+    
     conn.close()
-    return render_template('invoice.html', clients=clients, products=products, price_table=price_table)
+    return render_template('invoice.html', clients=clients, products=products, price_table=price_table, invoices=invoices)
 
 @app.route('/products_list', methods=['GET', 'POST'])
 def products_list():
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
+    if not has_permission('products_list'):
+        return redirect(url_for('access_restricted'))
     import json
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
@@ -1116,7 +1263,7 @@ def products_list():
                 'turf_type': row[1],
                 'description': row[2],
                 'stock': row[3],
-                'price': row[4],
+                'price': 0,
                 'image_urls': fountain_images
             })
         elif row[0] == 'Bamboo':
@@ -1126,7 +1273,7 @@ def products_list():
                 'turf_type': '',
                 'description': 'Bamboo 2 metres',
                 'stock': row[3],
-                'price': 40.0,
+                'price': 0,
                 'image_urls': bamboo_images
             })
             products.append({
@@ -1134,7 +1281,7 @@ def products_list():
                 'turf_type': '',
                 'description': 'Bamboo 2.4 metres',
                 'stock': row[3],
-                'price': 38.0,
+                'price': 0,
                 'image_urls': bamboo_images
             })
             products.append({
@@ -1142,7 +1289,7 @@ def products_list():
                 'turf_type': '',
                 'description': 'Bamboo 1.8 metres',
                 'stock': row[3],
-                'price': 38.0,
+                'price': 0,
                 'image_urls': bamboo_images
             })
         elif row[0] == 'Peg (U-Pins/Nails)':
@@ -1281,19 +1428,16 @@ def quotes():
     return render_template('quotes.html', quotes=quotes)
 @app.route('/payments')
 def payments():
-    # Temporarily bypass authentication and permission checks for testing
-    # if 'user_name' not in session:
-    #     return redirect(url_for('login'))
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
 
-    # if not has_permission('payments'):
-    #     return redirect(url_for('access_restricted'))
-
+    if not has_permission('payments'):
+        return redirect(url_for('access_restricted'))
     import json
 
-    # Temporarily set user_id to 1 for testing
-    user_id = 1
-    # if not user_id:
-    #     return redirect(url_for('login'))
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
 
     # Get invoices data for payments including extras_json
     conn = sqlite3.connect('users.db')
@@ -1489,6 +1633,10 @@ def calendar():
 def edit_client(client_id):
     if 'user_name' not in session:
         return redirect(url_for('login'))
+    if not has_permission('clients'):
+        return redirect(url_for('access_restricted'))
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     if request.method == 'POST':
@@ -1534,23 +1682,23 @@ def edit_client(client_id):
 
 # Task management API endpoints
 @app.route('/api/tasks', methods=['GET'])
-def get_tasks():
+def get_all_tasks_api():
     if 'user_name' not in session:
         print("Unauthorized access attempt to get tasks.")
         return jsonify({'error': 'Unauthorized'}), 401
-    
+
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     c.execute('SELECT * FROM tasks ORDER BY task_date, task_time')
     tasks = c.fetchall()
     conn.close()
-    
+
     print(f"Retrieved {len(tasks)} tasks from database")
     if tasks:
         print("Tasks found:")
         for task in tasks:
             print(f"  - ID: {task[0]}, Title: {task[1]}, Date: {task[3]}")
-    
+
     # Convert to list of dictionaries
     task_list = []
     for task in tasks:
@@ -1565,8 +1713,9 @@ def get_tasks():
             'status': task[7],
             'created_at': task[8],
             'assigned_user_id': task[9] if len(task) > 9 else None
+       
         })
-    
+
     return jsonify(task_list)
 
 @app.route('/api/tasks', methods=['POST'], endpoint='add_task_api')
@@ -1617,8 +1766,6 @@ def api_users():
     users = [{'id': row[0], 'name': row[1], 'role': row[2]} for row in c.fetchall()]
     conn.close()
     return jsonify(users)
-
-    return jsonify({'message': 'Task added successfully', 'task_id': task_id}), 201
 
 @app.route('/api/tasks/<int:task_id>', methods=['GET'])
 def get_task(task_id):
@@ -1691,6 +1838,10 @@ def delete_task(task_id):
 def delete_client(client_id):
     if 'user_name' not in session:
         return redirect(url_for('login'))
+    if not has_permission('clients'):
+        return redirect(url_for('access_restricted'))
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
@@ -1711,6 +1862,10 @@ def delete_client(client_id):
 
 @app.route('/invoices/edit/<int:invoice_id>', methods=['GET', 'POST'])
 def edit_invoice(invoice_id):
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+    if not has_permission('payments'):
+        return redirect(url_for('access_restricted'))
     if 'user_name' not in session:
         return redirect(url_for('login'))
     conn = sqlite3.connect('users.db')
@@ -1804,6 +1959,11 @@ def delete_invoice(invoice_id):
     if 'user_name' not in session:
         return redirect(url_for('login'))
 
+    if not has_permission('payments'):
+        return redirect(url_for('access_restricted'))
+    if 'user_name' not in session:
+        return redirect(url_for('login'))
+
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     c.execute('DELETE FROM invoices WHERE id = ?', (invoice_id,))
@@ -1816,6 +1976,9 @@ def delete_invoice(invoice_id):
 def delete_quote(quote_id):
     if 'user_name' not in session:
         return redirect(url_for('login'))
+
+    if not has_permission('quotes'):
+        return redirect(url_for('access_restricted'))
 
     user_id = session.get('user_id')
     if not user_id:
@@ -1831,6 +1994,11 @@ def delete_quote(quote_id):
 
 @app.route('/add_task', methods=['POST'], endpoint='add_task_form')
 def add_task():
+    if 'user_name' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not has_permission('calendar'):
+        return jsonify({'error': 'Access restricted'}), 403
     if 'user_name' not in session:
         return redirect(url_for('login'))
 

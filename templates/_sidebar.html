@@ -1,0 +1,29 @@
+<div class="sidebar" style="border-right: 1px solid #e2e8f0; min-width: 220px; max-width: 220px; background: #006400; color: white; height: 100vh; position: fixed;">
+    <div style="width:100%;text-align:center;margin-bottom:20px;">
+        <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+    </div>
+    <nav class="navbar">
+        <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+        <div class="nav-dropdown">
+            <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+            <div class="dropdown-content" style="position: absolute; background-color: #006400; min-width: 160px; z-index: 1; border-radius: 4px;">
+                <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+            </div>
+        </div>
+        <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+        <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients &amp; Invoices List</a>
+        <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+        <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
+            <div style="color: #fff; font-weight: 600; margin-bottom: 6px;">
+                <span style="font-size: 15px;">{{ session.get('user_name', 'Unknown') }}</span>
+                {% if session.get('user_email') %}
+                <br><span style="font-size: 13px; color: #ffd700;">{{ session.get('user_email') }}</span>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+            <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+        </div>
+    </nav>
+</div>
