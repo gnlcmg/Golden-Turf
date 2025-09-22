@@ -16,109 +16,116 @@
     {% include '_sidebar.html' %}
 
 <main class="main-content">
-    <main style="display: flex; flex-direction: row; align-items: flex-start; padding: 48px; margin-left: 280px; width: calc(100vw - 300px); box-sizing: border-box;">
-        <section class="calendar" style="flex: 1 1 60%; max-width: 60%;">
-            <div class="year-header" style="text-align: center; font-size: 32px; font-weight: bold; margin-bottom: 20px; color: #006400;">{{ current_year }}</div>
-            <div class="view-options" style="display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;">
-                <button onclick="navigate('week')" style="padding: 5px 15px; cursor: pointer;">Weekly</button>
-                <button onclick="navigate('month')" style="padding: 5px 15px; cursor: pointer;">Monthly</button>
+    <main style="display: flex; flex-direction: row; align-items: flex-start; gap: 8px; padding: 16px 12px 16px 32px; margin-left: 280px; width: calc(100vw - 280px); box-sizing: border-box; min-width:0; overflow-x:auto;">
+        <section class="calendar" style="flex: 1 1 70%; min-width: 0; max-width: 75%;">
+            <div class="year-header" style="text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 16px; color: #006400;">{{ current_year }}</div>
+            <div class="view-options" style="display: flex; justify-content: center; gap: 12px; margin-bottom: 12px;">
+                <button onclick="navigate('week')" style="padding: 4px 12px; cursor: pointer; font-size: 13px;">Weekly</button>
+                <button onclick="navigate('month')" style="padding: 4px 12px; cursor: pointer; font-size: 13px;">Monthly</button>
             </div>
-            <h2>
-                <span class="nav-arrow" onclick="navigateMonth(-1)" style="font-size: 24px; font-weight: bold; color: black; text-decoration: none; cursor: pointer;"><</span>
+            <h2 style="text-align: center; font-size: 18px; margin: 12px 0;">
+                <span class="nav-arrow" onclick="navigateMonth(-1)" style="font-size: 18px; font-weight: bold; color: black; text-decoration: none; cursor: pointer; margin-right: 12px;"><</span>
                 {{ header_text }}
-                <span class="nav-arrow" onclick="navigateMonth(1)" style="font-size: 24px; font-weight: bold; color: black; text-decoration: none; cursor: pointer;">></span>
+                <span class="nav-arrow" onclick="navigateMonth(1)" style="font-size: 18px; font-weight: bold; color: black; text-decoration: none; cursor: pointer; margin-left: 12px;">></span>
             </h2>
             {% if view == 'month' %}
-                <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;">
-                    <div class="day-name" style="font-weight: bold; text-align: center;">Sun</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center;">Mon</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center;">Tue</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center;">Wed</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center;">Thu</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center;">Fri</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center;">Sat</div>
+                <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, minmax(85px, 1fr)); gap: 6px; min-width: 595px;">
+                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Sun</div>
+                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Mon</div>
+                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Tue</div>
+                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Wed</div>
+                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Thu</div>
+                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Fri</div>
+                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Sat</div>
                     {% for day in calendar_data %}
-                        <div class="calendar-day {% if day.tasks %}has-tasks{% endif %} {% if day.is_today %}today{% endif %}" style="position: relative; width: 100px; height: 100px; border: 1px solid #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div class="calendar-day {% if day.tasks %}has-tasks{% endif %} {% if day.is_today %}today{% endif %}" style="position: relative; aspect-ratio: 1; min-width: 0; min-height: 75px; border: 1px solid #ccc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3px; box-sizing: border-box; overflow: hidden;">
                             {% if day.day %}
-                                <span class="day-number" style="position: absolute; top: 5px; right: 5px; font-size: 14px; font-weight: bold;">{{ day.day }}</span>
+                                <span class="day-number" style="position: absolute; top: 2px; right: 4px; font-size: 11px; font-weight: bold;">{{ day.day }}</span>
                                 {% if day.is_today %}
-                                    <div class="today-dot" style="position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
+                                    <div class="today-dot" style="position: absolute; top: 2px; left: 4px; width: 6px; height: 6px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
                                 {% endif %}
-                                {% for task in day.tasks %}
-                                    <li class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" data-task-id="{{ task[0] }}" style="border: 1px solid transparent; padding: 4px 8px; margin-bottom: 4px; border-radius: 4px; display: flex; align-items: center; font-size: 0.98rem; cursor: pointer; gap: 10px; justify-content: center; color: #fff;" onclick="redirectToTaskView('{{ task[0] }}')">
-                                        <span style="font-weight: 600;">{{ task[1] }}</span>
-                                    </li>
-                                {% endfor %}
+                                <div style="margin-top: 16px; width: 100%; overflow: hidden;">
+                                    {% for task in day.tasks %}
+                                        <div class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" data-task-id="{{ task[0] }}" style="border: 1px solid transparent; padding: 1px 3px; margin-bottom: 1px; border-radius: 2px; display: flex; align-items: center; font-size: 9px; cursor: pointer; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="redirectToTaskView('{{ task[0] }}')">
+                                            <span style="font-weight: 500; overflow: hidden; text-overflow: ellipsis;">{{ task[1][:7] }}{% if task[1]|length > 7 %}...{% endif %}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                         </div>
                     {% endfor %}
                 </div>
             {% elif view == 'week' %}
-                <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;">
+                <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, minmax(85px, 1fr)); gap: 6px; min-width: 595px;">
                     {% for day in calendar_data %}
-                        <div class="calendar-day {% if day.tasks %}has-tasks{% endif %} {% if day.is_today %}today{% endif %}" style="position: relative; width: 100px; height: 100px; border: 1px solid #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div class="calendar-day {% if day.tasks %}has-tasks{% endif %} {% if day.is_today %}today{% endif %}" style="position: relative; aspect-ratio: 1; min-width: 0; min-height: 75px; border: 1px solid #ccc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3px; box-sizing: border-box; overflow: hidden;">
                             {% if day.day %}
-                                <span class="day-number" style="position: absolute; top: 5px; right: 5px; font-size: 14px; font-weight: bold;">{{ day.day }}</span>
+                                <span class="day-number" style="position: absolute; top: 2px; right: 4px; font-size: 11px; font-weight: bold;">{{ day.day }}</span>
                                 {% if day.is_today %}
-                                    <div class="today-dot" style="position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
+                                    <div class="today-dot" style="position: absolute; top: 2px; left: 4px; width: 6px; height: 6px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
                                 {% endif %}
-                                {% for task in day.tasks %}
-                                    <li class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" data-task-id="{{ task[0] }}" style="border: 1px solid transparent; padding: 4px 8px; margin-bottom: 4px; border-radius: 4px; display: flex; align-items: center; font-size: 0.98rem; cursor: pointer; gap: 10px; justify-content: center; color: #fff;" onclick="redirectToTaskView('{{ task[0] }}')">
-                                        <span style="font-weight: 600;">{{ task[1] }}</span>
-                                    </li>
-                                {% endfor %}
+                                <div style="margin-top: 16px; width: 100%; overflow: hidden;">
+                                    {% for task in day.tasks %}
+                                        <div class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" data-task-id="{{ task[0] }}" style="border: 1px solid transparent; padding: 1px 3px; margin-bottom: 1px; border-radius: 2px; display: flex; align-items: center; font-size: 9px; cursor: pointer; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="redirectToTaskView('{{ task[0] }}')">
+                                            <span style="font-weight: 500; overflow: hidden; text-overflow: ellipsis;">{{ task[1][:7] }}{% if task[1]|length > 7 %}...{% endif %}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                         </div>
                     {% endfor %}
                 </div>
             {% endif %}
         </section>
-        <section class="task-sidebar" style="flex: 1 1 40%; max-width: 40%; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <button class="today-btn" onclick="goToToday()" style="background-color: #28a745; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer;">Today</button>
-                <button class="add-event" onclick="openAddTaskPopup()">+ Add New Task</button>
+        <section class="task-sidebar" style="flex: 0 0 280px; padding: 12px; background-color: #f8f9fa; border-radius: 8px;">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+                <button class="today-btn" onclick="goToToday()" style="background-color: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">Today</button>
+                <button class="add-event" onclick="openAddTaskPopup()" style="background-color: #007bff; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">+ Add Task</button>
             </div>
-            <div style="margin-bottom: 5px;">
-                <label for="filter-status">Filter by Status:</label>
-                <select id="filter-status" onchange="filterTasks()">
-                    <option value="all">All</option>
-                    <option value="Not completed">Not completed</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                </select>
-                <label for="filter-user" style="margin-left: 10px;">Filter by User:</label>
-                <select id="filter-user" onchange="filterTasks()">
-                    <option value="all">All</option>
-                    {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.name }}</option>
-                    {% endfor %}
-                </select>
-                <button onclick="sortTasksByDate()">Sort by Date <span id="sort-arrow">↑</span></button>
+            <div style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <label for="filter-status" style="font-size: 12px; white-space: nowrap;">Status:</label>
+                    <select id="filter-status" onchange="filterTasks()" style="font-size: 12px; padding: 3px;">
+                        <option value="all">All</option>
+                        <option value="Not completed">Not completed</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <label for="filter-user" style="font-size: 12px; white-space: nowrap;">User:</label>
+                    <select id="filter-user" onchange="filterTasks()" style="font-size: 12px; padding: 3px;">
+                        <option value="all">All</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button onclick="sortTasksByDate()" style="background: none; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Sort by Date <span id="sort-arrow">↑</span></button>
             </div>
-            <ul id="task-list" style="list-style: none; padding: 0;">
+            <ul id="task-list" style="list-style: none; padding: 0; margin: 0;">
                 {% for task in tasks %}
-                    <li class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" data-task-id="{{ task[0] }}" data-user="{{ task[9] }}" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 5px; border-radius: 5px; position: relative; display: flex; align-items: center; flex-direction: row; justify-content: space-between;">
+                    <li class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" data-task-id="{{ task[0] }}" data-user="{{ task[9] }}" style="border: 1px solid #ccc; padding: 8px; margin-bottom: 6px; border-radius: 4px; position: relative; display: flex; align-items: center; flex-direction: row; justify-content: space-between; font-size: 13px;">
                         <div onclick="redirectToTaskView('{{ task[0] }}')" style="cursor: pointer; display: flex; align-items: center; width: 100%; flex-direction: column; align-items: flex-start;">
-                            <span style="font-weight: 600; font-size: 1rem; color: #fff;">{{ task[1] }}</span>
-                            <div style="font-size: 0.85rem; color: #fff; margin-top: 4px;">
+                            <span style="font-weight: 600; font-size: 14px; color: #fff; line-height: 1.3;">{{ task[1] }}</span>
+                            <div style="font-size: 12px; color: #fff; margin-top: 3px; line-height: 1.2;">
                                 <span>Status: {{ task[6] }}</span>
                                 {% if task[9] %}
                                     {% for user in users %}
                                         {% if user.id == task[9] %}
-                                            <span style="margin-left: 10px;">User: {{ user.name }}</span>
+                                            <span style="margin-left: 8px;">User: {{ user.name }}</span>
                                         {% endif %}
                                     {% endfor %}
                                 {% endif %}
-                                <span style="margin-left: 10px;">Date: {{ task[3] }}</span>
+                                <span style="margin-left: 8px;">Date: {{ task[3] }}</span>
                             </div>
                         </div>
-                                <span class="task-dots" style="margin-left: 8px; font-size: 18px; cursor: pointer; user-select: none; position: relative;" onclick="event.stopPropagation(); toggleTaskMenu(this)">&#8942;
-                                    <span class="dropdown-menu" style="display: none; position: absolute; right: 0; top: 22px; background: white; border: 1px solid #ccc; border-radius: 4px; z-index: 10; min-width: 100px;">
-                                        <span onclick="event.stopPropagation(); printTask('{{ task[0] }}')" style="display:block; padding: 8px; cursor: pointer;">Print</span>
-                                        <!-- Edit button removed as requested -->
-                                        <span onclick="event.stopPropagation(); deleteTaskFromList('{{ task[0] }}')" style="display:block; padding: 8px; cursor: pointer;">Delete</span>
-                                    </span>
-                                </span>
+                        <span class="task-dots" style="margin-left: 8px; font-size: 16px; cursor: pointer; user-select: none; position: relative;" onclick="event.stopPropagation(); toggleTaskMenu(this)">&#8942;
+                            <span class="dropdown-menu" style="display: none; position: absolute; right: 0; top: 20px; background: white; border: 1px solid #ccc; border-radius: 4px; z-index: 1000; min-width: 90px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                                <span onclick="event.stopPropagation(); printTask('{{ task[0] }}')" style="display:block; padding: 8px 12px; cursor: pointer; font-size: 12px; color: #333; border-bottom: 1px solid #eee;">Print</span>
+                                <span onclick="event.stopPropagation(); deleteTaskFromList('{{ task[0] }}')" style="display:block; padding: 8px 12px; cursor: pointer; font-size: 12px; color: #333;">Delete</span>
+                            </span>
+                        </span>
                     </li>
                 {% endfor %}
             </ul>
@@ -129,10 +136,10 @@
         <!-- Task Overview modal removed as requested -->
     </div>
 
-    <div id="add-task-popup" class="modal" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;">
-        <div class="modal-content" style="width: 350px; padding: 20px; border-radius: 8px; background-color: #fff;">
-            <span class="close" onclick="closeAddTaskPopup()" style="cursor: pointer; font-size: 20px; font-weight: bold;">&times;</span>
-            <h2 style="text-align: center;">Add New Task</h2>
+    <div id="add-task-popup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; padding: 20px; box-sizing: border-box;">
+        <div style="position: absolute; top: 50%; left: 50%; width: 400px; margin-left: -200px; margin-top: -250px; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <button onclick="closeAddTaskPopup()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+            <h2 style="text-align: center; margin: 0 0 20px 0; color: #333;">Add New Task</h2>
             <form id="add-task-form" style="display: flex; flex-direction: column; gap: 10px;">
                 <label for="title">Title:</label>
                 <input type="text" id="title" name="title" required />
@@ -163,10 +170,10 @@
         </div>
     </div>
 
-    <div id="edit-task-popup" class="modal" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;">
-        <div class="modal-content" style="width: 350px; padding: 20px; border-radius: 8px; background-color: #fff;">
-            <span class="close" onclick="closeEditTaskPopup()" style="cursor: pointer; font-size: 20px; font-weight: bold;">&times;</span>
-            <h2 style="text-align: center;">Edit Task</h2>
+    <div id="edit-task-popup" class="modal" style="display: none !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 2000;">
+        <div class="modal-content" style="width: 350px; padding: 20px; border-radius: 8px; background-color: #fff; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 90vw; max-height: 90vh; overflow-y: auto;">
+            <span class="close" onclick="closeEditTaskPopup()" style="cursor: pointer; font-size: 20px; font-weight: bold; position: absolute; top: 10px; right: 15px; color: #666;">&times;</span>
+            <h2 style="text-align: center; margin-top: 0;">Edit Task</h2>
             <form id="edit-task-form" style="display: flex; flex-direction: column; gap: 10px;">
                 <input type="hidden" id="edit-task-id" name="task_id" />
                 <label for="edit-title">Title:</label>
@@ -197,6 +204,19 @@
     </div>
 
     <script>
+        // Ensure modals are hidden on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const addModal = document.getElementById('add-task-popup');
+            const editModal = document.getElementById('edit-task-popup');
+            
+            if (addModal) {
+                addModal.style.display = 'none';
+            }
+            if (editModal) {
+                editModal.style.display = 'none';
+            }
+        });
+
         function navigate(view) {
             const url = new URL(window.location.href);
             url.searchParams.set('view', view);
@@ -271,8 +291,8 @@
             console.log('openAddTaskPopup called');
             const modal = document.getElementById('add-task-popup');
             if (modal) {
-                modal.style.display = 'flex';
-                modal.style.zIndex = '1000';
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
             } else {
                 console.error('Modal element not found');
             }
@@ -283,7 +303,7 @@
             const modal = document.getElementById('add-task-popup');
             if (modal) {
                 modal.style.display = 'none';
-                modal.style.zIndex = '';
+                document.body.style.overflow = 'auto'; // Restore scrolling
             } else {
                 console.error('Modal element not found');
             }

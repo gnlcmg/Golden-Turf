@@ -149,6 +149,7 @@
                 <button onclick="printSection('invoices-section')" class="print-hide" style="float:right;margin-bottom:10px;">Print Invoices</button>
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
                     <tr>
+                        <th>Invoice ID</th>
                         <th>Clients</th>
                         <th>Status</th>
                         <th>Due Date</th>
@@ -160,6 +161,7 @@
                     </tr>
                     {% for invoice in invoices %}
                     <tr>
+                        <td>{{ invoice.id }}</td>
                         <td>{{ invoice.client_name }}</td>
                         <td>{{ invoice.status }}</td>
                         <td>{{ invoice.due_date }}</td>

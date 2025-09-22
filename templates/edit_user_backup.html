@@ -1,3 +1,27 @@
+    <div class="sidebar" style="border-right: 1px solid #e2e8f0; min-width: 200px; max-width: 200px; background: #006400; color: white; height: 100vh; position: fixed;">
+        <div style="width:100%;text-align:center;margin-bottom:20px;">
+            <img src="/static/golden_turf_logo.png" alt="Golden Turf Logo" style="width:100px;display:block;margin:0 auto;">
+        </div>
+        <nav class="navbar">
+            <a href="{{ url_for('dashboard') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Dashboard</a>
+            <div class="nav-dropdown">
+                <a href="#" class="dropbtn" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products</a>
+                <div class="dropdown-content" style="background-color: #006400;">
+                    <a href="{{ url_for('products_list') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Products List</a>
+                    <a href="{{ url_for('invoice') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Invoice Form</a>
+                    <a href="{{ url_for('clients') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Client Details Form</a>
+                </div>
+            </div>
+            <a href="{{ url_for('quotes') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Quotes</a>
+            <a href="{{ url_for('payments') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Clients & Invoices List</a>
+            <a href="{{ url_for('calendar') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Calendar</a>
+            <div style="position: absolute; bottom: 70px; left: 5px; width: 100%; text-align: center;">
+                <p style="color: white; margin-bottom: 10px;">Logged in as: {{ session.get('user_name', 'Unknown') }}</p>
+                <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+                <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+            </div>
+        </nav>
+    </div>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,8 +54,8 @@
         }
         .container {
             max-width: 600px;
-            margin: 40px auto 40px 280px;
-            padding: 30px;
+            margin: 40px auto;
+            padding: 20px;
             background-color: #f8f9fa;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -76,8 +100,11 @@
     </style>
 </head>
 <body>
-    {% include '_sidebar.html' %}
     <div class="container">
+    <div style="position: fixed; bottom: 20px; left: 0; width: 200px; text-align: center;">
+        <a href="{{ url_for('profiles') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px; margin-bottom: 10px;">Profiles</a>
+        <a href="{{ url_for('logout') }}" style="color: white; font-size: 16px; text-decoration: none; display: block; padding: 10px;">Logout</a>
+    </div>
         <h1>Edit User</h1>
 
         {% with messages = get_flashed_messages(with_categories=true) %}

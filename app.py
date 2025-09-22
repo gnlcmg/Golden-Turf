@@ -256,7 +256,8 @@ def dashboard():
         print("Dashboard access denied: No user_name in session")  # Debugging log
         return redirect(url_for('login'))
 
-    # All users can access the dashboard
+    if not has_permission('dashboard'):
+        return redirect(url_for('access_restricted'))
 
     user_id = session.get('user_id')
     if not user_id:
@@ -265,24 +266,44 @@ def dashboard():
     print(f"Dashboard accessed: user_name={session.get('user_name')}, user_role={session.get('user_role')}")  # Debugging log
 
     user_role = session.get('user_role', 'user')
-    clients = query_all_clients(user_id)
-    jobs = query_all_jobs(user_id)
-    payments = query_all_payments(user_id)
+    
+    # Get ALL data for dashboard - both admin and users should see the same totals
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    
+    # Get all clients
+    c.execute('SELECT * FROM clients')
+    clients = c.fetchall()
+    
+    # Get all jobs
+    c.execute('SELECT * FROM jobs')
+    jobs = c.fetchall()
+    
+    # Get all invoices/payments
+    c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date, 
+                        invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total, invoices.owner_id
+                  FROM invoices
+                  LEFT JOIN clients ON invoices.client_id = clients.id
+                  ORDER BY invoices.created_date DESC''')
+    payments = c.fetchall()
+    
+    conn.close()
 
     today = datetime.now().date()
     yesterday = today - timedelta(days=1)
     last_7_days = today - timedelta(days=7)
 
     total_clients = len(clients)
-    total_services = sum(1 for job in jobs if job[3] == 'Completed')
 
     # Fix sales calculations to use proper invoice data  
     # Query result format: [id, client_name, status, created_date, product, quantity, price, gst, total, owner_id]
     # Index 8 is the total amount, index 2 is the status, index 3 is created_date
     
-    # Calculate sales only from PAID invoices
-    # Filter for paid invoices only (status != 'Unpaid')
+    # Calculate sales only from PAID invoices (status != 'Unpaid')
     paid_payments = [payment for payment in payments if payment[2] != 'Unpaid']
+    
+    # Also calculate total sales from ALL invoices for comparison
+    total_all_invoices = sum(float(payment[8]) for payment in payments if payment[8] is not None)
     
     total_sales_paid_only = sum(float(payment[8]) for payment in paid_payments if payment[8] is not None)
     
@@ -310,13 +331,16 @@ def dashboard():
                 continue
     
     # Debug output
-    print(f"DEBUG - Dashboard calculations (PAID invoices only):")
-    print(f"  Found {len(payments)} total invoices ({len(paid_payments)} paid)")
-    print(f"  Total sales (paid only): ${total_sales_paid_only}")
+    print(f"DEBUG - Dashboard calculations for user {session.get('user_name')} (role: {user_role}):")
+    print(f"  Total invoices found: {len(payments)}")
+    print(f"  Paid invoices: {len(paid_payments)}")
+    print(f"  Total sales (ALL invoices): ${total_all_invoices}")
+    print(f"  Total sales (PAID only): ${total_sales_paid_only}")
     print(f"  Today sales: ${today_sales}")
     print(f"  Yesterday sales: ${yesterday_sales}") 
     print(f"  Last 7 days sales: ${last_7_days_sales}")
     print(f"  Date ranges: today={today}, yesterday={yesterday}, last_7_days={last_7_days}")
+    print(f"  Invoice statuses: {[p[2] for p in payments[:5]]}...")  # Show first 5 invoice statuses
 
     upcoming_jobs = [job for job in jobs if datetime.strptime(job[2], '%Y-%m-%d').date() >= today]
     overdue_jobs = [job for job in jobs if datetime.strptime(job[2], '%Y-%m-%d').date() < today and job[3] != 'Completed']
@@ -325,7 +349,7 @@ def dashboard():
     c = conn.cursor()
     overdue_jobs_info = []
     for job in overdue_jobs:
-        c.execute('SELECT client_name FROM clients WHERE id = ? AND owner_id = ?', (job[1], user_id))
+        c.execute('SELECT client_name FROM clients WHERE id = ?', (job[1],))  # Removed owner_id restriction
         client_name = c.fetchone()
         if client_name:
             overdue_jobs_info.append({'client_name': client_name[0], 'job_date': job[2]})
@@ -338,10 +362,10 @@ def dashboard():
     admins = c.fetchall()
     conn.close()
 
-    return render_template('dashboard.html',
+    return render_template('dashboard_updated.html',
                            total_clients=total_clients,
-                           total_services=total_services,
                            total_sales=total_sales_paid_only,  # Show only paid invoices
+                           total_all_sales=total_all_invoices,  # Include all invoices total for debugging
                            today_sales=today_sales,
                            yesterday_sales=yesterday_sales,
                            last_7_days_sales=last_7_days_sales,
@@ -363,7 +387,7 @@ def get_all_tasks(user_id=None):
 def query_all_clients(user_id):
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('SELECT * FROM clients WHERE owner_id = ?', (user_id,))
+    c.execute('SELECT * FROM clients')  # Removed owner_id restriction - all users see all clients
     clients = c.fetchall()
     conn.close()
     return clients
@@ -556,8 +580,9 @@ def clients():
             conn.commit()
             success = 'Client saved successfully.'
 
-    c.execute('SELECT * FROM clients WHERE owner_id = ?', (user_id,))
+    c.execute('SELECT * FROM clients')  # Removed owner_id restriction - all users see all clients
     clients = c.fetchall()
+    print(f"DEBUG: User {user_id} can see {len(clients)} clients (all shared)")
     conn.close()
 
     return render_template('clients.html', clients=clients, error=error, success=success)
@@ -581,7 +606,8 @@ def profiles():
     if 'user_name' not in session:
         return redirect(url_for('login'))
 
-    # Allow all users to access profiles page, but restrict admin actions below
+    if not has_permission('profiles'):
+        return redirect(url_for('access_restricted'))
 
     if request.method == 'POST':
         name = request.form['name']
@@ -883,7 +909,13 @@ def invoice():
 
     # Fetch all product prices from DB for dynamic pricing
     c.execute('SELECT product_name, price FROM products')
-    price_table = {row[0]: row[1] for row in c.fetchall()}
+    price_table = {}
+    for row in c.fetchall():
+        try:
+            price_table[row[0]] = float(row[1]) if row[1] else 0.0
+        except (ValueError, TypeError):
+            # Handle non-numeric prices like "Custom"
+            price_table[row[0]] = 0.0
 
 
     if request.method == 'POST':
@@ -974,8 +1006,8 @@ def invoice():
         current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print(f"DEBUG: Creating invoice with date: {current_date}")
         
-        # Find the next available sequential ID starting from 1
-        c.execute('SELECT id FROM invoices WHERE owner_id = ? ORDER BY id', (session['user_id'],))
+        # Find the next available sequential ID starting from 1 - GLOBAL for all users
+        c.execute('SELECT id FROM invoices ORDER BY id')
         existing_ids = [row[0] for row in c.fetchall()]
         
         # Find the first gap or next number
@@ -986,19 +1018,19 @@ def invoice():
             else:
                 break
         
-        print(f"DEBUG: Assigning invoice ID: {next_id}")
+        print(f"DEBUG: Assigning global invoice ID: {next_id}")
         
         c.execute('''INSERT INTO invoices (id, client_id, product, quantity, price, gst, total, status, created_date, extras_json, owner_id)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                   (next_id, client_id, turf_type, area_val, price, gst_amount, total_price, payment_status, current_date, extras_json, session['user_id']))
         conn.commit()
 
-        # Fetch updated invoices
+        # Fetch updated invoices - ALL INVOICES
         c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
                       invoices.gst, invoices.total, invoices.status, invoices.created_date
                       FROM invoices
                       LEFT JOIN clients ON invoices.client_id = clients.id
-                      WHERE invoices.owner_id = ? AND clients.owner_id = ?''', (session['user_id'], session['user_id']))
+                      ORDER BY invoices.id ASC''')
         invoices = c.fetchall()
         conn.close()
 
@@ -1011,17 +1043,13 @@ def invoice():
             'total_price': total_price
         })
 
-    # For GET request, fetch existing invoices for this user
-    user_id = session.get('user_id')
-    if user_id:
-        c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
-                      invoices.gst, invoices.total, invoices.status, invoices.created_date
-                      FROM invoices
-                      LEFT JOIN clients ON invoices.client_id = clients.id
-                      WHERE invoices.owner_id = ?''', (user_id,))
-        invoices = c.fetchall()
-    else:
-        invoices = []
+    # For GET request, fetch ALL invoices
+    c.execute('''SELECT invoices.id, clients.client_name, invoices.product, invoices.quantity, invoices.price,
+                  invoices.gst, invoices.total, invoices.status, invoices.created_date
+                  FROM invoices
+                  LEFT JOIN clients ON invoices.client_id = clients.id
+                  ORDER BY invoices.id ASC''')
+    invoices = c.fetchall()
     
     conn.close()
     return render_template('invoice.html', clients=clients, products=products, price_table=price_table, invoices=invoices)
@@ -1039,60 +1067,131 @@ def products_list():
 
     # Handle grouped/edited price and stock updates
     if request.method == 'POST':
-        # Bamboo
+        # Bamboo products
         bamboo_2m_stock = request.form.get('bamboo_2m_stock', type=int)
         bamboo_2m_price = request.form.get('bamboo_2m_price', type=float)
         bamboo_24m_stock = request.form.get('bamboo_24m_stock', type=int)
         bamboo_24m_price = request.form.get('bamboo_24m_price', type=float)
         bamboo_18m_stock = request.form.get('bamboo_18m_stock', type=int)
         bamboo_18m_price = request.form.get('bamboo_18m_price', type=float)
+        
         # Pebbles
         pebbles_black_stock = request.form.get('pebbles_black_stock', type=int)
         pebbles_black_price = request.form.get('pebbles_black_price', type=float)
         pebbles_white_stock = request.form.get('pebbles_white_stock', type=int)
         pebbles_white_price = request.form.get('pebbles_white_price', type=float)
+        
         # Fountain
         fountain_stock = request.form.get('fountain_stock', type=int)
         fountain_price = request.form.get('fountain_price')  # custom, can be text
+        
+        # Turf products
+        premium_stock = request.form.get('premium_stock', type=int)
+        premium_price = request.form.get('premium_price', type=float)
+        green_lush_stock = request.form.get('green_lush_stock', type=int)
+        green_lush_price = request.form.get('green_lush_price', type=float)
+        natural_40mm_stock = request.form.get('natural_40mm_stock', type=int)
+        natural_40mm_price = request.form.get('natural_40mm_price', type=float)
+        golf_turf_stock = request.form.get('golf_turf_stock', type=int)
+        golf_turf_price = request.form.get('golf_turf_price', type=float)
+        imperial_lush_stock = request.form.get('imperial_lush_stock', type=int)
+        imperial_lush_price = request.form.get('imperial_lush_price', type=float)
+        
+        # Other products
+        pegs_stock = request.form.get('pegs_stock', type=int)
+        pegs_price = request.form.get('pegs_price', type=float)
+        artificial_hedges_stock = request.form.get('artificial_hedges_stock', type=int)
+        artificial_hedges_price = request.form.get('artificial_hedges_price', type=float)
+        adhesive_tape_stock = request.form.get('adhesive_tape_stock', type=int)
+        adhesive_tape_price = request.form.get('adhesive_tape_price', type=float)
 
-        # Update DB for each
-        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (bamboo_2m_stock, bamboo_2m_price, 'Bamboo (2m)'))
-        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (bamboo_24m_stock, bamboo_24m_price, 'Bamboo (2.4m)'))
-        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (bamboo_18m_stock, bamboo_18m_price, 'Bamboo (1.8m)'))
+        # Update DB for each product
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (bamboo_2m_stock, bamboo_2m_price, 'Bamboo Products'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (bamboo_24m_stock, bamboo_24m_price, 'Bamboo Products'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (bamboo_18m_stock, bamboo_18m_price, 'Bamboo Products'))
         c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (pebbles_black_stock, pebbles_black_price, 'Black Pebbles'))
         c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (pebbles_white_stock, pebbles_white_price, 'White Pebbles'))
         c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (fountain_stock, fountain_price, 'Fountains'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (premium_stock, premium_price, 'Golden Premium Turf'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (green_lush_stock, green_lush_price, 'Golden Green Lush'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (natural_40mm_stock, natural_40mm_price, 'Golden Natural 40mm'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (golf_turf_stock, golf_turf_price, 'Golden Golf Turf'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (imperial_lush_stock, imperial_lush_price, 'Golden Imperial Lush'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (pegs_stock, pegs_price, 'Peg (U-pins/Nails)'))
+        c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (artificial_hedges_stock, artificial_hedges_price, 'Artificial Hedges'))
+        # Note: Adhesive Tape doesn't exist in DB, we'll need to add it or skip it
+        try:
+            c.execute('UPDATE products SET stock=?, price=? WHERE product_name=?', (adhesive_tape_stock, adhesive_tape_price, 'Adhesive Tape'))
+        except:
+            pass  # Skip if product doesn't exist
+        
         conn.commit()
-        # TODO: propagate price changes to invoice/payments/quotes logic (next step)
+        # Add success message
+        flash('Product prices and stock updated successfully!', 'success')
+        # Redirect to avoid resubmission on page refresh
+        return redirect(url_for('products_list'))
 
     c.execute('SELECT product_name, turf_type, description, stock, price, image_url, image_urls FROM products')
     rows = c.fetchall()
     conn.close()
 
     # Extract specific product values for template variables
-    bamboo_2m = next((row for row in rows if row[0] == 'Bamboo (2m)'), None)
-    bamboo_2m_stock = bamboo_2m[3] if bamboo_2m else 0
-    bamboo_2m_price = bamboo_2m[4] if bamboo_2m else 0
+    bamboo_products = next((row for row in rows if row[0] == 'Bamboo Products'), None)
+    bamboo_2m_stock = bamboo_products[3] if bamboo_products else 0
+    bamboo_2m_price = bamboo_products[4] if bamboo_products else 40.00
 
-    bamboo_24m = next((row for row in rows if row[0] == 'Bamboo (2.4m)'), None)
+    bamboo_24m = next((row for row in rows if row[0] == 'Bamboo Products'), None)
     bamboo_24m_stock = bamboo_24m[3] if bamboo_24m else 0
-    bamboo_24m_price = bamboo_24m[4] if bamboo_24m else 0
+    bamboo_24m_price = bamboo_24m[4] if bamboo_24m else 38.00
 
-    bamboo_18m = next((row for row in rows if row[0] == 'Bamboo (1.8m)'), None)
+    bamboo_18m = next((row for row in rows if row[0] == 'Bamboo Products'), None)
     bamboo_18m_stock = bamboo_18m[3] if bamboo_18m else 0
-    bamboo_18m_price = bamboo_18m[4] if bamboo_18m else 0
+    bamboo_18m_price = bamboo_18m[4] if bamboo_18m else 38.00
 
     pebbles_black = next((row for row in rows if row[0] == 'Black Pebbles'), None)
     pebbles_black_stock = pebbles_black[3] if pebbles_black else 0
-    pebbles_black_price = pebbles_black[4] if pebbles_black else 0
+    pebbles_black_price = pebbles_black[4] if pebbles_black else 18.00
 
     pebbles_white = next((row for row in rows if row[0] == 'White Pebbles'), None)
     pebbles_white_stock = pebbles_white[3] if pebbles_white else 0
-    pebbles_white_price = pebbles_white[4] if pebbles_white else 0
+    pebbles_white_price = pebbles_white[4] if pebbles_white else 15.00
 
     fountain = next((row for row in rows if row[0] == 'Fountains'), None)
     fountain_stock = fountain[3] if fountain else 0
     fountain_price = fountain[4] if fountain else 'Custom'
+
+    # Add missing product variables
+    premium = next((row for row in rows if row[0] == 'Golden Premium Turf'), None)
+    premium_stock = premium[3] if premium else 50
+    premium_price = premium[4] if premium else 45.00
+
+    green_lush = next((row for row in rows if row[0] == 'Golden Green Lush'), None)
+    green_lush_stock = green_lush[3] if green_lush else 50
+    green_lush_price = green_lush[4] if green_lush else 42.00
+
+    natural_40mm = next((row for row in rows if row[0] == 'Golden Natural 40mm'), None)
+    natural_40mm_stock = natural_40mm[3] if natural_40mm else 50
+    natural_40mm_price = natural_40mm[4] if natural_40mm else 40.00
+
+    golf_turf = next((row for row in rows if row[0] == 'Golden Golf Turf'), None)
+    golf_turf_stock = golf_turf[3] if golf_turf else 30
+    golf_turf_price = golf_turf[4] if golf_turf else 55.00
+
+    imperial_lush = next((row for row in rows if row[0] == 'Golden Imperial Lush'), None)
+    imperial_lush_stock = imperial_lush[3] if imperial_lush else 40
+    imperial_lush_price = imperial_lush[4] if imperial_lush else 48.00
+
+    pegs = next((row for row in rows if row[0] == 'Peg (U-pins/Nails)'), None)
+    pegs_stock = pegs[3] if pegs else 200
+    pegs_price = pegs[4] if pegs else 20.00
+
+    artificial_hedges = next((row for row in rows if row[0] == 'Artificial Hedges'), None)
+    artificial_hedges_stock = artificial_hedges[3] if artificial_hedges else 25
+    artificial_hedges_price = artificial_hedges[4] if artificial_hedges else 60.00
+
+    # Adhesive Tape doesn't exist in DB, use defaults
+    adhesive_tape_stock = 50
+    adhesive_tape_price = 25.00
 
     # Restore all product image lists
     imperial_lush_images = [
@@ -1338,7 +1437,47 @@ def products_list():
                 'price': row[4],
                 'image_urls': image_urls
             })
-    return render_template('products.html', products=products)
+    return render_template('products_list.html', 
+                           products=rows,
+                           bamboo_2m_stock=bamboo_2m_stock,
+                           bamboo_2m_price=bamboo_2m_price,
+                           bamboo_24m_stock=bamboo_24m_stock,
+                           bamboo_24m_price=bamboo_24m_price,
+                           bamboo_18m_stock=bamboo_18m_stock,
+                           bamboo_18m_price=bamboo_18m_price,
+                           pebbles_black_stock=pebbles_black_stock,
+                           pebbles_black_price=pebbles_black_price,
+                           pebbles_white_stock=pebbles_white_stock,
+                           pebbles_white_price=pebbles_white_price,
+                           fountain_stock=fountain_stock,
+                           fountain_price=fountain_price,
+                           premium_stock=premium_stock,
+                           premium_price=premium_price,
+                           green_lush_stock=green_lush_stock,
+                           green_lush_price=green_lush_price,
+                           natural_40mm_stock=natural_40mm_stock,
+                           natural_40mm_price=natural_40mm_price,
+                           golf_turf_stock=golf_turf_stock,
+                           golf_turf_price=golf_turf_price,
+                           imperial_lush_stock=imperial_lush_stock,
+                           imperial_lush_price=imperial_lush_price,
+                           pegs_stock=pegs_stock,
+                           pegs_price=pegs_price,
+                           artificial_hedges_stock=artificial_hedges_stock,
+                           artificial_hedges_price=artificial_hedges_price,
+                           adhesive_tape_stock=adhesive_tape_stock,
+                           adhesive_tape_price=adhesive_tape_price,
+                           bamboo_images=bamboo_images,
+                           pebbles_images=pebbles_images,
+                           fountain_images=fountain_images,
+                           imperial_lush_images=imperial_lush_images,
+                           green_lush_images=green_lush_images,
+                           natural_40mm_images=natural_40mm_images,
+                           golf_turf_images=golf_turf_images,
+                           premium_turf_images=premium_turf_images,
+                           artificial_hedges_images=artificial_hedges_images,
+                           peg_images=peg_images,
+                           tape_images=tape_images)
 
 @app.route('/quotes', methods=['GET', 'POST'])
 def quotes():
@@ -1368,7 +1507,13 @@ def quotes():
         # Fetch all product prices from DB for dynamic pricing
         c = sqlite3.connect('users.db').cursor()
         c.execute('SELECT product_name, price FROM products')
-        price_table = {row[0]: row[1] for row in c.fetchall()}
+        price_table = {}
+        for row in c.fetchall():
+            try:
+                price_table[row[0]] = float(row[1]) if row[1] else 0.0
+            except (ValueError, TypeError):
+                # Handle non-numeric prices like "Custom"
+                price_table[row[0]] = 0.0
 
         try:
             area_in_sqm = float(area_in_sqm_str) if area_in_sqm_str else 0.0
@@ -1439,18 +1584,29 @@ def payments():
     if not user_id:
         return redirect(url_for('login'))
 
-    # Get invoices data for payments including extras_json
+    # Get invoices data for payments including extras_json - SHOW ALL INVOICES
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     c.execute('''SELECT invoices.id, clients.client_name, invoices.status, invoices.created_date,
                   invoices.product, invoices.quantity, invoices.price, invoices.gst, invoices.total, invoices.extras_json
                   FROM invoices
                   LEFT JOIN clients ON invoices.client_id = clients.id
-                  WHERE invoices.owner_id = ?''', (user_id,))
+                  ORDER BY invoices.id ASC''')
     invoices_data = c.fetchall()
 
+    # Debug: Let's see what invoices exist
+    print(f"DEBUG - Payments page for user {session.get('user_name')}:")
+    print(f"  Found {len(invoices_data)} invoices total")
+    if invoices_data:
+        print(f"  First invoice: {invoices_data[0]}")
+        statuses = [inv[2] for inv in invoices_data]
+        print(f"  Invoice statuses: {statuses}")
+        totals = [inv[8] for inv in invoices_data if inv[8]]
+        print(f"  Invoice totals: {totals}")
+        print(f"  Sum of all totals: {sum(float(t) for t in totals if t)}")
+
     # Get clients data
-    c.execute('SELECT * FROM clients WHERE owner_id = ?', (user_id,))
+    c.execute('SELECT * FROM clients')  # Removed owner_id restriction - all users see all clients
     clients_data = c.fetchall()
 
     # Get quotes data
@@ -1954,6 +2110,49 @@ def edit_invoice(invoice_id):
 
     return render_template('edit_invoice.html', invoice=invoice, clients=clients, products=products, price_table=price_table)
 
+def resequence_invoice_ids():
+    """Resequence all invoice IDs to start from 1 with no gaps"""
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    
+    # Get all invoices ordered by creation date to maintain chronological order
+    c.execute('SELECT * FROM invoices ORDER BY created_date ASC')
+    invoices = c.fetchall()
+    
+    if not invoices:
+        conn.close()
+        return
+    
+    print(f"Resequencing {len(invoices)} invoices...")
+    
+    # Delete all invoices temporarily
+    c.execute('DELETE FROM invoices')
+    
+    # Re-insert with sequential IDs starting from 1
+    for index, invoice in enumerate(invoices, start=1):
+        old_id = invoice[0]  # Original ID
+        # Reconstruct the invoice with new ID (without discount column)
+        new_values = (
+            index,           # new id
+            invoice[1],      # client_id
+            invoice[2],      # product
+            invoice[3],      # quantity
+            invoice[4],      # price
+            invoice[5],      # gst
+            invoice[6],      # total
+            invoice[7],      # status
+            invoice[8],      # created_date
+            invoice[9],      # extras_json
+            invoice[10]      # owner_id
+        )
+        c.execute('''INSERT INTO invoices (id, client_id, product, quantity, price, gst, total, status, created_date, extras_json, owner_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', new_values)
+        print(f"Resequenced invoice: {old_id} -> {index}")
+    
+    conn.commit()
+    conn.close()
+    print("Resequencing complete!")
+
 @app.route('/invoices/delete/<int:invoice_id>', methods=['POST'])
 def delete_invoice(invoice_id):
     if 'user_name' not in session:
@@ -1969,6 +2168,10 @@ def delete_invoice(invoice_id):
     c.execute('DELETE FROM invoices WHERE id = ?', (invoice_id,))
     conn.commit()
     conn.close()
+    
+    # Resequence all IDs after deletion
+    resequence_invoice_ids()
+    print(f"Deleted invoice {invoice_id} and resequenced all IDs")
 
     return redirect(url_for('payments'))
 

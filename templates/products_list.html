@@ -23,9 +23,21 @@
         <div class="products-list-header">
             <!-- Logo already in sidebar -->
         </div>
-        <div class="products-title" style="text-align:center;">Products</div>
-        <div class="subheading-white" style="text-align:center;font-size:1.15em;font-weight:600;margin:32px 0 12px 0;">Synthetic Turf</div>
+        
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px 0; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="products-title" style="text-align:center; font-size:3.5em; font-weight:bold; margin:30px 0 40px 0; color: #FFA726;">Products</div>
         <div style="overflow-x:auto;">
+        <form method="POST" action="{{ url_for('products_list') }}">
         <table class="products-list-table" style="min-width: 900px;">
             <tr>
                 <th>Product Name</th>
@@ -34,66 +46,53 @@
                 <th>Price</th>
                 <th>Image</th>
             </tr>
-            <!-- Bamboo and Pebbles Combined Row -->
+            <!-- Bamboo Products -->
             <tr>
-                <td>Bamboo & Pebbles Products</td>
-                <td colspan="4">
-                    <form method="POST" action="{{ url_for('products_list') }}">
-                        <table style="width:100%; background: #f8f8f8; border-radius: 8px;">
-                            <tr>
-                                <th>Product</th>
-                                <th>Description</th>
-                                <th>Stock</th>
-                                <th>Price</th>
-                            </tr>
-                            <!-- Bamboo Products -->
-                            <tr>
-                                <td>Bamboo 2.0m</td>
-                                <td>Standard length</td>
-                                <td><input type="number" name="bamboo_2m_stock" value="{{ bamboo_2m_stock }}" min="0" style="width:60px;"></td>
-                                <td>
-                                    <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Bamboo 2.4m</td>
-                                <td>Longer, for fencing/screens</td>
-                                <td><input type="number" name="bamboo_24m_stock" value="{{ bamboo_24m_stock }}" min="0" style="width:60px;"></td>
-                                <td>
-                                    <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Bamboo 1.8m</td>
-                                <td>Shorter, for borders/edging</td>
-                                <td><input type="number" name="bamboo_18m_stock" value="{{ bamboo_18m_stock }}" min="0" style="width:60px;"></td>
-                                <td>
-                                    <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span>
-                                </td>
-                            </tr>
-                            <!-- Pebbles -->
-                            <tr>
-                                <td>Black Pebbles (20kg bag)</td>
-                                <td>Decorative pebbles</td>
-                                <td><input type="number" name="pebbles_black_stock" value="{{ pebbles_black_stock }}" min="0" style="width:60px;"></td>
-                                <td><input type="number" name="pebbles_black_price" value="{{ pebbles_black_price }}" step="0.01" style="width:80px;"></td>
-                            </tr>
-                            <tr>
-                                <td>White Pebbles (20kg bag)</td>
-                                <td>Decorative pebbles</td>
-                                <td><input type="number" name="pebbles_white_stock" value="{{ pebbles_white_stock }}" min="0" style="width:60px;"></td>
-                                <td><input type="number" name="pebbles_white_price" value="{{ pebbles_white_price }}" step="0.01" style="width:80px;"></td>
-                            </tr>
-                        </table>
-                        <button type="submit" style="margin-top:8px; padding:4px 16px; background:#006400; color:#fff; border:none; border-radius:4px; cursor:pointer;">Edit Prices</button>
-                    </form>
-                </td>
+                <td>Bamboo 2.4m</td>
+                <td>Longer, for fencing/screens</td>
+                <td><input type="number" name="bamboo_24m_stock" value="{{ bamboo_24m_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="bamboo_24m_price" value="{{ bamboo_24m_price }}" step="0.01" style="width:80px;"></td>
                 <td>
                     <div class="image-slider" data-images='{{ bamboo_images|tojson }}'>
                         <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
                         <img src="{{ bamboo_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
                         <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
                     </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Bamboo 2.0m</td>
+                <td>Standard length</td>
+                <td><input type="number" name="bamboo_2m_stock" value="{{ bamboo_2m_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="bamboo_2m_price" value="{{ bamboo_2m_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ bamboo_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ bamboo_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Bamboo 1.8m</td>
+                <td>Shorter, for borders/edging</td>
+                <td><input type="number" name="bamboo_18m_stock" value="{{ bamboo_18m_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="bamboo_18m_price" value="{{ bamboo_18m_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ bamboo_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ bamboo_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
+            <!-- Pebbles Products -->
+            <tr>
+                <td>Black Pebbles (20kg bag)</td>
+                <td>Decorative pebbles</td>
+                <td><input type="number" name="pebbles_black_stock" value="{{ pebbles_black_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="pebbles_black_price" value="{{ pebbles_black_price }}" step="0.01" style="width:80px;"></td>
+                <td>
                     <div class="image-slider" data-images='{{ pebbles_images|tojson }}'>
                         <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
                         <img src="{{ pebbles_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
@@ -101,14 +100,25 @@
                     </div>
                 </td>
             </tr>
-
+            <tr>
+                <td>White Pebbles (20kg bag)</td>
+                <td>Decorative pebbles</td>
+                <td><input type="number" name="pebbles_white_stock" value="{{ pebbles_white_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="pebbles_white_price" value="{{ pebbles_white_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ pebbles_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ pebbles_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
             <!-- Fountains Row -->
             <tr>
                 <td>Fountains</td>
-                <td>-</td>
-                <td>Fountain</td>
-                <td><input type="text" name="fountain_stock" value="{{ fountain_stock }}" min="Prices will vary"></td>
-                <td><span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span></td>
+                <td>Custom water features for premium landscaping projects</td>
+                <td><input type="number" name="fountain_stock" value="{{ fountain_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="text" name="fountain_price" value="{{ fountain_price }}" style="width:80px;"></td>
                 <td>
                     <div class="image-slider" data-images='{{ fountain_images|tojson }}'>
                         <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
@@ -118,66 +128,121 @@
                 </td>
             </tr>
 
-            <!-- Other products (default loop) -->
-            {% for product in products %}
-                {% if product[0] == 'Bamboo Products' %}
-                <tr>
-                    <td>{{ product[0] }}</td>
-                    <td>{{ product[1] }}</td>
-                    <td>{{ product[2] }}</td>
-            <td>
-                <form method="POST" action="{{ url_for('update_product_price', product_id=product[6]) }}" style="display:inline;">
-                    <input type="number" name="stock" value="{{ product[3] }}" min="0" style="width:60px;">
-            </td>
-            <td>
-                <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Varying prices</span>
-            </td>
-            <td>
-                {% if product[5] %}
-                <div class="image-slider" data-images='["{{ product[5] }}"]'>
-                    <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                    <img src="{{ product[5] }}" alt="{{ product[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                    <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                </div>
-                {% else %}
-                No image
-                {% endif %}
-            </td>
-        </tr>
-        {% elif product[0] not in ['Pebbles', 'Fountains'] %}
-        <tr>
-            <td>{{ product[0] }}</td>
-            <td>{{ product[1] }}</td>
-            <td>{{ product[2] }}</td>
-            <td>
-                <form method="POST" action="{{ url_for('update_product_price', product_id=product[6]) }}" style="display:inline;">
-                    <input type="number" name="stock" value="{{ product[3] }}" min="0" style="width:60px;">
-            </td>
-            <td>
-                {% if product[0].startswith('Bamboo') or 'Fountain' in product[0] or product[4] == 0 %}
-                    <span style="margin-left:8px; color:#f0a500; font-weight:bold; font-size:16px; background:#fffbe8; padding:2px 6px; border-radius:3px;">Price varies</span>
-                {% else %}
-                    ${{ '%.2f'|format(product[4]) }}
-                {% endif %}
-                <form method="POST" action="{{ url_for('update_product_price', product_id=product[6]) }}" style="display:inline;">
-                    <button type="submit" style="margin-left:8px; padding:4px 12px; background:#006400; color:#fff; border:none; border-radius:4px; cursor:pointer;">Edit</button>
-                </form>
-            </td>
-            <td>
-                {% if product[5] %}
-                <div class="image-slider" data-images='["{{ product[5] }}"]'>
-                    <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                    <img src="{{ product[5] }}" alt="{{ product[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                    <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                </div>
-                {% else %}
-                No image
-                {% endif %}
-            </td>
-        </tr>
-        {% endif %}
-    {% endfor %}
+            <!-- Premium Turf Products -->
+            <tr>
+                <td>Golden Premium Turf</td>
+                <td>Premium synthetic turf designed for a lush, natural look</td>
+                <td><input type="number" name="premium_stock" value="{{ premium_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="premium_price" value="{{ premium_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ premium_turf_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ premium_turf_images[0] if premium_turf_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Golden Green Lush</td>
+                <td>Artificial grass with vibrant green color, ideal for backyards</td>
+                <td><input type="number" name="green_lush_stock" value="{{ green_lush_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="green_lush_price" value="{{ green_lush_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ green_lush_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ green_lush_images[0] if green_lush_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Golden Natural 40mm</td>
+                <td>Realistic 40mm pile height turf, perfect for residential lawns</td>
+                <td><input type="number" name="natural_40mm_stock" value="{{ natural_40mm_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="natural_40mm_price" value="{{ natural_40mm_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ natural_40mm_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ natural_40mm_images[0] if natural_40mm_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Golden Golf Turf</td>
+                <td>Specially crafted for golf putting and chipping</td>
+                <td><input type="number" name="golf_turf_stock" value="{{ golf_turf_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="golf_turf_price" value="{{ golf_turf_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ golf_turf_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ golf_turf_images[0] if golf_turf_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Golden Imperial Lush</td>
+                <td>High-grade synthetic grass for premium landscaping projects</td>
+                <td><input type="number" name="imperial_lush_stock" value="{{ imperial_lush_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="imperial_lush_price" value="{{ imperial_lush_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ imperial_lush_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ imperial_lush_images[0] if imperial_lush_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
+            <!-- Accessory Products -->
+            <tr>
+                <td>Pegs (U-Pins/Nails)</td>
+                <td>Used for securing turf</td>
+                <td><input type="number" name="pegs_stock" value="{{ pegs_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="pegs_price" value="{{ pegs_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ peg_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ peg_images[0] if peg_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Artificial Hedges (per 50cm x 50cm)</td>
+                <td>Hedges for decoration</td>
+                <td><input type="number" name="artificial_hedges_stock" value="{{ artificial_hedges_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="artificial_hedges_price" value="{{ artificial_hedges_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ artificial_hedges_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ artificial_hedges_images[0] if artificial_hedges_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Adhesive Joining Tape (15m)</td>
+                <td>Tape for joining turf</td>
+                <td><input type="number" name="adhesive_tape_stock" value="{{ adhesive_tape_stock }}" min="0" style="width:60px;"></td>
+                <td><input type="number" name="adhesive_tape_price" value="{{ adhesive_tape_price }}" step="0.01" style="width:80px;"></td>
+                <td>
+                    <div class="image-slider" data-images='{{ tape_images|tojson }}'>
+                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
+                        <img src="{{ tape_images[0] if tape_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
+                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
+                    </div>
+                </td>
+            </tr>
         </table>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button type="submit" style="background-color: #006400; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                Save Changes
+            </button>
+        </div>
+        
+        </form>
 
         <style>
             /* Make Actions column bold in tables on products and clients tabs */
@@ -196,11 +261,247 @@
                 padding: 8px;
                 text-align: left;
             }
+            .products-list-table th:last-child, .products-list-table td:last-child {
+                width: 180px;
+                text-align: center;
+            }
             .products-list-table th {
                 background-color: #006400;
                 color: white;
             }
+            
+            /* Smaller table images */
+            .slider-img {
+                max-width: 75px !important; 
+                max-height: 45px !important; 
+                object-fit: cover !important;
+            }
+            
+            /* Enhanced gradient heading */
+            .products-title {
+                font-family: Arial, sans-serif;
+                background: linear-gradient(45deg, #f58220 0%, #006400 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                color: transparent;
+                filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+            }
+            
+            /* Fallback for browsers that don't support background-clip */
+            @supports not (-webkit-background-clip: text) {
+                .products-title {
+                    color: #006400;
+                    text-shadow: 2px 2px 4px rgba(245, 130, 32, 0.3);
+                }
+            }
+            
+            /* Image slider styles */
+            .image-slider {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                justify-content: center;
+                min-height: 100px;
+                padding: 5px;
+            }
+            .img-arrow {
+                background: #006400;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                cursor: pointer;
+                border-radius: 3px;
+                font-size: 14px;
+            }
+            .img-arrow:hover {
+                background: #004d00;
+            }
+            .slider-img {
+                cursor: pointer;
+                transition: opacity 0.3s ease;
+                max-width: 150px !important;
+                max-height: 90px !important;
+                width: auto;
+                height: auto;
+            }
+            .slider-img:hover {
+                opacity: 0.8;
+            }
+            
+            /* Modal styles */
+            .image-modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.8);
+            }
+            .modal-content {
+                position: relative;
+                margin: auto;
+                display: block;
+                width: 60%;
+                max-width: 600px;
+                max-height: 70vh;
+                margin-top: 8%;
+            }
+            .modal-img {
+                width: 100%;
+                height: auto;
+                max-height: 70vh;
+                object-fit: contain;
+                border-radius: 5px;
+            }
+            .modal-close {
+                position: absolute;
+                top: 15px;
+                right: 35px;
+                color: #fff;
+                font-size: 40px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            .modal-close:hover {
+                color: #ccc;
+            }
+            .modal-nav {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(0,100,0,0.8);
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                cursor: pointer;
+                font-size: 20px;
+                border-radius: 5px;
+            }
+            .modal-nav:hover {
+                background: rgba(0,77,0,0.9);
+            }
+            .modal-prev {
+                left: 20px;
+            }
+            .modal-next {
+                right: 20px;
+            }
         </style>
+        
+        <!-- Image Modal -->
+        <div id="imageModal" class="image-modal">
+            <div class="modal-content">
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+                <button class="modal-nav modal-prev" onclick="modalPrevImage()">&#8592;</button>
+                <img id="modalImg" class="modal-img" src="" alt="">
+                <button class="modal-nav modal-next" onclick="modalNextImage()">&#8594;</button>
+            </div>
+        </div>
+
+        <script>
+            // Global variables for modal
+            let currentModalImages = [];
+            let currentModalIndex = 0;
+            
+            // Initialize image sliders with current index
+            document.querySelectorAll('.image-slider').forEach(slider => {
+                slider.currentIndex = 0;
+            });
+
+            // Previous image function
+            function prevImage(button) {
+                const slider = button.parentElement;
+                const img = slider.querySelector('.slider-img');
+                const images = JSON.parse(slider.getAttribute('data-images'));
+                
+                if (images.length > 1) {
+                    slider.currentIndex = (slider.currentIndex - 1 + images.length) % images.length;
+                    img.src = images[slider.currentIndex];
+                }
+            }
+
+            // Next image function
+            function nextImage(button) {
+                const slider = button.parentElement;
+                const img = slider.querySelector('.slider-img');
+                const images = JSON.parse(slider.getAttribute('data-images'));
+                
+                if (images.length > 1) {
+                    slider.currentIndex = (slider.currentIndex + 1) % images.length;
+                    img.src = images[slider.currentIndex];
+                }
+            }
+
+            // Add click listener to all slider images for modal
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.slider-img').forEach(img => {
+                    img.addEventListener('click', function() {
+                        const slider = this.parentElement;
+                        const images = JSON.parse(slider.getAttribute('data-images'));
+                        openModal(images, slider.currentIndex || 0);
+                    });
+                });
+            });
+
+            // Open modal function
+            function openModal(images, index) {
+                currentModalImages = images;
+                currentModalIndex = index;
+                const modal = document.getElementById('imageModal');
+                const modalImg = document.getElementById('modalImg');
+                
+                modal.style.display = 'block';
+                modalImg.src = images[index];
+                
+                // Hide nav buttons if only one image
+                const prevBtn = modal.querySelector('.modal-prev');
+                const nextBtn = modal.querySelector('.modal-next');
+                if (images.length <= 1) {
+                    prevBtn.style.display = 'none';
+                    nextBtn.style.display = 'none';
+                } else {
+                    prevBtn.style.display = 'block';
+                    nextBtn.style.display = 'block';
+                }
+            }
+
+            // Close modal function
+            function closeModal() {
+                document.getElementById('imageModal').style.display = 'none';
+            }
+
+            // Modal navigation functions
+            function modalPrevImage() {
+                if (currentModalImages.length > 1) {
+                    currentModalIndex = (currentModalIndex - 1 + currentModalImages.length) % currentModalImages.length;
+                    document.getElementById('modalImg').src = currentModalImages[currentModalIndex];
+                }
+            }
+
+            function modalNextImage() {
+                if (currentModalImages.length > 1) {
+                    currentModalIndex = (currentModalIndex + 1) % currentModalImages.length;
+                    document.getElementById('modalImg').src = currentModalImages[currentModalIndex];
+                }
+            }
+
+            // Close modal when clicking outside the image
+            document.getElementById('imageModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+
+            // Close modal with escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+        </script>
     </div>
 </body>
 </html>
