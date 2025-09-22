@@ -132,10 +132,17 @@ def register():
         c = conn.cursor()
         c.execute('SELECT COUNT(*) FROM users')
         user_count = c.fetchone()[0]
-        # All manually added users start as 'user' role
-        # Only user ID 1 (first user) will be admin by default
-        role = 'user'
-        permissions = ''  # No permissions by default
+        
+        # If this is the first user, make them admin with all permissions
+        if user_count == 0:
+            role = 'admin'
+            permissions = 'dashboard,payments,clients,calendar,products'
+            flash('Congratulations! As the first user, you have been granted admin privileges.')
+        else:
+            # All other users start as 'user' role
+            role = 'user'
+            permissions = ''  # No permissions by default
+            
         try:
             c.execute('INSERT INTO users (name, email, password, role, permissions) VALUES (?, ?, ?, ?, ?)',
                       (name, email, hashed_password.decode('utf-8'), role, permissions))
