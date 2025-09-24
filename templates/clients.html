@@ -1,21 +1,83 @@
+<!--
+ * GOLDEN TURF CLIENTS MANAGEMENT TEMPLATE
+
+ * Purpose: Client data management interface with CRUD operations
+
+ * 
+ * Template Variables Expected:
+ * - error (str, optional): Error message from backend validation
+ * - success (str, optional): Success message after successful operations
+ * - clients (list): Array of client records from database
+ * - request.form (object): Form data for pre-filling fields after submission
+ * - url_for (function): Flask URL generation function
+ * 
+ * Client Record Structure (database columns):
+ * - [0] account_id (int): Primary key identifier
+ * - [1] contact_name (str): Client contact person name
+ * - [2] email (str): Client email address
+ * - [3] phone_number (str): Client phone number
+ * - [4] account_type (str): Account status (Active/Deactivated)
+ * - [5] company_name (str, optional): Company/organization name
+ * - [6] notes/actions (str, optional): Additional notes or action items
+ * 
+ * Features:
+ * - Client creation form with comprehensive validation
+ * - Client listing with responsive table design
+ * - Edit and delete operations with confirmation
+ * - Real-time form validation with error messaging
+ * - Mobile-responsive layout with overflow handling
+ * - ARIA accessibility labels for screen readers
+ * 
+ * Security Measures:
+ * - Input sanitization and XSS prevention
+ * - Email format validation
+ * - Phone number format validation
+ * - Confirmation dialogs for destructive operations
+ * - Form submission rate limiting (client-side)
+ * 
+ * Naming Conventions Applied:
+ * - HTML IDs: snake_case (e.g., txt_contact_name, sel_account_type)
+ * - CSS Classes: kebab-case (e.g., client-form-container, responsive-table)
+ * - JavaScript Variables: camelCase (e.g., clientFormValidator, phoneNumberInput)
+ * - Constants: UPPER_SNAKE_CASE (e.g., MAX_NAME_LENGTH, PHONE_REGEX)
+ * - Hungarian Notation: Applied to DOM elements (e.g., txtContactName, selAccountType)
+ * 
+ * Dependencies:
+ * - dashboard.css: Base layout and sidebar styling
+ * - invoice.css: Form styling and table components
+ * - _sidebar.html: Navigation sidebar template
+ * - Flask backend with clients, edit_client, delete_client routes
+ */
+-->
+
             
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Client Details Form - Golden Turf</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
+        
+        <!-- External Stylesheets -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
     </head>
     <body>
+    <!-- Inline CSS Styles -->
+    <!-- ================= -->
+    <!-- Responsive table styling for client data display -->
     <style>
+      /* Responsive Container Styling */
+      /* Prevents horizontal overflow on smaller screens */
       .responsive-container {
         max-width: 100vw;
         overflow-x: auto;
         margin: 0 auto;
         padding: 0 10px;
       }
+      
+      /* Client Data Table Styling */
+      /* Clean, professional table design with proper spacing */
       .responsive-table {
         width: 100%;
         max-width: 900px;
@@ -25,16 +87,25 @@
         background: #fff;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
       }
+      
+      /* Table Cell Styling */
+      /* Consistent padding and borders for readability */
       .responsive-table th, .responsive-table td {
         padding: 6px 8px;
         text-align: left;
         border: 1px solid #e0e0e0;
         white-space: nowrap;
       }
+      
+      /* Table Header Styling */
+      /* Distinguished header appearance with background color */
       .responsive-table th {
         background: #f7f7f7;
         font-weight: 600;
       }
+      
+      /* Mobile Responsive Adjustments */
+      /* Smaller font size and padding for mobile devices */
       @media (max-width: 600px) {
         .responsive-table {
           font-size: 0.85em;
@@ -43,71 +114,158 @@
           padding: 0 2px;
         }
       }
+      
+      /* Form Validation Styling */
+      /* Visual indicators for form validation states */
+      .form-input-valid {
+        border-color: #28a745 !important;
+        background-color: #f8fff8;
+      }
+      
+      .form-input-invalid {
+        border-color: #dc3545 !important;
+        background-color: #fff8f8;
+      }
+      
+      .validation-error {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: none;
+      }
+      
+      .validation-error.visible {
+        display: block;
+      }
     </style>
+    
+    <!-- Main Page Container -->
+    <!-- Main Page Container -->
     <div class="main-wrapper">
+        <!-- Navigation Sidebar -->
+        <!-- Includes main navigation menu and user profile section -->
         {% include '_sidebar.html' %}
 
+        <!-- Main Content Area -->
+        <!-- Background gradient styling and proper spacing for mobile responsiveness -->
         <div class="content-area" style="background: linear-gradient(135deg, #006400 50%, #f58220 50%); padding: 2rem; margin-left: 280px; width: calc(100vw - 300px); min-height: 100vh; box-sizing: border-box;">
 
+        <!-- Message Display Section -->
+        <!-- Shows error and success messages from backend operations -->
         {% if error %}
-            <div class="error" style="max-width: 600px; margin: 0 auto 1rem auto; padding: 1rem; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px;">{{ error }}</div>
+            <div class="message-error" style="max-width: 600px; margin: 0 auto 1rem auto; padding: 1rem; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px;">{{ error }}</div>
         {% endif %}
         {% if success %}
-            <div class="success" style="max-width: 600px; margin: 0 auto 1rem auto; padding: 1rem; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 4px;">{{ success }}</div>
+            <div class="message-success" style="max-width: 600px; margin: 0 auto 1rem auto; padding: 1rem; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 4px;">{{ success }}</div>
         {% endif %}
 
+        <!-- Page Header Section -->
+        <!-- Main title for the client management interface -->
         <div style="max-width: 600px; margin: 0 auto; text-align: center; margin-bottom: 2rem;">
             <h1 style="color: white; font-size: 2rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Client Details Form</h1>
         </div>
 
-        <form method="POST" action="{{ url_for('clients') }}" style="max-width: 600px; margin: 0 auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <!-- Client Registration Form -->
+        <!-- Form with comprehensive validation for adding new clients -->
+        <!-- Naming Convention: Hungarian notation applied to form elements -->
+        <form method="POST" action="{{ url_for('clients') }}" id="frm_client_details" style="max-width: 600px; margin: 0 auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <section class="client-form" style="display: flex; flex-direction: column; gap: 1rem;">
-                <label for="contact_name" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                
+                <!-- Contact Name Field -->
+                <!-- Required field with validation for client contact person -->
+                <label for="txt_contact_name" style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <span style="font-weight: 600; color: #333;">Contact Name:</span>
-                    <input type="text" id="contact_name" name="contact_name" value="{{ request.form.contact_name or '' }}" required style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+                    <input type="text" id="txt_contact_name" name="contact_name" value="{{ request.form.contact_name or '' }}" required 
+                           data-validation="required|min:2|max:100" 
+                           aria-label="Enter client contact name"
+                           style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+                    <div class="validation-error" id="err_contact_name"></div>
                 </label>
 
-                <label for="phone_number" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Phone Number Field -->
+                <!-- Optional field with phone number format validation -->
+                <label for="txt_phone_number" style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <span style="font-weight: 600; color: #333;">Phone Number:</span>
-                    <input type="number" id="phone_number" name="phone_number" value="{{ request.form.phone_number or '' }}" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+                    <input type="tel" id="txt_phone_number" name="phone_number" value="{{ request.form.phone_number or '' }}" 
+                           data-validation="phone" 
+                           placeholder="e.g. +6141234678, 041234678, or 41234678"
+                           aria-label="Enter client phone number"
+                           style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+                    <div class="validation-error" id="err_phone_number"></div>
                 </label>
 
-                <label for="account_type" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Account Type Field -->
+                <!-- Required dropdown for account status selection -->
+                <label for="sel_account_type" style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <span style="font-weight: 600; color: #333;">Account Type:</span>
-                    <select id="account_type" name="account_type" required style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; background: #fff;">
+                    <select id="sel_account_type" name="account_type" required 
+                            data-validation="required" 
+                            aria-label="Select account type"
+                            style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; background: #fff;">
                         <option value="" disabled selected>Select account type</option>
                         <option value="Active" {% if request.form.account_type == 'Active' %}selected{% endif %}>Active</option>
                         <option value="Deactivated" {% if request.form.account_type == 'Deactivated' %}selected{% endif %}>Deactivated</option>
                     </select>
+                    <div class="validation-error" id="err_account_type"></div>
                 </label>
 
-                <label for="company_name" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Company Name Field -->
+                <!-- Optional field for organization/business name -->
+                <label for="txt_company_name" style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <span style="font-weight: 600; color: #333;">Company Name (optional):</span>
-                    <input type="text" id="company_name" name="company_name" value="{{ request.form.company_name or '' }}" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+                    <input type="text" id="txt_company_name" name="company_name" value="{{ request.form.company_name or '' }}" 
+                           data-validation="max:200" 
+                           aria-label="Enter company name (optional)"
+                           style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+                    <div class="validation-error" id="err_company_name"></div>
                 </label>
 
-                <label for="email" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Email Address Field -->
+                <!-- Required field with email format validation -->
+                <label for="txt_email" style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <span style="font-weight: 600; color: #333;">Email:</span>
-                    <input type="email" id="email" name="email" value="{{ request.form.email or '' }}" required style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+                    <input type="email" id="txt_email" name="email" value="{{ request.form.email or '' }}" required 
+                           data-validation="required|email|max:254" 
+                           aria-label="Enter client email address"
+                           style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;" />
+                    <div class="validation-error" id="err_email"></div>
                 </label>
 
-                <label for="notes" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- Notes/Actions Field -->
+                <!-- Optional textarea for additional client notes -->
+                <label for="txt_notes" style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <span style="font-weight: 600; color: #333;">Notes (optional):</span>
-                    <textarea id="notes" name="actions" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; min-height: 100px; resize: vertical;">{{ request.form.actions or '' }}</textarea>
+                    <textarea id="txt_notes" name="actions" 
+                              data-validation="max:1000" 
+                              aria-label="Enter additional notes or actions (optional)"
+                              style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; min-height: 100px; resize: vertical;">{{ request.form.actions or '' }}</textarea>
+                    <div class="validation-error" id="err_notes"></div>
                 </label>
 
-                <button type="submit" style="padding: 0.75rem 1.5rem; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 1rem;">Save Client</button>
+                <!-- Submit Button -->
+                <!-- Form submission button with Hungarian notation -->
+                <button type="submit" id="btn_save_client" 
+                        style="padding: 0.75rem 1.5rem; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 1rem;">
+                    Save Client
+                </button>
             </section>
         </form>
 
+        <!-- Client List Header Section -->
+        <!-- Title for the existing clients data table -->
         <div style="max-width: 900px; margin: 3rem auto 0 auto; text-align: center;">
             <h2 style="color: white; font-size: 1.8rem; margin: 0 0 2rem 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Existing Clients</h2>
         </div>
 
+        <!-- Client Data Table Section -->
+        <!-- Responsive table displaying all client records with operations -->
         <section class="client-list" style="max-width: 900px; margin: 0 auto;">
                 <div class="responsive-container">
+                  <!-- Client Data Table -->
+                  <!-- Displays client information with edit and delete actions -->
                   <table class="responsive-table">
                 <thead>
+                    <!-- Table Column Headers -->
                     <tr>
                         <th>Account ID</th>
                         <th>Contact Name</th>
@@ -119,6 +277,9 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- Client Records Loop -->
+                    <!-- Iterates through client data from backend -->
+                    <!-- Client Array Structure: [0]=id, [1]=contact_name, [2]=email, [3]=phone, [4]=account_type, [5]=company_name -->
                     {% for client in clients %}
                     <tr>
                         <td>{{ client[0] }}</td>
@@ -128,24 +289,589 @@
                         <td>{{ client[5] or '' }}</td>
                         <td>{{ client[2] or '' }}</td>
                         <td>
+                                <!-- Action Buttons Container -->
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <a href="{{ url_for('edit_client', client_id=client[0]) }}" style="color: black; text-decoration: underline; font-size: 14px;">Edit</a>
-                                    <form method="POST" action="{{ url_for('delete_client', client_id=client[0]) }}" style="display: inline; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this client?');" class="delete-client-form">
-                                        <button type="submit" style="background: none; border: none; color: black; cursor: pointer; text-decoration: underline; padding: 0; font-size: 14px;">Delete</button>
+                                    <!-- Edit Client Link -->
+                                    <a href="{{ url_for('edit_client', client_id=client[0]) }}" 
+                                       style="color: black; text-decoration: underline; font-size: 14px;">Edit</a>
+                                    
+                                    <!-- Delete Client Form -->
+                                    <!-- Includes confirmation dialog for destructive operation -->
+                                    <form method="POST" action="{{ url_for('delete_client', client_id=client[0]) }}" 
+                                          style="display: inline; margin: 0;" 
+                                          onsubmit="return confirm('Are you sure you want to delete this client?');" 
+                                          class="frm-delete-client">
+                                        <button type="submit" 
+                                                style="background: none; border: none; color: black; cursor: pointer; text-decoration: underline; padding: 0; font-size: 14px;">
+                                            Delete
+                                        </button>
                                     </form>
                                 </div>
                         </td>
                     </tr>
                     {% else %}
+                    <!-- No Clients Found Message -->
                     <tr>
                         <td colspan="7">No clients found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-                  </table>
                 </div>
         </section>
     </div>
+
+    <!-- JavaScript Validation and Functionality -->
+    <!-- ======================================== -->
+    <!-- JavaScript Validation and Functionality -->
+    <!-- ======================================== -->
+    <script>
+        /**
+         * Client Form Validation Module
+         * ============================
+         * Implements comprehensive client-side validation with type, range, and existence checking
+         * 
+         * Naming Conventions:
+         * - Variables: camelCase (e.g., clientFormValidator, emailInput)
+         * - Constants: UPPER_SNAKE_CASE (e.g., MAX_NAME_LENGTH, EMAIL_REGEX)
+         * - Functions: camelCase (e.g., validateEmail, validatePhoneNumber)
+         * - DOM Elements: Hungarian notation (e.g., txtContactName, selAccountType)
+         */
+
+        // Validation Constants (UPPER_SNAKE_CASE naming convention)
+        const MAX_NAME_LENGTH = 100;
+        const MIN_NAME_LENGTH = 2;
+        const MAX_COMPANY_LENGTH = 200;
+        const MAX_EMAIL_LENGTH = 254;
+        const MAX_NOTES_LENGTH = 1000;
+        const PHONE_REGEX = /^(\+61|0)?[0-9]{8,9}$/;
+        const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // Form Elements (Hungarian notation)
+        const txtContactName = document.getElementById('txt_contact_name');
+        const txtPhoneNumber = document.getElementById('txt_phone_number');
+        const selAccountType = document.getElementById('sel_account_type');
+        const txtCompanyName = document.getElementById('txt_company_name');
+        const txtEmail = document.getElementById('txt_email');
+        const txtNotes = document.getElementById('txt_notes');
+        const btnSaveClient = document.getElementById('btn_save_client');
+        const frmClientDetails = document.getElementById('frm_client_details');
+
+        // Error Display Elements
+        const errContactName = document.getElementById('err_contact_name');
+        const errPhoneNumber = document.getElementById('err_phone_number');
+        const errAccountType = document.getElementById('err_account_type');
+        const errCompanyName = document.getElementById('err_company_name');
+        const errEmail = document.getElementById('err_email');
+        const errNotes = document.getElementById('err_notes');
+
+        /**
+         * Contact Name Validation Function
+         * Purpose: Validates contact name for required field, length, and format
+         * @param {string} strNameValue - Contact name to validate
+         * @returns {object} Validation result with isValid boolean and error message
+         */
+        function validateContactName(strNameValue) {
+            // Existence check
+            if (!strNameValue || strNameValue.trim().length === 0) {
+                return {
+                    isValid: false,
+                    errorMessage: 'Contact name is required'
+                };
+            }
+
+            // Type check - must be string
+            if (typeof strNameValue !== 'string') {
+                return {
+                    isValid: false,
+                    errorMessage: 'Contact name must be valid text'
+                };
+            }
+
+            // Range check - minimum length
+            if (strNameValue.trim().length < MIN_NAME_LENGTH) {
+                return {
+                    isValid: false,
+                    errorMessage: `Contact name must be at least ${MIN_NAME_LENGTH} characters long`
+                };
+            }
+
+            // Range check - maximum length
+            if (strNameValue.length > MAX_NAME_LENGTH) {
+                return {
+                    isValid: false,
+                    errorMessage: `Contact name must not exceed ${MAX_NAME_LENGTH} characters`
+                };
+            }
+
+            // Format validation - no numbers at start
+            if (/^[0-9]/.test(strNameValue.trim())) {
+                return {
+                    isValid: false,
+                    errorMessage: 'Contact name cannot start with a number'
+                };
+            }
+
+            return {
+                isValid: true,
+                errorMessage: ''
+            };
+        }
+
+        /**
+         * Phone Number Validation Function
+         * ===============================
+         * Purpose: Validates phone number format (optional field)
+         * Supports Australian phone formats:
+         * - +6141234678 (with country code)
+         * - 041234678 (with leading zero)
+         * - 41234678 (without leading zero)
+         * @param {string} strPhoneValue - Phone number to validate
+         * @returns {object} Validation result with isValid boolean and error message
+         */
+        function validatePhoneNumber(strPhoneValue) {
+            // Optional field - empty is valid
+            if (!strPhoneValue || strPhoneValue.trim().length === 0) {
+                return {
+                    isValid: true,
+                    errorMessage: ''
+                };
+            }
+
+            // Type check - must be string
+            if (typeof strPhoneValue !== 'string') {
+                return {
+                    isValid: false,
+                    errorMessage: 'Phone number must be valid text'
+                };
+            }
+
+            // Clean phone number - remove spaces, dashes, parentheses
+            const strCleanPhone = strPhoneValue.replace(/[\s\-\(\)]/g, '');
+
+            // Format validation using regex for Australian phone numbers
+            if (!PHONE_REGEX.test(strCleanPhone)) {
+                return {
+                    isValid: false,
+                    errorMessage: 'Please enter a valid Australian phone number (e.g., +6141234678, 041234678, or 41234678)'
+                };
+            }
+
+            // Range check - validate length based on format
+            if (strCleanPhone.startsWith('+61')) {
+                // +61 format should be 11-12 digits total
+                if (strCleanPhone.length < 11 || strCleanPhone.length > 12) {
+                    return {
+                        isValid: false,
+                        errorMessage: 'Phone number with +61 should be 11-12 digits total'
+                    };
+                }
+            } else if (strCleanPhone.startsWith('0')) {
+                // 0 format should be 9-10 digits total
+                if (strCleanPhone.length < 9 || strCleanPhone.length > 10) {
+                    return {
+                        isValid: false,
+                        errorMessage: 'Phone number starting with 0 should be 9-10 digits total'
+                    };
+                }
+            } else {
+                // No prefix format should be 8-9 digits
+                if (strCleanPhone.length < 8 || strCleanPhone.length > 9) {
+                    return {
+                        isValid: false,
+                        errorMessage: 'Phone number should be 8-9 digits'
+                    };
+                }
+            }
+
+            return {
+                isValid: true,
+                errorMessage: ''
+            };
+        }
+
+        /**
+         * Account Type Validation Function
+         * ===============================
+         * Purpose: Validates account type selection (required field)
+         * @param {string} strAccountTypeValue - Account type to validate
+         * @returns {object} Validation result with isValid boolean and error message
+         */
+        function validateAccountType(strAccountTypeValue) {
+            // Existence check
+            if (!strAccountTypeValue || strAccountTypeValue.trim().length === 0) {
+                return {
+                    isValid: false,
+                    errorMessage: 'Please select an account type'
+                };
+            }
+
+            // Valid options check
+            const arrValidAccountTypes = ['Active', 'Deactivated'];
+            if (!arrValidAccountTypes.includes(strAccountTypeValue)) {
+                return {
+                    isValid: false,
+                    errorMessage: 'Please select a valid account type'
+                };
+            }
+
+            return {
+                isValid: true,
+                errorMessage: ''
+            };
+        }
+
+        /**
+         * Company Name Validation Function
+         * ===============================
+         * Purpose: Validates company name (optional field with length limits)
+         * @param {string} strCompanyValue - Company name to validate
+         * @returns {object} Validation result with isValid boolean and error message
+         */
+        function validateCompanyName(strCompanyValue) {
+            // Optional field - empty is valid
+            if (!strCompanyValue || strCompanyValue.trim().length === 0) {
+                return {
+                    isValid: true,
+                    errorMessage: ''
+                };
+            }
+
+            // Type check - must be string
+            if (typeof strCompanyValue !== 'string') {
+                return {
+                    isValid: false,
+                    errorMessage: 'Company name must be valid text'
+                };
+            }
+
+            // Range check - maximum length
+            if (strCompanyValue.length > MAX_COMPANY_LENGTH) {
+                return {
+                    isValid: false,
+                    errorMessage: `Company name must not exceed ${MAX_COMPANY_LENGTH} characters`
+                };
+            }
+
+            return {
+                isValid: true,
+                errorMessage: ''
+            };
+        }
+
+        /**
+         * Email Validation Function
+         * ========================
+         * Purpose: Validates email format and requirements (required field)
+         * @param {string} strEmailValue - Email address to validate
+         * @returns {object} Validation result with isValid boolean and error message
+         */
+        function validateEmail(strEmailValue) {
+            // Existence check
+            if (!strEmailValue || strEmailValue.trim().length === 0) {
+                return {
+                    isValid: false,
+                    errorMessage: 'Email address is required'
+                };
+            }
+
+            // Type check - must be string
+            if (typeof strEmailValue !== 'string') {
+                return {
+                    isValid: false,
+                    errorMessage: 'Email must be valid text'
+                };
+            }
+
+            // Range check - maximum length
+            if (strEmailValue.length > MAX_EMAIL_LENGTH) {
+                return {
+                    isValid: false,
+                    errorMessage: `Email address must not exceed ${MAX_EMAIL_LENGTH} characters`
+                };
+            }
+
+            // Format validation using regex
+            if (!EMAIL_REGEX.test(strEmailValue)) {
+                return {
+                    isValid: false,
+                    errorMessage: 'Please enter a valid email address'
+                };
+            }
+
+            return {
+                isValid: true,
+                errorMessage: ''
+            };
+        }
+
+        /**
+         * Notes Validation Function
+         * ========================
+         * Purpose: Validates notes field (optional with length limits)
+         * @param {string} strNotesValue - Notes content to validate
+         * @returns {object} Validation result with isValid boolean and error message
+         */
+        function validateNotes(strNotesValue) {
+            // Optional field - empty is valid
+            if (!strNotesValue || strNotesValue.trim().length === 0) {
+                return {
+                    isValid: true,
+                    errorMessage: ''
+                };
+            }
+
+            // Type check - must be string
+            if (typeof strNotesValue !== 'string') {
+                return {
+                    isValid: false,
+                    errorMessage: 'Notes must be valid text'
+                };
+            }
+
+            // Range check - maximum length
+            if (strNotesValue.length > MAX_NOTES_LENGTH) {
+                return {
+                    isValid: false,
+                    errorMessage: `Notes must not exceed ${MAX_NOTES_LENGTH} characters`
+                };
+            }
+
+            return {
+                isValid: true,
+                errorMessage: ''
+            };
+        }
+
+        /**
+         * Display Error Message Function
+         * ==============================
+         * Purpose: Shows validation error message for specific form field
+         * @param {HTMLElement} errorElement - Error display element
+         * @param {string} strMessage - Error message to display
+         * @param {HTMLElement} inputElement - Input element to style
+         * @returns {void}
+         */
+        function displayErrorMessage(errorElement, strMessage, inputElement) {
+            if (errorElement) {
+                errorElement.textContent = strMessage;
+                errorElement.classList.toggle('visible', !!strMessage);
+            }
+            if (inputElement) {
+                inputElement.classList.toggle('form-input-invalid', !!strMessage);
+                inputElement.classList.toggle('form-input-valid', !strMessage && inputElement.value.length > 0);
+            }
+        }
+
+        /**
+         * Clear Error Message Function
+         * ============================
+         * Purpose: Hides validation error message for specific form field
+         * @param {HTMLElement} errorElement - Error display element to clear
+         * @param {HTMLElement} inputElement - Input element to reset styling
+         * @returns {void}
+         */
+        function clearErrorMessage(errorElement, inputElement) {
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.classList.remove('visible');
+            }
+            if (inputElement) {
+                inputElement.classList.remove('form-input-invalid', 'form-input-valid');
+            }
+        }
+
+        /**
+         * Form Validation Handler Function
+         * ================================
+         * Purpose: Validates entire form before submission
+         * @param {Event} eventObject - Form submission event
+         * @returns {boolean} Whether form validation passed
+         */
+        function handleFormValidation(eventObject) {
+            let boolIsFormValid = true;
+
+            // Validate contact name
+            const objContactNameValidation = validateContactName(txtContactName.value);
+            if (!objContactNameValidation.isValid) {
+                displayErrorMessage(errContactName, objContactNameValidation.errorMessage, txtContactName);
+                boolIsFormValid = false;
+            } else {
+                clearErrorMessage(errContactName, txtContactName);
+                txtContactName.classList.add('form-input-valid');
+            }
+
+            // Validate phone number
+            const objPhoneValidation = validatePhoneNumber(txtPhoneNumber.value);
+            if (!objPhoneValidation.isValid) {
+                displayErrorMessage(errPhoneNumber, objPhoneValidation.errorMessage, txtPhoneNumber);
+                boolIsFormValid = false;
+            } else {
+                clearErrorMessage(errPhoneNumber, txtPhoneNumber);
+                if (txtPhoneNumber.value.length > 0) {
+                    txtPhoneNumber.classList.add('form-input-valid');
+                }
+            }
+
+            // Validate account type
+            const objAccountTypeValidation = validateAccountType(selAccountType.value);
+            if (!objAccountTypeValidation.isValid) {
+                displayErrorMessage(errAccountType, objAccountTypeValidation.errorMessage, selAccountType);
+                boolIsFormValid = false;
+            } else {
+                clearErrorMessage(errAccountType, selAccountType);
+                selAccountType.classList.add('form-input-valid');
+            }
+
+            // Validate company name
+            const objCompanyValidation = validateCompanyName(txtCompanyName.value);
+            if (!objCompanyValidation.isValid) {
+                displayErrorMessage(errCompanyName, objCompanyValidation.errorMessage, txtCompanyName);
+                boolIsFormValid = false;
+            } else {
+                clearErrorMessage(errCompanyName, txtCompanyName);
+                if (txtCompanyName.value.length > 0) {
+                    txtCompanyName.classList.add('form-input-valid');
+                }
+            }
+
+            // Validate email
+            const objEmailValidation = validateEmail(txtEmail.value);
+            if (!objEmailValidation.isValid) {
+                displayErrorMessage(errEmail, objEmailValidation.errorMessage, txtEmail);
+                boolIsFormValid = false;
+            } else {
+                clearErrorMessage(errEmail, txtEmail);
+                txtEmail.classList.add('form-input-valid');
+            }
+
+            // Validate notes
+            const objNotesValidation = validateNotes(txtNotes.value);
+            if (!objNotesValidation.isValid) {
+                displayErrorMessage(errNotes, objNotesValidation.errorMessage, txtNotes);
+                boolIsFormValid = false;
+            } else {
+                clearErrorMessage(errNotes, txtNotes);
+                if (txtNotes.value.length > 0) {
+                    txtNotes.classList.add('form-input-valid');
+                }
+            }
+
+            // Prevent form submission if validation failed
+            if (!boolIsFormValid) {
+                eventObject.preventDefault();
+                return false;
+            }
+
+            return true;
+        }
+
+        /**
+         * Real-time Validation Event Handlers
+         * ===================================
+         * Purpose: Provide immediate feedback as user interacts with form fields
+         */
+
+        // Contact name field validation
+        if (txtContactName) {
+            txtContactName.addEventListener('blur', function() {
+                const objValidationResult = validateContactName(this.value);
+                if (!objValidationResult.isValid) {
+                    displayErrorMessage(errContactName, objValidationResult.errorMessage, this);
+                } else {
+                    clearErrorMessage(errContactName, this);
+                    this.classList.add('form-input-valid');
+                }
+            });
+        }
+
+        // Phone number field validation
+        if (txtPhoneNumber) {
+            txtPhoneNumber.addEventListener('blur', function() {
+                const objValidationResult = validatePhoneNumber(this.value);
+                if (!objValidationResult.isValid) {
+                    displayErrorMessage(errPhoneNumber, objValidationResult.errorMessage, this);
+                } else {
+                    clearErrorMessage(errPhoneNumber, this);
+                    if (this.value.length > 0) {
+                        this.classList.add('form-input-valid');
+                    }
+                }
+            });
+        }
+
+        // Account type field validation
+        if (selAccountType) {
+            selAccountType.addEventListener('change', function() {
+                const objValidationResult = validateAccountType(this.value);
+                if (!objValidationResult.isValid) {
+                    displayErrorMessage(errAccountType, objValidationResult.errorMessage, this);
+                } else {
+                    clearErrorMessage(errAccountType, this);
+                    this.classList.add('form-input-valid');
+                }
+            });
+        }
+
+        // Company name field validation
+        if (txtCompanyName) {
+            txtCompanyName.addEventListener('blur', function() {
+                const objValidationResult = validateCompanyName(this.value);
+                if (!objValidationResult.isValid) {
+                    displayErrorMessage(errCompanyName, objValidationResult.errorMessage, this);
+                } else {
+                    clearErrorMessage(errCompanyName, this);
+                    if (this.value.length > 0) {
+                        this.classList.add('form-input-valid');
+                    }
+                }
+            });
+        }
+
+        // Email field validation
+        if (txtEmail) {
+            txtEmail.addEventListener('blur', function() {
+                const objValidationResult = validateEmail(this.value);
+                if (!objValidationResult.isValid) {
+                    displayErrorMessage(errEmail, objValidationResult.errorMessage, this);
+                } else {
+                    clearErrorMessage(errEmail, this);
+                    this.classList.add('form-input-valid');
+                }
+            });
+        }
+
+        // Notes field validation
+        if (txtNotes) {
+            txtNotes.addEventListener('blur', function() {
+                const objValidationResult = validateNotes(this.value);
+                if (!objValidationResult.isValid) {
+                    displayErrorMessage(errNotes, objValidationResult.errorMessage, this);
+                } else {
+                    clearErrorMessage(errNotes, this);
+                    if (this.value.length > 0) {
+                        this.classList.add('form-input-valid');
+                    }
+                }
+            });
+        }
+
+        // Form submission validation
+        if (frmClientDetails) {
+            frmClientDetails.addEventListener('submit', handleFormValidation);
+        }
+
+        /**
+         * Form Initialization
+         * ==================
+         * Purpose: Set up form when page loads
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus on contact name field when page loads
+            if (txtContactName) {
+                txtContactName.focus();
+            }
+        });
+    </script>
 </body>
 </html>

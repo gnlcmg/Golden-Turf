@@ -1,53 +1,113 @@
+<!--
+Purpose:
+    - Interactive calendar interface for Golden Turf task management system
+    - Supports multiple view modes (monthly, weekly) with task display and management
+    - Provides task creation, editing, filtering, and status tracking capabilities
+
+Template Variables (Jinja2):
+    - current_year (int): Current year for display header
+    - header_text (str): Formatted month/year or week display text  
+    - view (str): Current view mode ('month', 'week')
+    - calendar_data (list): Array of day objects with tasks and metadata
+    - tasks (list): Complete task list for sidebar display
+    - users (list): Available users for task assignment
+
+Dependencies:
+    - dashboard.css: Base styling and layout components
+    - calendar.css: Calendar-specific styling and grid layouts
+    - _sidebar.html: Shared navigation sidebar component
+    
+Features:
+    - Dynamic calendar grid with task visualization
+    - Task filtering by status and assigned user
+    - Modal forms for task creation and editing
+    - Print functionality for individual tasks
+    - Date navigation and today shortcut
+    - Real-time task status updates via AJAX
+
+Naming Conventions:
+    - Variables: snake_case (e.g., task_list, filter_status)
+    - Constants: UPPER_SNAKE_CASE (e.g., MODAL_Z_INDEX, MAX_TASK_TITLE)
+    - Functions: camelCase (e.g., navigateMonth, filterTasks)
+    - DOM Elements: Hungarian notation (e.g., divCalendarGrid, btnAddTask)
+    - CSS Classes: kebab-case (e.g., task-item, calendar-day)
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Calendar</title>
+    <title>Golden Turf - Calendar Management</title>
+    <!-- CSS Dependencies -->
     <link rel="stylesheet" href="/static/dashboard.css" />
     <link rel="stylesheet" href="/static/calendar.css" />
     <style>
+        /* Dropdown Navigation Styles */
         .nav-dropdown:hover .dropdown-content {
             display: block;
         }
     </style>
 </head>
 <body>
+    <!-- Navigation Sidebar Integration -->
     {% include '_sidebar.html' %}
 
-<main class="main-content">
-    <main style="display: flex; flex-direction: row; align-items: flex-start; gap: 8px; padding: 16px 12px 16px 32px; margin-left: 280px; width: calc(100vw - 280px); box-sizing: border-box; min-width:0; overflow-x:auto;">
-        <section class="calendar" style="flex: 1 1 70%; min-width: 0; max-width: 75%;">
-            <div class="year-header" style="text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 16px; color: #006400;">{{ current_year }}</div>
-            <div class="view-options" style="display: flex; justify-content: center; gap: 12px; margin-bottom: 12px;">
-                <button onclick="navigate('week')" style="padding: 4px 12px; cursor: pointer; font-size: 13px;">Weekly</button>
-                <button onclick="navigate('month')" style="padding: 4px 12px; cursor: pointer; font-size: 13px;">Monthly</button>
+<!-- Main Calendar Content Area -->
+<main id="main_calendar_content" class="main-content">
+    <main id="div_calendar_layout" style="display: flex; flex-direction: row; align-items: flex-start; gap: 8px; padding: 16px 12px 16px 32px; margin-left: 280px; width: calc(100vw - 280px); box-sizing: border-box; min-width:0; overflow-x:auto;">
+        
+        <!-- Calendar Display Section -->
+        <section id="section_calendar_display" class="calendar" style="flex: 1 1 70%; min-width: 0; max-width: 75%;">
+            <!-- Year Header Display -->
+            <div id="div_year_header" class="year-header" style="text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 16px; color: #006400;">{{ current_year }}</div>
+            
+            <!-- View Mode Selection Buttons -->
+            <div id="div_view_options" class="view-options" style="display: flex; justify-content: center; gap: 12px; margin-bottom: 12px;">
+                <button id="btn_weekly_view" onclick="navigateToView('week')" style="padding: 4px 12px; cursor: pointer; font-size: 13px;">Weekly</button>
+                <button id="btn_monthly_view" onclick="navigateToView('month')" style="padding: 4px 12px; cursor: pointer; font-size: 13px;">Monthly</button>
             </div>
-            <h2 style="text-align: center; font-size: 18px; margin: 12px 0;">
-                <span class="nav-arrow" onclick="navigateMonth(-1)" style="font-size: 18px; font-weight: bold; color: black; text-decoration: none; cursor: pointer; margin-right: 12px;"><</span>
+            
+            <!-- Navigation Header with Month/Week Display -->
+            <h2 id="h2_navigation_header" style="text-align: center; font-size: 18px; margin: 12px 0;">
+                <span id="span_nav_previous" class="nav-arrow" onclick="navigateTimePeriod(-1)" style="font-size: 18px; font-weight: bold; color: black; text-decoration: none; cursor: pointer; margin-right: 12px;"><</span>
                 {{ header_text }}
-                <span class="nav-arrow" onclick="navigateMonth(1)" style="font-size: 18px; font-weight: bold; color: black; text-decoration: none; cursor: pointer; margin-left: 12px;">></span>
+                <span id="span_nav_next" class="nav-arrow" onclick="navigateTimePeriod(1)" style="font-size: 18px; font-weight: bold; color: black; text-decoration: none; cursor: pointer; margin-left: 12px;">></span>
             </h2>
+            <!-- Monthly Calendar View Layout -->
             {% if view == 'month' %}
-                <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, minmax(85px, 1fr)); gap: 6px; min-width: 595px;">
-                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Sun</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Mon</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Tue</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Wed</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Thu</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Fri</div>
-                    <div class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Sat</div>
+                <div id="div_monthly_calendar_grid" class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, minmax(85px, 1fr)); gap: 6px; min-width: 595px;">
+                    <!-- Day Name Headers (Hungarian notation for clear DOM identification) -->
+                    <div id="div_day_header_sun" class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Sun</div>
+                    <div id="div_day_header_mon" class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Mon</div>
+                    <div id="div_day_header_tue" class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Tue</div>
+                    <div id="div_day_header_wed" class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Wed</div>
+                    <div id="div_day_header_thu" class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Thu</div>
+                    <div id="div_day_header_fri" class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Fri</div>
+                    <div id="div_day_header_sat" class="day-name" style="font-weight: bold; text-align: center; padding: 4px 0; background: #f8f9fa; border-radius: 4px; font-size: 13px;">Sat</div>
+                    
+                    <!-- Calendar Day Cells with Task Display -->
                     {% for day in calendar_data %}
-                        <div class="calendar-day {% if day.tasks %}has-tasks{% endif %} {% if day.is_today %}today{% endif %}" style="position: relative; aspect-ratio: 1; min-width: 0; min-height: 75px; border: 1px solid #ccc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3px; box-sizing: border-box; overflow: hidden;">
+                        <div id="div_calendar_day_{{ day.day if day.day else 'empty' }}" class="calendar-day {% if day.tasks %}has-tasks{% endif %} {% if day.is_today %}today{% endif %}" style="position: relative; aspect-ratio: 1; min-width: 0; min-height: 75px; border: 1px solid #ccc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3px; box-sizing: border-box; overflow: hidden;">
                             {% if day.day %}
-                                <span class="day-number" style="position: absolute; top: 2px; right: 4px; font-size: 11px; font-weight: bold;">{{ day.day }}</span>
+                                <!-- Day Number Display -->
+                                <span id="span_day_number_{{ day.day }}" class="day-number" style="position: absolute; top: 2px; right: 4px; font-size: 11px; font-weight: bold;">{{ day.day }}</span>
+                                
+                                <!-- Today Indicator Dot -->
                                 {% if day.is_today %}
-                                    <div class="today-dot" style="position: absolute; top: 2px; left: 4px; width: 6px; height: 6px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
+                                    <div id="div_today_indicator_{{ day.day }}" class="today-dot" style="position: absolute; top: 2px; left: 4px; width: 6px; height: 6px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
                                 {% endif %}
-                                <div style="margin-top: 16px; width: 100%; overflow: hidden;">
+                                
+                                <!-- Task Items Container -->
+                                <div id="div_task_container_{{ day.day }}" style="margin-top: 16px; width: 100%; overflow: hidden;">
                                     {% for task in day.tasks %}
-                                        <div class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" data-task-id="{{ task[0] }}" style="border: 1px solid transparent; padding: 1px 3px; margin-bottom: 1px; border-radius: 2px; display: flex; align-items: center; font-size: 9px; cursor: pointer; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="redirectToTaskView('{{ task[0] }}')">
-                                            <span style="font-weight: 500; overflow: hidden; text-overflow: ellipsis;">{{ task[1][:7] }}{% if task[1]|length > 7 %}...{% endif %}</span>
+                                        <div id="div_task_item_{{ task[0] }}" class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" 
+                                             data-status="{{ task[6] }}" 
+                                             data-date="{{ task[3] }}" 
+                                             data-time="{{ task[4] }}" 
+                                             data-task-id="{{ task[0] }}" 
+                                             style="border: 1px solid transparent; padding: 1px 3px; margin-bottom: 1px; border-radius: 2px; display: flex; align-items: center; font-size: 9px; cursor: pointer; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                                             onclick="handleTaskViewRedirect('{{ task[0] }}')">
+                                            <span id="span_task_title_{{ task[0] }}" style="font-weight: 500; overflow: hidden; text-overflow: ellipsis;">{{ task[1][:7] }}{% if task[1]|length > 7 %}...{% endif %}</span>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -55,19 +115,31 @@
                         </div>
                     {% endfor %}
                 </div>
+            <!-- Weekly Calendar View Layout -->
             {% elif view == 'week' %}
-                <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, minmax(85px, 1fr)); gap: 6px; min-width: 595px;">
+                <div id="div_weekly_calendar_grid" class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, minmax(85px, 1fr)); gap: 6px; min-width: 595px;">
                     {% for day in calendar_data %}
-                        <div class="calendar-day {% if day.tasks %}has-tasks{% endif %} {% if day.is_today %}today{% endif %}" style="position: relative; aspect-ratio: 1; min-width: 0; min-height: 75px; border: 1px solid #ccc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3px; box-sizing: border-box; overflow: hidden;">
+                        <div id="div_weekly_day_{{ day.day if day.day else 'empty' }}" class="calendar-day {% if day.tasks %}has-tasks{% endif %} {% if day.is_today %}today{% endif %}" style="position: relative; aspect-ratio: 1; min-width: 0; min-height: 75px; border: 1px solid #ccc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 3px; box-sizing: border-box; overflow: hidden;">
                             {% if day.day %}
-                                <span class="day-number" style="position: absolute; top: 2px; right: 4px; font-size: 11px; font-weight: bold;">{{ day.day }}</span>
+                                <!-- Day Number Display -->
+                                <span id="span_weekly_day_number_{{ day.day }}" class="day-number" style="position: absolute; top: 2px; right: 4px; font-size: 11px; font-weight: bold;">{{ day.day }}</span>
+                                
+                                <!-- Today Indicator for Weekly View -->
                                 {% if day.is_today %}
-                                    <div class="today-dot" style="position: absolute; top: 2px; left: 4px; width: 6px; height: 6px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
+                                    <div id="div_weekly_today_indicator_{{ day.day }}" class="today-dot" style="position: absolute; top: 2px; left: 4px; width: 6px; height: 6px; background-color: blue; border-radius: 50%; z-index: 10;"></div>
                                 {% endif %}
-                                <div style="margin-top: 16px; width: 100%; overflow: hidden;">
+                                
+                                <!-- Weekly Task Items Container -->
+                                <div id="div_weekly_task_container_{{ day.day }}" style="margin-top: 16px; width: 100%; overflow: hidden;">
                                     {% for task in day.tasks %}
-                                        <div class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" data-task-id="{{ task[0] }}" style="border: 1px solid transparent; padding: 1px 3px; margin-bottom: 1px; border-radius: 2px; display: flex; align-items: center; font-size: 9px; cursor: pointer; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="redirectToTaskView('{{ task[0] }}')">
-                                            <span style="font-weight: 500; overflow: hidden; text-overflow: ellipsis;">{{ task[1][:7] }}{% if task[1]|length > 7 %}...{% endif %}</span>
+                                        <div id="div_weekly_task_item_{{ task[0] }}" class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" 
+                                             data-status="{{ task[6] }}" 
+                                             data-date="{{ task[3] }}" 
+                                             data-time="{{ task[4] }}" 
+                                             data-task-id="{{ task[0] }}" 
+                                             style="border: 1px solid transparent; padding: 1px 3px; margin-bottom: 1px; border-radius: 2px; display: flex; align-items: center; font-size: 9px; cursor: pointer; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                                             onclick="handleTaskViewRedirect('{{ task[0] }}')">
+                                            <span id="span_weekly_task_title_{{ task[0] }}" style="font-weight: 500; overflow: hidden; text-overflow: ellipsis;">{{ task[1][:7] }}{% if task[1]|length > 7 %}...{% endif %}</span>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -77,53 +149,77 @@
                 </div>
             {% endif %}
         </section>
-        <section class="task-sidebar" style="flex: 0 0 280px; padding: 12px; background-color: #f8f9fa; border-radius: 8px;">
-            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
-                <button class="today-btn" onclick="goToToday()" style="background-color: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">Today</button>
-                <button class="add-event" onclick="openAddTaskPopup()" style="background-color: #007bff; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">+ Add Task</button>
+        
+        <!-- Task Management Sidebar -->
+        <section id="section_task_sidebar" class="task-sidebar" style="flex: 0 0 280px; padding: 12px; background-color: #f8f9fa; border-radius: 8px;">
+            <!-- Action Buttons Container (snake_case variables) -->
+            <div id="div_action_buttons_container" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+                <button id="btn_today_navigation" class="today-btn" onclick="navigateToToday()" style="background-color: #28a745; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">Today</button>
+                <button id="btn_add_task_modal" class="add-event" onclick="openAddTaskModal()" style="background-color: #007bff; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">+ Add Task</button>
             </div>
-            <div style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px;">
-                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    <label for="filter-status" style="font-size: 12px; white-space: nowrap;">Status:</label>
-                    <select id="filter-status" onchange="filterTasks()" style="font-size: 12px; padding: 3px;">
+            
+            <!-- Task Filtering Controls -->
+            <div id="div_filter_controls" style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px;">
+                <!-- Status Filter Control -->
+                <div id="div_status_filter_container" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <label for="sel_filter_status" style="font-size: 12px; white-space: nowrap;">Status:</label>
+                    <select id="sel_filter_status" onchange="applyTaskFilters()" style="font-size: 12px; padding: 3px;">
                         <option value="all">All</option>
                         <option value="Not completed">Not completed</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
                     </select>
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                    <label for="filter-user" style="font-size: 12px; white-space: nowrap;">User:</label>
-                    <select id="filter-user" onchange="filterTasks()" style="font-size: 12px; padding: 3px;">
+                
+                <!-- User Assignment Filter Control -->
+                <div id="div_user_filter_container" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <label for="sel_filter_user" style="font-size: 12px; white-space: nowrap;">User:</label>
+                    <select id="sel_filter_user" onchange="applyTaskFilters()" style="font-size: 12px; padding: 3px;">
                         <option value="all">All</option>
                         {% for user in users %}
                         <option value="{{ user.id }}">{{ user.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <button onclick="sortTasksByDate()" style="background: none; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Sort by Date <span id="sort-arrow">↑</span></button>
+                
+                <!-- Date Sorting Control -->
+                <button id="btn_sort_by_date" onclick="toggleTaskSortOrder()" style="background: none; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Sort by Date <span id="span_sort_arrow">↑</span></button>
             </div>
-            <ul id="task-list" style="list-style: none; padding: 0; margin: 0;">
+            <!-- Task List Display Container -->
+            <ul id="ul_task_list" style="list-style: none; padding: 0; margin: 0;">
                 {% for task in tasks %}
-                    <li class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" data-status="{{ task[6] }}" data-date="{{ task[3] }}" data-time="{{ task[4] }}" data-task-id="{{ task[0] }}" data-user="{{ task[9] }}" style="border: 1px solid #ccc; padding: 8px; margin-bottom: 6px; border-radius: 4px; position: relative; display: flex; align-items: center; flex-direction: row; justify-content: space-between; font-size: 13px;">
-                        <div onclick="redirectToTaskView('{{ task[0] }}')" style="cursor: pointer; display: flex; align-items: center; width: 100%; flex-direction: column; align-items: flex-start;">
-                            <span style="font-weight: 600; font-size: 14px; color: #fff; line-height: 1.3;">{{ task[1] }}</span>
-                            <div style="font-size: 12px; color: #fff; margin-top: 3px; line-height: 1.2;">
-                                <span>Status: {{ task[6] }}</span>
+                    <li id="li_task_item_{{ task[0] }}" class="task-item task-status-bg-{{ task[6]|lower|replace(' ', '-') }}" 
+                        data-status="{{ task[6] }}" 
+                        data-date="{{ task[3] }}" 
+                        data-time="{{ task[4] }}" 
+                        data-task-id="{{ task[0] }}" 
+                        data-user="{{ task[9] }}" 
+                        style="border: 1px solid #ccc; padding: 8px; margin-bottom: 6px; border-radius: 4px; position: relative; display: flex; align-items: center; flex-direction: row; justify-content: space-between; font-size: 13px;">
+                        
+                        <!-- Task Information Display Area -->
+                        <div id="div_task_info_{{ task[0] }}" onclick="handleTaskViewRedirect('{{ task[0] }}')" style="cursor: pointer; display: flex; align-items: center; width: 100%; flex-direction: column; align-items: flex-start;">
+                            <!-- Task Title Display -->
+                            <span id="span_task_title_sidebar_{{ task[0] }}" style="font-weight: 600; font-size: 14px; color: #fff; line-height: 1.3;">{{ task[1] }}</span>
+                            
+                            <!-- Task Metadata Display -->
+                            <div id="div_task_metadata_{{ task[0] }}" style="font-size: 12px; color: #fff; margin-top: 3px; line-height: 1.2;">
+                                <span id="span_task_status_{{ task[0] }}">Status: {{ task[6] }}</span>
                                 {% if task[9] %}
                                     {% for user in users %}
                                         {% if user.id == task[9] %}
-                                            <span style="margin-left: 8px;">User: {{ user.name }}</span>
+                                            <span id="span_task_user_{{ task[0] }}" style="margin-left: 8px;">User: {{ user.name }}</span>
                                         {% endif %}
                                     {% endfor %}
                                 {% endif %}
-                                <span style="margin-left: 8px;">Date: {{ task[3] }}</span>
+                                <span id="span_task_date_{{ task[0] }}" style="margin-left: 8px;">Date: {{ task[3] }}</span>
                             </div>
                         </div>
-                        <span class="task-dots" style="margin-left: 8px; font-size: 16px; cursor: pointer; user-select: none; position: relative;" onclick="event.stopPropagation(); toggleTaskMenu(this)">&#8942;
-                            <span class="dropdown-menu" style="display: none; position: absolute; right: 0; top: 20px; background: white; border: 1px solid #ccc; border-radius: 4px; z-index: 1000; min-width: 90px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
-                                <span onclick="event.stopPropagation(); printTask('{{ task[0] }}')" style="display:block; padding: 8px 12px; cursor: pointer; font-size: 12px; color: #333; border-bottom: 1px solid #eee;">Print</span>
-                                <span onclick="event.stopPropagation(); deleteTaskFromList('{{ task[0] }}')" style="display:block; padding: 8px 12px; cursor: pointer; font-size: 12px; color: #333;">Delete</span>
+                        
+                        <!-- Task Actions Menu -->
+                        <span id="span_task_menu_{{ task[0] }}" class="task-dots" style="margin-left: 8px; font-size: 16px; cursor: pointer; user-select: none; position: relative;" onclick="event.stopPropagation(); toggleTaskActionsMenu(this)">&#8942;
+                            <span id="span_dropdown_menu_{{ task[0] }}" class="dropdown-menu" style="display: none; position: absolute; right: 0; top: 20px; background: white; border: 1px solid #ccc; border-radius: 4px; z-index: 1000; min-width: 90px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                                <span id="span_print_task_{{ task[0] }}" onclick="event.stopPropagation(); handleTaskPrint('{{ task[0] }}')" style="display:block; padding: 8px 12px; cursor: pointer; font-size: 12px; color: #333; border-bottom: 1px solid #eee;">Print</span>
+                                <span id="span_delete_task_{{ task[0] }}" onclick="event.stopPropagation(); handleTaskDeletion('{{ task[0] }}')" style="display:block; padding: 8px 12px; cursor: pointer; font-size: 12px; color: #333;">Delete</span>
                             </span>
                         </span>
                     </li>
@@ -138,7 +234,7 @@
 
     <div id="add-task-popup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; padding: 20px; box-sizing: border-box;">
         <div style="position: absolute; top: 50%; left: 50%; width: 400px; margin-left: -200px; margin-top: -250px; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-            <button onclick="closeAddTaskPopup()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+            <button onclick="closeAddTaskModal()" style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
             <h2 style="text-align: center; margin: 0 0 20px 0; color: #333;">Add New Task</h2>
             <form id="add-task-form" style="display: flex; flex-direction: column; gap: 10px;">
                 <label for="title">Title:</label>
@@ -172,7 +268,7 @@
 
     <div id="edit-task-popup" class="modal" style="display: none !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 2000;">
         <div class="modal-content" style="width: 350px; padding: 20px; border-radius: 8px; background-color: #fff; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 90vw; max-height: 90vh; overflow-y: auto;">
-            <span class="close" onclick="closeEditTaskPopup()" style="cursor: pointer; font-size: 20px; font-weight: bold; position: absolute; top: 10px; right: 15px; color: #666;">&times;</span>
+            <span class="close" onclick="closeEditTaskModal()" style="cursor: pointer; font-size: 20px; font-weight: bold; position: absolute; top: 10px; right: 15px; color: #666;">&times;</span>
             <h2 style="text-align: center; margin-top: 0;">Edit Task</h2>
             <form id="edit-task-form" style="display: flex; flex-direction: column; gap: 10px;">
                 <input type="hidden" id="edit-task-id" name="task_id" />
@@ -204,181 +300,588 @@
     </div>
 
     <script>
-        // Ensure modals are hidden on page load
+        /**
+         * Calendar Management Module
+         * Provides comprehensive task management, navigation, and modal functionality
+         * 
+         * Naming Conventions:
+         * - Variables: camelCase (e.g., taskList, currentView)
+         * - Constants: UPPER_SNAKE_CASE (e.g., MODAL_Z_INDEX, MAX_TASK_TITLE)
+         * - Functions: camelCase (e.g., navigateToView, filterTasks)
+         * - DOM Elements: Hungarian notation (e.g., divModal, btnSubmit)
+         * - Event Handlers: handle prefix (e.g., handleTaskClick, handleFormSubmit)
+         * 
+         * Validation Types:
+         * - Type Check: Validates data types and structure
+         * - Range Check: Validates numeric ranges and string lengths
+         * - Existence Check: Validates element/data presence
+         */
+
+        // Application Constants (UPPER_SNAKE_CASE naming convention)
+        const MODAL_Z_INDEX = 9999;
+        const MAX_TASK_TITLE_LENGTH = 100;
+        const MIN_TASK_TITLE_LENGTH = 1;
+        const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+        const TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
+        const SORT_ORDER_ASC = 'asc';
+        const SORT_ORDER_DESC = 'desc';
+
+        // Global State Variables (camelCase naming convention)
+        let currentSortOrder = SORT_ORDER_ASC;
+        let isModalOpen = false;
+        let activeTaskFilters = { status: 'all', user: 'all' };
+
+        /**
+         * DOM Initialization Function
+         * Purpose: Initializes modal states and ensures proper page setup
+         * Validation: Existence check for modal elements
+         */
         document.addEventListener('DOMContentLoaded', function() {
-            const addModal = document.getElementById('add-task-popup');
-            const editModal = document.getElementById('edit-task-popup');
+            // DOM Element References (Hungarian notation)
+            const divAddTaskModal = document.getElementById('add-task-popup');
+            const divEditTaskModal = document.getElementById('edit-task-popup');
             
-            if (addModal) {
-                addModal.style.display = 'none';
+            // Existence check - validate modal elements exist
+            if (divAddTaskModal) {
+                divAddTaskModal.style.display = 'none';
+            } else {
+                console.warn('Add task modal element not found during initialization');
             }
-            if (editModal) {
-                editModal.style.display = 'none';
+            
+            if (divEditTaskModal) {
+                divEditTaskModal.style.display = 'none';
+            } else {
+                console.warn('Edit task modal element not found during initialization');
             }
+
+            console.log('Calendar interface initialized successfully');
         });
 
-        function navigate(view) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('view', view);
-            window.location.href = url.toString();
-        }
-
-        function navigateMonth(offset) {
-            const url = new URL(window.location.href);
-            const view = url.searchParams.get('view') || 'month';
-            if (view === 'day') {
-                const currentDay = parseInt(url.searchParams.get('day')) || new Date().getDate();
-                const currentMonth = parseInt(url.searchParams.get('month')) || new Date().getMonth() + 1;
-                const currentYear = parseInt(url.searchParams.get('year')) || new Date().getFullYear();
-                const currentDate = new Date(currentYear, currentMonth - 1, currentDay);
-                currentDate.setDate(currentDate.getDate() + offset);
-                url.searchParams.set('day', currentDate.getDate());
-                url.searchParams.set('month', currentDate.getMonth() + 1);
-                url.searchParams.set('year', currentDate.getFullYear());
-            } else if (view === 'week') {
-                const currentDay = parseInt(url.searchParams.get('day')) || new Date().getDate();
-                const currentMonth = parseInt(url.searchParams.get('month')) || new Date().getMonth() + 1;
-                const currentYear = parseInt(url.searchParams.get('year')) || new Date().getFullYear();
-                const currentDate = new Date(currentYear, currentMonth - 1, currentDay);
-                currentDate.setDate(currentDate.getDate() + (offset * 7));
-                url.searchParams.set('day', currentDate.getDate());
-                url.searchParams.set('month', currentDate.getMonth() + 1);
-                url.searchParams.set('year', currentDate.getFullYear());
-            } else {
-                const currentMonth = parseInt(url.searchParams.get('month')) || new Date().getMonth() + 1;
-                const currentYear = parseInt(url.searchParams.get('year')) || new Date().getFullYear();
-                let newMonth = currentMonth + offset;
-                let newYear = currentYear;
-                if (newMonth < 1) {
-                    newMonth = 12;
-                    newYear -= 1;
-                } else if (newMonth > 12) {
-                    newMonth = 1;
-                    newYear += 1;
-                }
-                url.searchParams.set('month', newMonth);
-                url.searchParams.set('year', newYear);
+        /**
+         * View Navigation Function
+         * Purpose: Handles switching between calendar view modes (month, week)
+         * @param {string} strViewMode - Target view mode ('month', 'week')
+         * @returns {boolean} Success status of navigation
+         */
+        function navigateToView(strViewMode) {
+            // Type check - ensure view parameter is string
+            if (typeof strViewMode !== 'string') {
+                console.error('Invalid view mode parameter type:', typeof strViewMode);
+                return false;
             }
-            window.location.href = url.toString();
+
+            // Range check - validate view mode options
+            const arrValidViews = ['month', 'week', 'day'];
+            if (!arrValidViews.includes(strViewMode)) {
+                console.error('Invalid view mode specified:', strViewMode);
+                return false;
+            }
+
+            try {
+                const urlCurrent = new URL(window.location.href);
+                urlCurrent.searchParams.set('view', strViewMode);
+                window.location.href = urlCurrent.toString();
+                return true;
+            } catch (error) {
+                console.error('Error navigating to view:', error);
+                return false;
+            }
         }
 
-        function redirectToTaskView(taskId) {
-            fetch('/api/tasks/' + taskId)
-                .then(response => response.json())
-                .then(task => {
-                    const url = new URL(window.location.href);
-                    const currentView = url.searchParams.get('view') || 'month';
-                    const taskDate = new Date(task.date);
-                    url.searchParams.set('year', taskDate.getFullYear());
-                    if (currentView === 'month') {
-                        url.searchParams.set('view', 'month');
-                        url.searchParams.set('month', taskDate.getMonth() + 1);
-                    } else if (currentView === 'week') {
-                        url.searchParams.set('view', 'week');
-                        url.searchParams.set('month', taskDate.getMonth() + 1);
-                        url.searchParams.set('day', taskDate.getDate());
-                    } else {
-                        url.searchParams.set('view', 'day');
-                        url.searchParams.set('month', taskDate.getMonth() + 1);
-                        url.searchParams.set('day', taskDate.getDate());
+        /**
+         * Time Period Navigation Function
+         * Purpose: Handles navigation between time periods (months, weeks, days)
+         * @param {number} intOffset - Direction and magnitude of navigation (-1 = previous, 1 = next)
+         * @returns {boolean} Success status of navigation operation
+         */
+        function navigateTimePeriod(intOffset) {
+            // Type check - ensure offset is numeric
+            if (typeof intOffset !== 'number' || isNaN(intOffset)) {
+                console.error('Invalid offset parameter:', intOffset);
+                return false;
+            }
+
+            // Range check - reasonable offset bounds
+            if (Math.abs(intOffset) > 12) {
+                console.warn('Large offset value detected, limiting to reasonable range:', intOffset);
+                intOffset = Math.sign(intOffset) * 12;
+            }
+
+            try {
+                const urlCurrent = new URL(window.location.href);
+                const strCurrentView = urlCurrent.searchParams.get('view') || 'month';
+
+                // Handle day view navigation
+                if (strCurrentView === 'day') {
+                    const intCurrentDay = parseInt(urlCurrent.searchParams.get('day')) || new Date().getDate();
+                    const intCurrentMonth = parseInt(urlCurrent.searchParams.get('month')) || new Date().getMonth() + 1;
+                    const intCurrentYear = parseInt(urlCurrent.searchParams.get('year')) || new Date().getFullYear();
+                    
+                    // Existence check - validate date parameters
+                    if (intCurrentDay < 1 || intCurrentDay > 31 || intCurrentMonth < 1 || intCurrentMonth > 12) {
+                        console.error('Invalid date parameters detected');
+                        return false;
                     }
-                    window.location.href = url.toString();
-                })
-                .catch(error => console.error('Error fetching task:', error));
-        }
 
-        function openAddTaskPopup() {
-            console.log('openAddTaskPopup called');
-            const modal = document.getElementById('add-task-popup');
-            if (modal) {
-                modal.style.display = 'block';
-                document.body.style.overflow = 'hidden'; // Prevent background scrolling
-            } else {
-                console.error('Modal element not found');
-            }
-        }
+                    const dateTarget = new Date(intCurrentYear, intCurrentMonth - 1, intCurrentDay);
+                    dateTarget.setDate(dateTarget.getDate() + intOffset);
+                    
+                    urlCurrent.searchParams.set('day', dateTarget.getDate());
+                    urlCurrent.searchParams.set('month', dateTarget.getMonth() + 1);
+                    urlCurrent.searchParams.set('year', dateTarget.getFullYear());
 
-        function closeAddTaskPopup() {
-            console.log('closeAddTaskPopup called');
-            const modal = document.getElementById('add-task-popup');
-            if (modal) {
-                modal.style.display = 'none';
-                document.body.style.overflow = 'auto'; // Restore scrolling
-            } else {
-                console.error('Modal element not found');
-            }
-        }
+                // Handle week view navigation  
+                } else if (strCurrentView === 'week') {
+                    const intCurrentDay = parseInt(urlCurrent.searchParams.get('day')) || new Date().getDate();
+                    const intCurrentMonth = parseInt(urlCurrent.searchParams.get('month')) || new Date().getMonth() + 1;
+                    const intCurrentYear = parseInt(urlCurrent.searchParams.get('year')) || new Date().getFullYear();
+                    
+                    const dateTarget = new Date(intCurrentYear, intCurrentMonth - 1, intCurrentDay);
+                    dateTarget.setDate(dateTarget.getDate() + (intOffset * 7));
+                    
+                    urlCurrent.searchParams.set('day', dateTarget.getDate());
+                    urlCurrent.searchParams.set('month', dateTarget.getMonth() + 1);
+                    urlCurrent.searchParams.set('year', dateTarget.getFullYear());
 
-        function filterTasks() {
-            const status = document.getElementById('filter-status').value;
-            const user = document.getElementById('filter-user').value;
-            const items = document.querySelectorAll('#task-list li');
-            items.forEach(item => {
-                const statusMatch = (status === 'all' || item.dataset.status === status);
-                const userMatch = (user === 'all' || item.dataset.user === user);
-                if (statusMatch && userMatch) {
-                    item.style.display = 'block';
+                // Handle month view navigation
                 } else {
-                    item.style.display = 'none';
+                    const intCurrentMonth = parseInt(urlCurrent.searchParams.get('month')) || new Date().getMonth() + 1;
+                    const intCurrentYear = parseInt(urlCurrent.searchParams.get('year')) || new Date().getFullYear();
+                    
+                    let intNewMonth = intCurrentMonth + intOffset;
+                    let intNewYear = intCurrentYear;
+                    
+                    // Range check - handle year boundaries
+                    if (intNewMonth < 1) {
+                        intNewMonth = 12;
+                        intNewYear -= 1;
+                    } else if (intNewMonth > 12) {
+                        intNewMonth = 1;
+                        intNewYear += 1;
+                    }
+                    
+                    urlCurrent.searchParams.set('month', intNewMonth);
+                    urlCurrent.searchParams.set('year', intNewYear);
                 }
-            });
+                
+                window.location.href = urlCurrent.toString();
+                return true;
+
+            } catch (error) {
+                console.error('Error during time period navigation:', error);
+                return false;
+            }
         }
 
-        let sortOrder = 'asc';
+        /**
+         * Task View Redirect Handler
+         * Purpose: Redirects to calendar view focused on specific task's date
+         * @param {string|number} taskId - Unique identifier for the task
+         * @returns {Promise<boolean>} Success status of redirect operation
+         */
+        async function handleTaskViewRedirect(taskId) {
+            // Type check - ensure taskId is provided and valid
+            if (!taskId || (typeof taskId !== 'string' && typeof taskId !== 'number')) {
+                console.error('Invalid task ID provided:', taskId);
+                return false;
+            }
 
-        function sortTasksByDate() {
-            const list = document.getElementById('task-list');
-            const items = Array.from(list.children);
-            const arrow = document.getElementById('sort-arrow');
+            // Convert to string for consistency
+            const strTaskId = String(taskId);
 
-            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-            arrow.textContent = sortOrder === 'asc' ? '↑' : '↓';
+            try {
+                // Fetch task data with error handling
+                const responseTask = await fetch('/api/tasks/' + strTaskId);
+                
+                // Existence check - validate response
+                if (!responseTask.ok) {
+                    console.error('Failed to fetch task data, status:', responseTask.status);
+                    return false;
+                }
 
-            items.sort((a, b) => {
-                const dateA = new Date(a.dataset.date + ' ' + (a.dataset.time || '00:00'));
-                const dateB = new Date(b.dataset.date + ' ' + (b.dataset.time || '00:00'));
-                return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-            });
+                const objTaskData = await responseTask.json();
+                
+                // Type check - validate task data structure
+                if (!objTaskData || typeof objTaskData !== 'object' || !objTaskData.date) {
+                    console.error('Invalid task data structure received:', objTaskData);
+                    return false;
+                }
 
-            items.forEach(item => list.appendChild(item));
+                const urlCurrent = new URL(window.location.href);
+                const strCurrentView = urlCurrent.searchParams.get('view') || 'month';
+                const dateTask = new Date(objTaskData.date);
+                
+                // Range check - validate date object
+                if (isNaN(dateTask.getTime())) {
+                    console.error('Invalid task date format:', objTaskData.date);
+                    return false;
+                }
+
+                // Set year parameter for all views
+                urlCurrent.searchParams.set('year', dateTask.getFullYear());
+                
+                // Configure view-specific parameters
+                if (strCurrentView === 'month') {
+                    urlCurrent.searchParams.set('view', 'month');
+                    urlCurrent.searchParams.set('month', dateTask.getMonth() + 1);
+                } else if (strCurrentView === 'week') {
+                    urlCurrent.searchParams.set('view', 'week');
+                    urlCurrent.searchParams.set('month', dateTask.getMonth() + 1);
+                    urlCurrent.searchParams.set('day', dateTask.getDate());
+                } else {
+                    urlCurrent.searchParams.set('view', 'day');
+                    urlCurrent.searchParams.set('month', dateTask.getMonth() + 1);
+                    urlCurrent.searchParams.set('day', dateTask.getDate());
+                }
+                
+                window.location.href = urlCurrent.toString();
+                return true;
+
+            } catch (error) {
+                console.error('Error during task view redirect:', error);
+                return false;
+            }
         }
 
-        function goToToday() {
-            const today = new Date();
-            const url = new URL(window.location.href);
-            url.searchParams.set('year', today.getFullYear());
-            url.searchParams.set('month', today.getMonth() + 1);
-            url.searchParams.set('day', today.getDate());
-            window.location.href = url.toString();
+        /**
+         * Add Task Modal Opening Handler
+         * Purpose: Opens the add task modal with proper state management
+         * @returns {boolean} Success status of modal opening
+         */
+        function openAddTaskModal() {
+            // Existence check - validate modal element
+            const divAddTaskModal = document.getElementById('add-task-popup');
+            if (!divAddTaskModal) {
+                console.error('Add task modal element not found in DOM');
+                return false;
+            }
+
+            // Range check - prevent multiple modal opens
+            if (isModalOpen) {
+                console.warn('Modal is already open, ignoring duplicate request');
+                return false;
+            }
+
+            try {
+                divAddTaskModal.style.display = 'block';
+                divAddTaskModal.style.zIndex = MODAL_Z_INDEX;
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+                isModalOpen = true;
+                
+                console.log('Add task modal opened successfully');
+                return true;
+
+            } catch (error) {
+                console.error('Error opening add task modal:', error);
+                return false;
+            }
         }
 
-        function toggleTaskMenu(element) {
-            const menu = element.querySelector('.dropdown-menu');
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        /**
+         * Add Task Modal Closing Handler  
+         * Purpose: Closes the add task modal and restores page state
+         * @returns {boolean} Success status of modal closing
+         */
+        function closeAddTaskModal() {
+            // Existence check - validate modal element
+            const divAddTaskModal = document.getElementById('add-task-popup');
+            if (!divAddTaskModal) {
+                console.error('Add task modal element not found in DOM');
+                return false;
+            }
+
+            try {
+                divAddTaskModal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Restore scrolling
+                isModalOpen = false;
+                
+                // Clear form data for next use
+                const formAddTask = document.getElementById('add-task-form');
+                if (formAddTask) {
+                    formAddTask.reset();
+                }
+                
+                console.log('Add task modal closed successfully');
+                return true;
+
+            } catch (error) {
+                console.error('Error closing add task modal:', error);
+                return false;
+            }
         }
 
-        function printTask(taskId) {
-            fetch('/api/tasks/' + taskId)
-                .then(response => response.json())
-                .then(task => {
-                    const printWindow = window.open('', '_blank');
-                    printWindow.document.write(
-                        '<html>' +
-                        '<head><title>Task Details</title></head>' +
-                        '<body>' +
-                        '<h1>' + task.title + '</h1>' +
-                        '<p><strong>Description:</strong> ' + task.description + '</p>' +
-                        '<p><strong>Date:</strong> ' + task.date + '</p>' +
-                        '<p><strong>Time:</strong> ' + task.time + '</p>' +
-                        '<p><strong>Location:</strong> ' + task.location + '</p>' +
-                        '<p><strong>Status:</strong> ' + task.status + '</p>' +
-                        '</body>' +
-                        '</html>'
-                    );
-                    printWindow.document.close();
-                    printWindow.print();
-                })
-                .catch(error => console.error('Error fetching task:', error));
+        /**
+         * Task Filtering Function
+         * Purpose: Applies status and user filters to task list display
+         * @returns {boolean} Success status of filtering operation
+         */
+        function applyTaskFilters() {
+            // DOM Element References (Hungarian notation)
+            const selFilterStatus = document.getElementById('sel_filter_status');
+            const selFilterUser = document.getElementById('sel_filter_user');
+            
+            // Existence check - validate filter elements
+            if (!selFilterStatus || !selFilterUser) {
+                console.error('Filter control elements not found in DOM');
+                return false;
+            }
+
+            try {
+                // Get current filter values
+                const strStatusFilter = selFilterStatus.value;
+                const strUserFilter = selFilterUser.value;
+                
+                // Type check - validate filter values
+                if (typeof strStatusFilter !== 'string' || typeof strUserFilter !== 'string') {
+                    console.error('Invalid filter value types');
+                    return false;
+                }
+
+                // Update global filter state
+                activeTaskFilters.status = strStatusFilter;
+                activeTaskFilters.user = strUserFilter;
+
+                // Get all task items
+                const arrTaskItems = document.querySelectorAll('#ul_task_list li');
+                
+                // Existence check - validate task items exist
+                if (arrTaskItems.length === 0) {
+                    console.warn('No task items found to filter');
+                    return true; // Not an error condition
+                }
+
+                let intVisibleTasks = 0;
+
+                // Apply filters to each task item
+                arrTaskItems.forEach(liTaskItem => {
+                    // Existence check - validate dataset attributes
+                    if (!liTaskItem.dataset || !liTaskItem.dataset.status) {
+                        console.warn('Task item missing required dataset attributes');
+                        return;
+                    }
+
+                    // Check filter criteria
+                    const boolStatusMatch = (strStatusFilter === 'all' || liTaskItem.dataset.status === strStatusFilter);
+                    const boolUserMatch = (strUserFilter === 'all' || liTaskItem.dataset.user === strUserFilter);
+                    
+                    // Apply visibility based on filter match
+                    if (boolStatusMatch && boolUserMatch) {
+                        liTaskItem.style.display = 'block';
+                        intVisibleTasks++;
+                    } else {
+                        liTaskItem.style.display = 'none';
+                    }
+                });
+
+                console.log(`Task filtering applied successfully, ${intVisibleTasks} tasks visible`);
+                return true;
+
+            } catch (error) {
+                console.error('Error during task filtering:', error);
+                return false;
+            }
+        }
+
+        /**
+         * Task Sort Order Toggle Function
+         * Purpose: Sorts task list by date in ascending/descending order
+         * @returns {boolean} Success status of sorting operation
+         */
+        function toggleTaskSortOrder() {
+            // DOM Element References (Hungarian notation)
+            const ulTaskList = document.getElementById('ul_task_list');
+            const spanSortArrow = document.getElementById('span_sort_arrow');
+            
+            // Existence check - validate required elements
+            if (!ulTaskList || !spanSortArrow) {
+                console.error('Required sorting elements not found in DOM');
+                return false;
+            }
+
+            try {
+                // Convert NodeList to Array for sorting
+                const arrTaskItems = Array.from(ulTaskList.children);
+                
+                // Range check - ensure we have items to sort
+                if (arrTaskItems.length === 0) {
+                    console.warn('No task items available for sorting');
+                    return true; // Not an error condition
+                }
+
+                // Toggle sort order
+                currentSortOrder = (currentSortOrder === SORT_ORDER_ASC) ? SORT_ORDER_DESC : SORT_ORDER_ASC;
+                spanSortArrow.textContent = (currentSortOrder === SORT_ORDER_ASC) ? '↑' : '↓';
+
+                // Sort items with validation
+                arrTaskItems.sort((itemA, itemB) => {
+                    // Existence check - validate dataset attributes
+                    if (!itemA.dataset || !itemB.dataset || !itemA.dataset.date || !itemB.dataset.date) {
+                        console.warn('Task item missing date information for sorting');
+                        return 0;
+                    }
+
+                    // Create date objects with time fallback
+                    const strTimeA = itemA.dataset.time || '00:00';
+                    const strTimeB = itemB.dataset.time || '00:00';
+                    
+                    // Type check - validate time format
+                    if (!TIME_FORMAT_REGEX.test(strTimeA) || !TIME_FORMAT_REGEX.test(strTimeB)) {
+                        console.warn('Invalid time format detected in task data');
+                    }
+
+                    const dateA = new Date(itemA.dataset.date + ' ' + strTimeA);
+                    const dateB = new Date(itemB.dataset.date + ' ' + strTimeB);
+                    
+                    // Range check - validate date objects
+                    if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+                        console.warn('Invalid date values encountered during sorting');
+                        return 0;
+                    }
+
+                    // Return sort comparison
+                    return (currentSortOrder === SORT_ORDER_ASC) ? dateA - dateB : dateB - dateA;
+                });
+
+                // Re-append sorted items to list
+                arrTaskItems.forEach(liTaskItem => ulTaskList.appendChild(liTaskItem));
+                
+                console.log(`Task list sorted successfully in ${currentSortOrder} order`);
+                return true;
+
+            } catch (error) {
+                console.error('Error during task sorting:', error);
+                return false;
+            }
+        }
+
+        /**
+         * Today Navigation Function
+         * Purpose: Navigates calendar view to current date
+         * @returns {boolean} Success status of navigation
+         */
+        function navigateToToday() {
+            try {
+                const dateToday = new Date();
+                
+                // Range check - validate current date
+                if (isNaN(dateToday.getTime())) {
+                    console.error('Invalid current date detected');
+                    return false;
+                }
+
+                const urlCurrent = new URL(window.location.href);
+                urlCurrent.searchParams.set('year', dateToday.getFullYear());
+                urlCurrent.searchParams.set('month', dateToday.getMonth() + 1);
+                urlCurrent.searchParams.set('day', dateToday.getDate());
+                
+                window.location.href = urlCurrent.toString();
+                return true;
+
+            } catch (error) {
+                console.error('Error navigating to today:', error);
+                return false;
+            }
+        }
+
+        /**
+         * Task Actions Menu Toggle Function
+         * Purpose: Shows/hides dropdown menu for task actions
+         * @param {HTMLElement} elemTaskDots - The element containing the dropdown menu
+         * @returns {boolean} Success status of menu toggle
+         */
+        function toggleTaskActionsMenu(elemTaskDots) {
+            // Type check - validate element parameter
+            if (!elemTaskDots || !(elemTaskDots instanceof HTMLElement)) {
+                console.error('Invalid element provided for menu toggle:', elemTaskDots);
+                return false;
+            }
+
+            try {
+                // Existence check - find dropdown menu element
+                const spanDropdownMenu = elemTaskDots.querySelector('.dropdown-menu');
+                if (!spanDropdownMenu) {
+                    console.error('Dropdown menu element not found within task dots element');
+                    return false;
+                }
+
+                // Toggle menu visibility
+                const boolIsVisible = (spanDropdownMenu.style.display === 'block');
+                spanDropdownMenu.style.display = boolIsVisible ? 'none' : 'block';
+                
+                return true;
+
+            } catch (error) {
+                console.error('Error toggling task actions menu:', error);
+                return false;
+            }
+        }
+
+        /**
+         * Task Print Handler Function
+         * Purpose: Fetches task data and opens print dialog with formatted content
+         * @param {string|number} taskId - Unique identifier for the task to print
+         * @returns {Promise<boolean>} Success status of print operation
+         */
+        async function handleTaskPrint(taskId) {
+            // Type check - validate taskId parameter
+            if (!taskId || (typeof taskId !== 'string' && typeof taskId !== 'number')) {
+                console.error('Invalid task ID provided for printing:', taskId);
+                return false;
+            }
+
+            const strTaskId = String(taskId);
+
+            try {
+                // Fetch task data with validation
+                const responseTask = await fetch('/api/tasks/' + strTaskId);
+                
+                // Existence check - validate response
+                if (!responseTask.ok) {
+                    console.error('Failed to fetch task for printing, status:', responseTask.status);
+                    return false;
+                }
+
+                const objTaskData = await responseTask.json();
+                
+                // Type check - validate task data structure
+                if (!objTaskData || typeof objTaskData !== 'object') {
+                    console.error('Invalid task data received for printing:', objTaskData);
+                    return false;
+                }
+
+                // Create print window with validation
+                const windowPrint = window.open('', '_blank');
+                if (!windowPrint) { 
+                    console.error('Failed to open print window - popup blocked?');
+                    return false;
+                }
+
+                // Generate print content with safe data handling
+                const strPrintContent = 
+                    '<html>' +
+                    '<head><title>Golden Turf - Task Details</title>' +
+                    '<style>body { font-family: Arial, sans-serif; margin: 20px; }</style></head>' +
+                    '<body>' +
+                    '<h1>' + (objTaskData.title || 'Untitled Task') + '</h1>' +
+                    '<p><strong>Description:</strong> ' + (objTaskData.description || 'No description') + '</p>' +
+                    '<p><strong>Date:</strong> ' + (objTaskData.date || 'No date specified') + '</p>' +
+                    '<p><strong>Time:</strong> ' + (objTaskData.time || 'No time specified') + '</p>' +
+                    '<p><strong>Location:</strong> ' + (objTaskData.location || 'No location specified') + '</p>' +
+                    '<p><strong>Status:</strong> ' + (objTaskData.status || 'No status') + '</p>' +
+                    '</body>' +
+                    '</html>';
+
+                windowPrint.document.write(strPrintContent);
+                windowPrint.document.close();
+                windowPrint.print();
+                
+                console.log('Task print operation completed successfully');
+                return true;
+
+            } catch (error) {
+                console.error('Error during task print operation:', error);
+                return false;
+            }
         }
 
         function editTask(taskId) {
@@ -397,8 +900,36 @@
                 .catch(error => console.error('Error fetching task:', error));
         }
 
-        function closeEditTaskPopup() {
-            document.getElementById('edit-task-popup').style.display = 'none';
+        /**
+         * Edit Task Modal Closing Handler
+         * Purpose: Closes the edit task modal and resets form state
+         * @returns {boolean} Success status of modal closing
+         */
+        function closeEditTaskModal() {
+            // Existence check - validate modal element
+            const divEditTaskModal = document.getElementById('edit-task-popup');
+            if (!divEditTaskModal) {
+                console.error('Edit task modal element not found in DOM');
+                return false;
+            }
+
+            try {
+                divEditTaskModal.style.display = 'none';
+                isModalOpen = false;
+                
+                // Clear form data for next use
+                const formEditTask = document.getElementById('edit-task-form');
+                if (formEditTask) {
+                    formEditTask.reset();
+                }
+                
+                console.log('Edit task modal closed successfully');
+                return true;
+
+            } catch (error) {
+                console.error('Error closing edit task modal:', error);
+                return false;
+            }
         }
 
         document.getElementById('edit-task-form').addEventListener('submit', function(e) {
@@ -420,35 +951,104 @@
             .catch(error => console.error('Error updating task:', error));
         });
 
-        function deleteTaskFromList(taskId) {
-            if (confirm('Are you sure you want to delete this task?')) {
-                fetch('/api/tasks/' + taskId, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    location.reload();
-                })
-                .catch(error => console.error('Error deleting task:', error));
+        /**
+         * Task Deletion Handler Function
+         * Purpose: Handles task deletion with user confirmation and API call
+         * @param {string|number} taskId - Unique identifier for the task to delete
+         * @returns {Promise<boolean>} Success status of deletion operation
+         */
+        async function handleTaskDeletion(taskId) {
+            // Type check - validate taskId parameter
+            if (!taskId || (typeof taskId !== 'string' && typeof taskId !== 'number')) {
+                console.error('Invalid task ID provided for deletion:', taskId);
+                return false;
+            }
+
+            const strTaskId = String(taskId);
+
+            // User confirmation with validation
+            const boolUserConfirmed = confirm('Are you sure you want to delete this task? This action cannot be undone.');
+            if (!boolUserConfirmed) {
+                console.log('Task deletion cancelled by user');
+                return false;
+            }
+
+            try {
+                // Perform deletion API call
+                const responseDeletion = await fetch('/api/tasks/' + strTaskId, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                // Existence check - validate deletion response
+                if (!responseDeletion.ok) {
+                    console.error('Task deletion failed, status:', responseDeletion.status);
+                    return false;
+                }
+
+                const objDeletionResult = await responseDeletion.json();
+                
+                // Type check - validate response data
+                if (typeof objDeletionResult !== 'object') {
+                    console.warn('Unexpected deletion response format:', objDeletionResult);
+                }
+
+                // Reload page to reflect changes
+                location.reload();
+                
+                console.log('Task deletion completed successfully');
+                return true;
+
+            } catch (error) {
+                console.error('Error during task deletion:', error);
+                alert('Failed to delete task. Please try again.');
+                return false;
             }
         }
 
-        document.getElementById('add-task-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            fetch('/add_task', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (response.ok) {
-                    closeAddTaskPopup();
-                    location.reload();
-                } else {
-                    console.error('Error adding task');
+        /**
+         * Add Task Form Submission Handler
+         * Purpose: Handles form submission for creating new tasks
+         */
+        document.getElementById('add-task-form').addEventListener('submit', async function(eventSubmit) {
+            eventSubmit.preventDefault();
+            
+            try {
+                // Form validation and data collection
+                const formAddTask = eventSubmit.target;
+                const formDataAdd = new FormData(formAddTask);
+                
+                // Type check - validate form data
+                if (!formDataAdd || formDataAdd.constructor !== FormData) {
+                    console.error('Invalid form data collected');
+                    return;
                 }
-            })
-            .catch(error => console.error('Error adding task:', error));
+
+                // Submit task creation request
+                const responseAddTask = await fetch('/add_task', {
+                    method: 'POST',
+                    body: formDataAdd
+                });
+
+                // Existence check - validate response
+                if (!responseAddTask.ok) {
+                    console.error('Task creation failed, status:', responseAddTask.status);
+                    alert('Failed to create task. Please try again.');
+                    return;
+                }
+
+                // Success handling
+                closeAddTaskModal();
+                location.reload();
+                
+                console.log('Task created successfully');
+
+            } catch (error) {
+                console.error('Error during task creation:', error);
+                alert('Failed to create task. Please try again.');
+            }
         });
     </script>
 </body>

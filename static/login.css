@@ -13,6 +13,19 @@ body, html {
     overflow-x: hidden;
 }
 
+/* Screen reader only content (accessibility) */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .container {
     display: flex;
     min-height: 100vh;
@@ -204,4 +217,81 @@ h1 {
         width: 250px;
         height: 250px;
     }
+}
+
+/* Validation and error message styles */
+.error-message {
+    display: none;
+    color: #d32f2f;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+.input-group.has-error input {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+}
+
+.input-group.has-error input:focus {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.3);
+}
+
+/* Flash messages styling */
+.flash-messages {
+    margin-bottom: 1.5rem;
+}
+
+.flash-message {
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: opacity 0.3s ease;
+}
+
+.flash-message.flash-error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.flash-message.flash-success {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.flash-message.flash-info {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.flash-message.flash-warning {
+    background-color: #fffde7;
+    color: #f57f17;
+    border: 1px solid #fff9c4;
+}
+
+/* Loading state for submit button */
+.btn-login:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Focus visible for better accessibility */
+input:focus-visible,
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid #20723B;
+    outline-offset: 2px;
+}
+
+/* Improved input focus styles */
+.input-group input:focus {
+    border-color: #20723B;
+    box-shadow: 0 0 0 3px rgba(32, 114, 59, 0.2);
 }

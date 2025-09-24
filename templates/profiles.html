@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!--
+    File: profiles.html
+    Purpose: User management interface for Golden Turf
+    Dependencies: dashboard.css, invoice.css, FontAwesome 6.4.0, _sidebar.html
+-->
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
@@ -7,86 +12,246 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
         <link rel="stylesheet" href="{{ url_for('static', filename='invoice.css') }}" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        
+        <!-- Profile Management Styles -->
         <style>
-            .container {
+            /* Main Content Container (snake_case naming) */
+            .main_content_container {
                 margin-left: 240px;
                 padding: 20px 40px;
                 max-width: calc(100vw - 260px);
             }
-            .password-container {
+            
+            /* Password Input Container with Toggle */
+            .password_input_container {
                 position: relative;
                 display: flex;
                 align-items: center;
             }
-            .password-container input {
+            .password_input_container input {
                 flex: 1;
                 padding-right: 40px;
             }
-            .password-container .toggle-password {
+            .password_input_container .btn_toggle_password {
                 position: absolute;
                 right: 10px;
                 cursor: pointer;
                 color: #666;
                 font-size: 16px;
                 z-index: 10;
+                transition: color 0.2s ease;
             }
-            .password-container .toggle-password:hover {
+            .password_input_container .btn_toggle_password:hover {
                 color: #333;
             }
-                .permission-label {
-                    color: #0074d9;
-                    font-weight: 500;
-                    margin-left: 4px;
-                }
+            
+            /* Permission Label Styling */
+            .lbl_permission {
+                color: #0074d9;
+                font-weight: 500;
+                margin-left: 4px;
+            }
+            
+            /* User Table Responsive Design */
+            .tbl_users_list {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+            
+            /* Action Button Container */
+            .div_action_buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                align-items: flex-start;
+                min-width: 120px;
+            }
+            
+            /* Override table styling to use white background */
+            table thead th {
+                background-color: #ffffff !important;
+                color: #333 !important;
+                border: 1px solid #ddd !important;
+            }
+            
+            table tbody td {
+                background-color: #ffffff !important;
+            }
         </style>
     </head>
     <body>
 
-        <div class="container">
-            <header>
+        <!-- Main Content Container -->
+        <div id="main_content" class="main_content_container">
+            <!-- Page Header Section -->
+            <header id="page_header">
                 <h1>User Profiles</h1>
             </header>
 
+            <!-- Flash Messages Section -->
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
-                    {% endfor %}
+                    <div id="flash_messages_container">
+                        {% for category, message in messages %}
+                            <div class="{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
                 {% endif %}
             {% endwith %}
 
+            <!-- User Creation Form (Admin Only) -->
             {% if session['user_role'] == 'admin' or session['user_id'] == 1 %}
-            <form method="POST" action="{{ url_for('profiles') }}">
-                <section class="user-form">
-                    <label for="name">Name:</label>
-                    <input type="text" id="name" name="name" required />
+            <form method="POST" action="{{ url_for('profiles') }}" id="frm_create_user">
+                <section class="user-form" id="section_user_creation">
+                    <label for="txt_user_name">Name:</label>
+                    <input type="text" id="txt_user_name" name="name" 
+                           data-validation="required" 
+                           data-field-type="text"
+                           required />
 
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" required />
+                    <label for="txt_user_email">Email:</label>
+                    <input type="email" id="txt_user_email" name="email" 
+                           data-validation="email" 
+                           data-field-type="email"
+                           required />
 
-                    <label for="password">Password:</label>
-                    <div class="password-container">
-                        <input type="password" id="password" name="password" required />
-                        <i class="fa fa-eye toggle-password" id="togglePassword" title="Show/Hide Password"></i>
+                    <label for="pwd_user_password">Password:</label>
+                    <div class="password_input_container" id="div_password_container">
+                        <input type="password" id="pwd_user_password" name="password" 
+                               data-validation="password" 
+                               data-min-length="6"
+                               data-field-type="password"
+                               required />
+                        <i class="fa fa-eye btn_toggle_password" id="btn_toggle_password" title="Show/Hide Password"></i>
                     </div>
 
-                    <button type="submit">Add User</button>
+                    <button type="submit" id="btn_add_user">Add User</button>
                 </section>
             </form>
+            
+            <!-- Password Toggle Script -->
             <script>
-                const togglePassword = document.querySelector('#togglePassword');
-                const passwordInput = document.querySelector('#password');
-                togglePassword.addEventListener('click', function () {
-                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                    passwordInput.setAttribute('type', type);
-                    this.classList.toggle('fa-eye-slash');
+                /**
+                 * Password Visibility Toggle Module
+                 * Purpose: Password field visibility toggle functionality
+                 * Naming: camelCase functions, Hungarian notation DOM elements
+                 */
+                
+                // Constants (UPPER_SNAKE_CASE naming convention)
+                const PASSWORD_VISIBLE_CLASS = 'fa-eye-slash';
+                const PASSWORD_HIDDEN_CLASS = 'fa-eye';
+                const MIN_PASSWORD_LENGTH = 6;
+                
+                // DOM Element References (Hungarian notation)
+                const btnTogglePassword = document.querySelector('#btn_toggle_password');
+                const pwdUserInput = document.querySelector('#pwd_user_password');
+                
+                /**
+                 * Password Input Validation Function
+                 * Purpose: Validates password input for security requirements
+                 * @param {string} strPassword - Password string to validate
+                 * @returns {object} Validation result with isValid boolean and message
+                 */
+                function validatePasswordInput(strPassword) {
+                    // Existence check
+                    if (!strPassword || typeof strPassword !== 'string') {
+                        return { isValid: false, message: 'Password is required' };
+                    }
+                    
+                    // Length check (range validation)
+                    if (strPassword.length < MIN_PASSWORD_LENGTH) {
+                        return { isValid: false, message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` };
+                    }
+                    
+                    return { isValid: true, message: '' };
+                }
+                
+                /**
+                 * Email Input Validation Function
+                 * Purpose: Validates email format and existence
+                 * @param {string} strEmail - Email string to validate
+                 * @returns {object} Validation result with isValid boolean and message
+                 */
+                function validateEmailInput(strEmail) {
+                    // Existence check
+                    if (!strEmail || typeof strEmail !== 'string') {
+                        return { isValid: false, message: 'Email is required' };
+                    }
+                    
+                    // Type check (email format validation)
+                    const regexEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!regexEmailPattern.test(strEmail)) {
+                        return { isValid: false, message: 'Please enter a valid email address' };
+                    }
+                    
+                    return { isValid: true, message: '' };
+                }
+                
+                /**
+                 * Password Toggle Event Handler
+                 * Purpose: Toggles password field visibility with validation
+                 */
+                if (btnTogglePassword && pwdUserInput) {
+                    btnTogglePassword.addEventListener('click', function () {
+                        // Existence check for required elements
+                        if (!pwdUserInput) {
+                            console.error('Password input element not found');
+                            return;
+                        }
+                        
+                        const strCurrentType = pwdUserInput.getAttribute('type');
+                        const strNewType = strCurrentType === 'password' ? 'text' : 'password';
+                        
+                        pwdUserInput.setAttribute('type', strNewType);
+                        this.classList.toggle(PASSWORD_VISIBLE_CLASS);
+                    });
+                }
+                
+                /**
+                 * Form Validation Setup
+                 * Purpose: Add real-time validation to form inputs
+                 */
+                function setupFormValidation() {
+                    // Password validation
+                    if (pwdUserInput) {
+                        pwdUserInput.addEventListener('blur', function() {
+                            const objValidation = validatePasswordInput(this.value);
+                            if (!objValidation.isValid) {
+                                this.style.borderColor = 'red';
+                                console.warn(`Password validation: ${objValidation.message}`);
+                            } else {
+                                this.style.borderColor = '';
+                            }
+                        });
+                    }
+                    
+                    // Email validation
+                    const txtEmailInput = document.querySelector('#txt_user_email');
+                    if (txtEmailInput) {
+                        txtEmailInput.addEventListener('blur', function() {
+                            const objValidation = validateEmailInput(this.value);
+                            if (!objValidation.isValid) {
+                                this.style.borderColor = 'red';
+                                console.warn(`Email validation: ${objValidation.message}`);
+                            } else {
+                                this.style.borderColor = '';
+                            }
+                        });
+                    }
+                }
+                
+                // Initialize validation on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    setupFormValidation();
                 });
             </script>
             {% endif %}
 
-            <section class="user-list">
+            <!-- User List Section -->
+            <section class="user-list" id="section_user_list">
                 <h2>Existing Users</h2>
-                <table>
+                <table id="tbl_users_list" class="tbl_users_list">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -96,17 +261,21 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tbody_users_data">
                         {% for user in users %}
-                        <tr>
+                        <tr data-user-id="{{ user[0] }}" data-user-role="{{ user[3] }}">
                             <td>{{ user[0] }}</td>
                             <td>{{ user[1] }}</td>
                             <td>{{ user[2] }}</td>
                             <td>{{ user[3] }}</td>
                             <td>
                                 {% if session['user_role'] == 'admin' or session['user_id'] == 1 %}
-                                <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start; min-width: 120px;">
-                                    <form action="{{ url_for('toggle_admin', user_id=user[0]) }}" method="post" style="width:100%;">
+                                <div class="div_action_buttons" id="div_actions_user_{{ user[0] }}">
+                                    <!-- Admin Role Toggle Form -->
+                                    <form action="{{ url_for('toggle_admin', user_id=user[0]) }}" method="post" 
+                                          id="frm_toggle_admin_{{ user[0] }}" 
+                                          data-form-type="admin-toggle"
+                                          style="width:100%;">
                                         {% set is_only_admin = only_admin_id is not none and user[0] == only_admin_id %}
                                         {% if is_only_admin %}
                                             {% set admin_btn_style = 'width:100%; padding:6px 0; background:#ccc; color:#fff; border:none; border-radius:4px; font-size:14px; margin-bottom:4px; cursor:not-allowed;' %}
@@ -115,8 +284,11 @@
                                         {% else %}
                                             {% set admin_btn_style = 'width:100%; padding:6px 0; background:#0074d9; color:#fff; border:none; border-radius:4px; font-size:14px; margin-bottom:4px; cursor:pointer;' %}
                                         {% endif %}
-                                        <button type="submit"
+                                        <button type="submit" 
+                                            id="btn_toggle_admin_{{ user[0] }}"
                                             title="Toggle Admin Role"
+                                            data-validation="admin-role-change"
+                                            data-user-id="{{ user[0] }}"
                                             style="{{ admin_btn_style }}"
                                             {% if is_only_admin %}disabled{% endif %}>
                                             {% if user[3] == 'admin' %}
@@ -126,13 +298,33 @@
                                             {% endif %}
                                         </button>
                                         {% if is_only_admin %}
-                                            <span style="font-size:11px;color:#888;">At least one admin required.</span>
+                                            <span class="lbl_permission" style="font-size:11px;color:#888;">At least one admin required.</span>
                                         {% endif %}
                                     </form>
-                                    <form action="{{ url_for('delete_user', user_id=user[0]) }}" method="post" style="width:100%;">
-                                        <button type="submit" style="width:100%; padding: 6px 0; background:#dc3545; color:#fff; border:none; border-radius:4px; font-size:14px; margin-bottom: 4px;">Delete</button>
+                                    
+                                    <!-- User Delete Form -->
+                                    <form action="{{ url_for('delete_user', user_id=user[0]) }}" method="post" 
+                                          id="frm_delete_user_{{ user[0] }}"
+                                          data-form-type="user-delete"
+                                          style="width:100%;">
+                                        <button type="submit" 
+                                            id="btn_delete_user_{{ user[0] }}"
+                                            data-validation="user-delete"
+                                            data-user-id="{{ user[0] }}"
+                                            data-user-name="{{ user[1] }}"
+                                            style="width:100%; padding: 6px 0; background:#dc3545; color:#fff; border:none; border-radius:4px; font-size:14px; margin-bottom: 4px;">
+                                            Delete
+                                        </button>
                                     </form>
-                                    <a href="{{ url_for('edit_user', user_id=user[0]) }}" style="display:block; width:100%; padding:6px 0; background:#28a745; color:#fff; border:none; border-radius:4px; text-decoration:none; font-size:14px; text-align:center;">Edit</a>
+                                    
+                                    <!-- User Edit Link -->
+                                    <a href="{{ url_for('edit_user', user_id=user[0]) }}" 
+                                       id="lnk_edit_user_{{ user[0] }}"
+                                       data-validation="user-edit"
+                                       data-user-id="{{ user[0] }}"
+                                       style="display:block; width:100%; padding:6px 0; background:#28a745; color:#fff; border:none; border-radius:4px; text-decoration:none; font-size:14px; text-align:center;">
+                                        Edit
+                                    </a>
                                 </div>
                                 {% endif %}
                             </td>
@@ -144,5 +336,127 @@
         </div>
 
         {% include '_sidebar.html' %}
+        
+        <!-- User Management Validation Script -->
+        <script>
+            /**
+             * User Management Validation Module
+             * Purpose: Validation for user management operations
+             * Functions: validateUserDeletion, validateAdminRoleChange
+             */
+            
+            /**
+             * Admin Auto-Promotion Function
+             * Purpose: Promotes next user to admin when last admin is deleted
+             * @param {string} strDeletedUserId - ID of user being deleted
+             */
+            function handleAdminAutoPromotion(strDeletedUserId) {
+                const tableRows = document.querySelectorAll('#tbody_users_data tr[data-user-id]');
+                const adminUsers = Array.from(tableRows).filter(row => 
+                    row.getAttribute('data-user-role') === 'admin'
+                );
+                
+                // If this is the last admin being deleted, promote next user
+                if (adminUsers.length === 1 && adminUsers[0].getAttribute('data-user-id') === strDeletedUserId) {
+                    const nextUser = Array.from(tableRows)
+                        .filter(row => row.getAttribute('data-user-id') !== strDeletedUserId)
+                        .sort((a, b) => parseInt(a.getAttribute('data-user-id')) - parseInt(b.getAttribute('data-user-id')))[0];
+                    
+                    if (nextUser) {
+                        const nextUserId = nextUser.getAttribute('data-user-id');
+                        // Send promotion request
+                        fetch(`/toggle_admin/${nextUserId}`, { method: 'POST' })
+                            .then(() => console.log(`Auto-promoted user ${nextUserId} to admin`))
+                            .catch(err => console.error('Auto-promotion failed:', err));
+                    }
+                }
+            }
+
+            /**
+             * User Deletion Validation Function
+             * Purpose: Validates and confirms user deletion operations
+             * @param {string} strUserId - User ID to delete
+             * @param {string} strUserName - User name for confirmation
+             * @returns {boolean} True if deletion should proceed
+             */
+            function validateUserDeletion(strUserId, strUserName) {
+                // Existence checks
+                if (!strUserId || !strUserName) {
+                    console.error('Missing user information for deletion');
+                    return false;
+                }
+                
+                // Type check
+                if (typeof strUserId !== 'string' || typeof strUserName !== 'string') {
+                    console.error('Invalid data types for user deletion');
+                    return false;
+                }
+                
+                // Handle admin auto-promotion before deletion
+                handleAdminAutoPromotion(strUserId);
+                
+                // User confirmation with name verification
+                const strConfirmMessage = `Are you sure you want to delete user "${strUserName}"? This action cannot be undone.`;
+                return confirm(strConfirmMessage);
+            }
+            
+            /**
+             * Admin Role Change Validation Function
+             * Purpose: Validates admin role toggle operations
+             * @param {string} strUserId - User ID for role change
+             * @param {string} strCurrentRole - Current user role
+             * @returns {boolean} True if role change should proceed
+             */
+            function validateAdminRoleChange(strUserId, strCurrentRole) {
+                // Existence checks
+                if (!strUserId || !strCurrentRole) {
+                    console.error('Missing user information for role change');
+                    return false;
+                }
+                
+                // Confirm role change
+                const strAction = strCurrentRole === 'admin' ? 'revoke admin privileges from' : 'grant admin privileges to';
+                const strConfirmMessage = `Are you sure you want to ${strAction} this user?`;
+                return confirm(strConfirmMessage);
+            }
+            
+            /**
+             * User Management Validation Setup
+             * Purpose: Initialize all user management validation handlers
+             */
+            function setupUserManagementValidation() {
+                // Delete button validation
+                document.querySelectorAll('button[data-validation="user-delete"]').forEach(btnDelete => {
+                    btnDelete.addEventListener('click', function(eventObject) {
+                        const strUserId = this.getAttribute('data-user-id');
+                        const strUserName = this.getAttribute('data-user-name');
+                        
+                        if (!validateUserDeletion(strUserId, strUserName)) {
+                            eventObject.preventDefault();
+                            return false;
+                        }
+                    });
+                });
+                
+                // Admin role toggle validation
+                document.querySelectorAll('button[data-validation="admin-role-change"]').forEach(btnToggle => {
+                    btnToggle.addEventListener('click', function(eventObject) {
+                        const strUserId = this.getAttribute('data-user-id');
+                        const trUserRow = this.closest('tr');
+                        const strCurrentRole = trUserRow ? trUserRow.getAttribute('data-user-role') : '';
+                        
+                        if (!validateAdminRoleChange(strUserId, strCurrentRole)) {
+                            eventObject.preventDefault();
+                            return false;
+                        }
+                    });
+                });
+            }
+            
+            // Initialize validation on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                setupUserManagementValidation();
+            });
+        </script>
     </body>
 </html>

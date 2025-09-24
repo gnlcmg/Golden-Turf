@@ -1,17 +1,25 @@
 <!DOCTYPE html>
+<!--
+    File: quotes.html
+    Purpose: Interactive quotation form and price calculation for Golden Turf
+    Dependencies: dashboard.css, _sidebar.html
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quotes - Golden Turf</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    
+    <!-- Quotation System Styles -->
     <style>
+        /* Navigation Dropdown Hover Effect */
         .nav-dropdown:hover .dropdown-content {
             display: block;
         }
-    </style>
-    <style>
-        .form-container {
+        
+        /* Main Form Container (snake_case naming) */
+        .form_container_main {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
@@ -20,30 +28,41 @@
             margin-left: auto;
             margin-right: auto;
         }
-        .form-container label {
+        .form_container_main label {
             margin: 10px 0 5px;
             font-weight: bold;
             text-align: left;
         }
-        .form-container input, .form-container select {
+        .form_container_main input, 
+        .form_container_main select {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            transition: border-color 0.2s ease;
         }
-        .form-container button {
+        .form_container_main input:focus,
+        .form_container_main select:focus {
+            border-color: #006400;
+            outline: none;
+        }
+        .form_container_main button {
             padding: 10px 20px;
             background-color: #006400;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
-        .form-container button:hover {
+        .form_container_main button:hover {
             background-color: #004d00;
+            transform: translateY(-2px);
         }
-        .quote-summary {
+        
+        /* Quote Summary Container */
+        .div_quote_summary {
             margin-top: 20px;
             padding: 20px;
             border: 1px solid #ccc;
@@ -61,11 +80,12 @@
             transition: all 0.3s ease;
         }
 
-        .quote-summary:hover {
+        .div_quote_summary:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
+        /* Animation Keyframes */
         @keyframes fadeInUp {
             0% {
                 opacity: 0;
@@ -77,8 +97,8 @@
             }
         }
 
-        /* Additional modern animations for form elements */
-        .form-container {
+        /* Form Animation */
+        .form_container_main {
             animation: slideInLeft 0.6s ease-out;
         }
 
@@ -93,14 +113,13 @@
             }
         }
 
-        /* Button hover effects */
-        .form-container button {
-            transition: all 0.3s ease;
+        /* Button Hover Effects */
+        .form_container_main button {
             position: relative;
             overflow: hidden;
         }
 
-        .form-container button::before {
+        .form_container_main button::before {
             content: '';
             position: absolute;
             top: 0;
@@ -111,174 +130,451 @@
             transition: left 0.5s;
         }
 
-        .form-container button:hover::before {
+        .form_container_main button:hover::before {
             left: 100%;
         }
-        .quote-summary h2 {
+        
+        /* Quote Summary Text Styling */
+        .div_quote_summary h2 {
             margin-bottom: 10px;
+            color: #006400;
         }
-        .quote-summary p {
+        .div_quote_summary p {
             margin: 5px 0;
+        }
+        
+        /* Conditional Field Containers */
+        .div_conditional_fields {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        /* Print Button Styling */
+        .btn_print_summary {
+            margin-top: 15px;
+            padding: 8px 16px;
+            background-color: #0074d9;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .btn_print_summary:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
+    <!-- Sidebar Navigation -->
     {% include '_sidebar.html' %}
 
-    <div class="container" style="margin-left: 280px; background-color: #f0f8f0; padding: 1rem; width: calc(100vw - 300px); box-sizing: border-box;">
-        <div class="form-container" style="max-width: 600px;">
+    <!-- Main Content Container -->
+    <div id="main_content" class="container" style="margin-left: 280px; background-color: #f0f8f0; padding: 1rem; width: calc(100vw - 300px); box-sizing: border-box;">
+        <div class="form_container_main" id="div_quotation_form" style="max-width: 600px;">
+            <!-- Page Header -->
             <h1 style="margin-top:0; margin-bottom: 1.5rem;">Quotation Form</h1>
-            <form method="POST" action="{{ url_for('quotes') }}">
-                <label for="client_name">Name (Client):</label>
-                <input type="text" id="client_name" name="client_name">
+            
+            <!-- Quote Generation Form -->
+            <form method="POST" action="{{ url_for('quotes') }}" id="frm_generate_quote">
+                <label for="txt_client_name">Name (Client):</label>
+                <input type="text" id="txt_client_name" name="client_name" 
+                       data-validation="required" 
+                       data-field-type="text"
+                       placeholder="Enter client name">
 
-                <label for="turf_type">Grass Type:</label>
-                <select id="turf_type" name="turf_type">
-                    <option value="Golden Imperial Lush">Golden Imperial Lush</option>
-                    <option value="Golden Green Lush">Golden Green Lush</option>
-                    <option value="Golden Natural 40mm">Golden Natural 40mm</option>
-                    <option value="Golden Golf Turf">Golden Golf Turf</option>
-                    <option value="Golden Premium Turf">Golden Premium Turf</option>
+                <label for="sel_turf_type">Grass Type:</label>
+                <select id="sel_turf_type" name="turf_type" 
+                        data-validation="required"
+                        data-field-type="select">
+                    <option value="Golden Imperial Lush" data-price="15">Golden Imperial Lush</option>
+                    <option value="Golden Green Lush" data-price="19">Golden Green Lush</option>
+                    <option value="Golden Natural 40mm" data-price="17">Golden Natural 40mm</option>
+                    <option value="Golden Golf Turf" data-price="22">Golden Golf Turf</option>
+                    <option value="Golden Premium Turf" data-price="20">Golden Premium Turf</option>
                 </select>
 
-                <label for="area_in_sqm">Size (sq meters):</label>
-                <input type="number" id="area_in_sqm" name="area_in_sqm" min="0.01" step="0.01">
+                <label for="num_area_sqm">Size (sq meters):</label>
+                <input type="number" id="num_area_sqm" name="area_in_sqm" 
+                       min="0.01" step="0.01" 
+                       data-validation="number"
+                       data-min="0.01"
+                       data-field-type="number"
+                       placeholder="Enter area in square meters">
 
-                <label for="other_products">Other Products:</label>
-
-                <select id="other_products" name="other_products">
+                <label for="sel_other_products">Other Products:</label>
+                <select id="sel_other_products" name="other_products" 
+                        data-validation="optional"
+                        data-field-type="select">
                     <option value="">None</option>
-                    <option value="Peg">Peg (Upins/Nails)</option>
-                    <option value="Fountain">Fountain</option>
-                    <option value="Artificial Hedges">Artificial Hedges</option>
-                    <option value="Pebbles">Pebbles (20kg bag)</option>
-                    <option value="Bamboo 2m">Bamboo Products (2m)</option>
-                    <option value="Bamboo 2.4m">Bamboo Products (2.4m)</option>
-                    <option value="Bamboo 1.8m">Bamboo Products (1.8m)</option>
-                    <option value="Adhesive Tape">Adhesive Joining Tape</option>
+                    <option value="Peg" data-price="25">Peg (Upins/Nails)</option>
+                    <option value="Fountain" data-price="custom">Fountain</option>
+                    <option value="Artificial Hedges" data-price="10">Artificial Hedges</option>
+                    <option value="Pebbles" data-price="40">Pebbles (20kg bag)</option>
+                    <option value="Bamboo 2m" data-price="40">Bamboo Products (2m)</option>
+                    <option value="Bamboo 2.4m" data-price="38">Bamboo Products (2.4m)</option>
+                    <option value="Bamboo 1.8m" data-price="38">Bamboo Products (1.8m)</option>
+                    <option value="Adhesive Tape" data-price="25">Adhesive Joining Tape</option>
                 </select>
 
-                <div id="pebbles-extra-container" style="display: none;">
-                    <label for="pebbles_custom_type">Pebbles Type (e.g. Black, White, Mixed):</label>
-                    <input type="text" id="pebbles_custom_type" name="pebbles_custom_type" placeholder="Type (e.g. Black, White, Mixed)">
-                    <label for="pebbles_qty">Quantity (bags):</label>
-                    <input type="number" id="pebbles_qty" name="pebbles_qty" min="1" step="1">
+                <!-- Pebbles Custom Configuration -->
+                <div id="div_pebbles_config" class="div_conditional_fields" style="display: none;">
+                    <label for="txt_pebbles_type">Pebbles Type (e.g. Black, White, Mixed):</label>
+                    <input type="text" id="txt_pebbles_type" name="pebbles_custom_type" 
+                           data-validation="conditional"
+                           data-field-type="text"
+                           placeholder="Type (e.g. Black, White, Mixed)">
+                    <label for="num_pebbles_qty">Quantity (bags):</label>
+                    <input type="number" id="num_pebbles_qty" name="pebbles_qty" 
+                           min="1" step="1"
+                           data-validation="conditional"
+                           data-min="1"
+                           data-field-type="number">
                 </div>
 
-                <div id="custom-price-container" style="display: none;">
-                    <label for="custom_price">Custom Price for Selected Product:</label>
-                    <input type="number" id="custom_price" name="custom_price" min="0.01" step="0.01">
+                <!-- Custom Price Configuration (Fountains) -->
+                <div id="div_custom_price" class="div_conditional_fields" style="display: none;">
+                    <label for="num_custom_price">Custom Price for Selected Product:</label>
+                    <input type="number" id="num_custom_price" name="custom_price" 
+                           min="0.01" step="0.01"
+                           data-validation="conditional"
+                           data-min="0.01"
+                           data-field-type="number"
+                           placeholder="Enter custom price">
                 </div>
 
-                <div id="other-product-quantity-container" style="display: none;">
-                    <label for="other_product_quantity">Quantity for Selected Product:</label>
-                    <input type="number" id="other_product_quantity" name="other_product_quantity" min="1" step="1">
+                <!-- Other Product Quantity Configuration -->
+                <div id="div_other_quantity" class="div_conditional_fields" style="display: none;">
+                    <label for="num_other_quantity">Quantity for Selected Product:</label>
+                    <input type="number" id="num_other_quantity" name="other_product_quantity" 
+                           min="1" step="1"
+                           data-validation="conditional"
+                           data-min="1"
+                           data-field-type="number">
                 </div>
 
-                <button type="submit">Submit</button>
+                <button type="submit" id="btn_submit_quote">Submit</button>
             </form>
 
-            <div class="quote-summary" id="quote-summary" {% if not summary %}style="display: none;"{% endif %}>
+            <!-- Quote Summary Display -->
+            <div class="div_quote_summary" id="div_quote_summary" {% if not summary %}style="display: none;"{% endif %}>
                 <h2>Quote Summary</h2>
-                <p><strong>Client Name:</strong> <span id="summary-client-name">{% if summary %}{{ summary.client_name }}{% endif %}</span></p>
-                <p><strong>Grass Type:</strong> <span id="summary-turf-type">{% if summary %}{{ summary.turf_type }}{% endif %}</span></p>
-                <p><strong>Size:</strong> <span id="summary-size">{% if summary %}{{ summary.area_in_sqm }}{% endif %}</span> sq meters</p>
-                <p><strong>Other Product:</strong> <span id="summary-other-product">{% if summary %}{{ summary.other_products or 'N/A' }}{% endif %}</span></p>
-                <p><strong>Total Price:</strong> $<span id="summary-total-price">{% if summary %}{{ '%.2f'|format(summary.total_price) }}{% endif %}</span></p>
+                <p><strong>Client Name:</strong> <span id="span_summary_client">{% if summary %}{{ summary.client_name }}{% endif %}</span></p>
+                <p><strong>Grass Type:</strong> <span id="span_summary_turf">{% if summary %}{{ summary.turf_type }}{% endif %}</span></p>
+                <p><strong>Size:</strong> <span id="span_summary_size">{% if summary %}{{ summary.area_in_sqm }}{% endif %}</span> sq meters</p>
+                <p><strong>Other Product:</strong> <span id="span_summary_other">{% if summary %}{{ summary.other_products or 'N/A' }}{% endif %}</span></p>
+                <p><strong>Total Price:</strong> $<span id="span_summary_total">{% if summary %}{{ '%.2f'|format(summary.total_price) }}{% endif %}</span></p>
             </div>
-            <button onclick="printSummary()">Print Summary</button>
+            <button onclick="printQuoteSummary()" id="btn_print_summary" class="btn_print_summary">Print Summary</button>
         </div>
     </div>
 
+    <!-- Quote Management JavaScript Module -->
     <script>
-        const otherProductsSelect = document.getElementById('other_products');
-        const customPriceContainer = document.getElementById('custom-price-container');
-        const otherProductQuantityContainer = document.getElementById('other-product-quantity-container');
-        const otherProductQuantityInput = document.getElementById('other_product_quantity');
+        /**
+         * Quote Management Module
+         * Purpose: Dynamic quote form, price calculations, and summary generation
+         * Naming: camelCase functions, Hungarian notation DOM elements
+         */
 
-        otherProductsSelect.addEventListener('change', () => {
-            if (otherProductsSelect.value === 'Fountain') {
-                customPriceContainer.style.display = 'block';
-                otherProductQuantityContainer.style.display = 'none';
-                pebblesExtraContainer.style.display = 'none';
-            } else if (otherProductsSelect.value === 'Pebbles') {
-                customPriceContainer.style.display = 'none';
-                otherProductQuantityContainer.style.display = 'none';
-                pebblesExtraContainer.style.display = 'block';
-            } else if (otherProductsSelect.value) {
-                customPriceContainer.style.display = 'none';
-                otherProductQuantityContainer.style.display = 'block';
-                pebblesExtraContainer.style.display = 'none';
-            } else {
-                customPriceContainer.style.display = 'none';
-                otherProductQuantityContainer.style.display = 'none';
-                pebblesExtraContainer.style.display = 'none';
-            }
-        });
+        // Module Constants (UPPER_SNAKE_CASE naming convention)
+        const MAX_AREA_SIZE = 10000;
+        const MIN_AREA_SIZE = 0.01;
+        const MAX_CUSTOM_PRICE = 99999.99;
+        const MIN_CUSTOM_PRICE = 0.01;
+        const PRICE_PRECISION = 2;
 
-        const pebblesExtraContainer = document.getElementById('pebbles-extra-container');
-        const form = document.querySelector('form');
-        form.addEventListener('submit', (event) => {
-            // event.preventDefault();
+        // DOM Element References (Hungarian notation)
+        const selOtherProducts = document.getElementById('sel_other_products');
+        const divCustomPrice = document.getElementById('div_custom_price');
+        const divOtherQuantity = document.getElementById('div_other_quantity');
+        const numOtherQuantity = document.getElementById('num_other_quantity');
+        const divPebblesConfig = document.getElementById('div_pebbles_config');
+        const frmGenerateQuote = document.querySelector('#frm_generate_quote');
 
-            const clientName = document.getElementById('client_name').value;
-            const turfType = document.getElementById('turf_type').value;
-            const areaInSqm = parseFloat(document.getElementById('area_in_sqm').value || 0);
-            const otherProduct = otherProductsSelect.value || 'N/A';
-            const customPrice = parseFloat(document.getElementById('custom_price').value || 0);
-            const otherProductQuantity = parseInt(otherProductQuantityInput.value) || 0;
-            const pebblesCustomType = document.getElementById('pebbles_custom_type').value;
-            const pebblesQty = parseInt(document.getElementById('pebbles_qty').value) || 0;
+        // Price Data Object (camelCase naming)
+        const objProductPrices = {
+            'Golden Imperial Lush': 15,
+            'Golden Green Lush': 19,
+            'Golden Natural 40mm': 17,
+            'Golden Golf Turf': 22,
+            'Golden Premium Turf': 20
+        };
 
-            const pricePerUnit = {
-                'Golden Imperial Lush': 15,
-                'Golden Green Lush': 19,
-                'Golden Natural 40mm': 17,
-                'Golden Golf Turf': 22,
-                'Golden Premium Turf': 20
-            }[turfType] || 0;
+        const objOtherProductPrices = {
+            'Peg': 25,
+            'Artificial Hedges': 10,
+            'Pebbles': 40,
+            'Bamboo 2m': 40,
+            'Bamboo 2.4m': 38,
+            'Bamboo 1.8m': 38,
+            'Adhesive Tape': 25
+        };
 
-            const otherProductPrices = {
-                'Peg': 25,
-                'Artificial Hedges': 10,
-                'Pebbles': 40,
-                'Bamboo 2m': 40,
-                'Bamboo 2.4m': 38,
-                'Bamboo 1.8m': 38,
-                'Adhesive Tape': 25
-            };
-
-            let otherProductPrice = 0;
-            let otherProductDisplay = otherProduct;
-            if (otherProduct === 'Fountain') {
-                otherProductPrice = customPrice;
-            } else if (otherProduct === 'Pebbles') {
-                otherProductPrice = otherProductPrices['Pebbles'] * pebblesQty;
-                otherProductDisplay = `Pebbles (${pebblesCustomType}): ${pebblesQty}`;
-            } else if (otherProduct) {
-                otherProductPrice = (otherProductPrices[otherProduct] || 0) * otherProductQuantity;
+        /**
+         * Form Input Validation Function
+         * Purpose: Validates individual form inputs with type and range checking
+         * @param {string} strFieldType - Type of field to validate
+         * @param {any} mixValue - Value to validate
+         * @param {object} objOptions - Validation options (min, max, required)
+         * @returns {object} Validation result with isValid boolean and message
+         */
+        function validateFormInput(strFieldType, mixValue, objOptions = {}) {
+            // Existence check for required fields
+            if (objOptions.required && (!mixValue || mixValue.toString().trim() === '')) {
+                return { isValid: false, message: 'This field is required' };
             }
 
-            const totalPrice = (areaInSqm * pricePerUnit) + otherProductPrice;
+            // Type-specific validations
+            switch (strFieldType) {
+                case 'number':
+                    // Type check - ensure numeric value
+                    const fltNumber = parseFloat(mixValue);
+                    if (isNaN(fltNumber)) {
+                        return { isValid: false, message: 'Must be a valid number' };
+                    }
 
-            document.getElementById('summary-client-name').textContent = clientName;
-            document.getElementById('summary-turf-type').textContent = turfType;
-            document.getElementById('summary-size').textContent = areaInSqm;
-            document.getElementById('summary-other-product').textContent = otherProductDisplay;
-            document.getElementById('summary-total-price').textContent = totalPrice.toFixed(2);
+                    // Range checks
+                    if (objOptions.min !== undefined && fltNumber < objOptions.min) {
+                        return { isValid: false, message: `Must be at least ${objOptions.min}` };
+                    }
+                    if (objOptions.max !== undefined && fltNumber > objOptions.max) {
+                        return { isValid: false, message: `Cannot exceed ${objOptions.max}` };
+                    }
+                    break;
 
-            document.getElementById('quote-summary').style.display = 'block';
-        });
+                case 'text':
+                    // Type check
+                    if (typeof mixValue !== 'string') {
+                        return { isValid: false, message: 'Must be valid text' };
+                    }
+                    
+                    // Length checks
+                    if (objOptions.minLength && mixValue.length < objOptions.minLength) {
+                        return { isValid: false, message: `Must be at least ${objOptions.minLength} characters` };
+                    }
+                    break;
+            }
 
-        function printSummary() {
-            const summary = document.getElementById('quote-summary');
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write('<html><head><title>Print Summary</title></head><body>');
-            printWindow.document.write(summary.outerHTML);
-            printWindow.document.write('</body></html>');
-            printWindow.document.close();
-            printWindow.print();
+            return { isValid: true, message: '' };
         }
+
+        /**
+         * Conditional Fields Display Handler
+         * =================================
+         * Purpose: Shows/hides form fields based on product selection
+         * @returns {void}
+         */
+        function handleConditionalFieldsDisplay() {
+            // Existence check
+            if (!selOtherProducts) return;
+
+            const strSelectedProduct = selOtherProducts.value;
+
+            // Hide all conditional containers first
+            if (divCustomPrice) divCustomPrice.style.display = 'none';
+            if (divOtherQuantity) divOtherQuantity.style.display = 'none';
+            if (divPebblesConfig) divPebblesConfig.style.display = 'none';
+
+            // Show relevant container based on selection
+            switch (strSelectedProduct) {
+                case 'Fountain':
+                    if (divCustomPrice) divCustomPrice.style.display = 'block';
+                    break;
+                case 'Pebbles':
+                    if (divPebblesConfig) divPebblesConfig.style.display = 'block';
+                    break;
+                case '':
+                    // No additional fields needed for 'None' selection
+                    break;
+                default:
+                    // Show quantity field for standard products
+                    if (strSelectedProduct && divOtherQuantity) {
+                        divOtherQuantity.style.display = 'block';
+                    }
+                    break;
+            }
+        }
+
+        /**
+         * Quote Total Calculation Function
+         * Purpose: Calculates total quote price with all products and options
+         * @returns {number} Calculated total price
+         */
+        function calculateQuoteTotal() {
+            try {
+                // Get form values
+                const txtClientName = document.getElementById('txt_client_name').value;
+                const selTurfType = document.getElementById('sel_turf_type').value;
+                const fltAreaSqm = parseFloat(document.getElementById('num_area_sqm').value || 0);
+                const strOtherProduct = selOtherProducts.value || 'N/A';
+                const fltCustomPrice = parseFloat(document.getElementById('num_custom_price').value || 0);
+                const intOtherQuantity = parseInt(numOtherQuantity.value) || 0;
+                const strPebblesType = document.getElementById('txt_pebbles_type').value;
+                const intPebblesQty = parseInt(document.getElementById('num_pebbles_qty').value) || 0;
+
+                // Calculate turf price
+                const fltTurfPricePerUnit = objProductPrices[selTurfType] || 0;
+
+                // Calculate other product price
+                let fltOtherProductPrice = 0;
+                let strOtherProductDisplay = strOtherProduct;
+                
+                if (strOtherProduct === 'Fountain') {
+                    fltOtherProductPrice = fltCustomPrice;
+                } else if (strOtherProduct === 'Pebbles') {
+                    fltOtherProductPrice = objOtherProductPrices['Pebbles'] * intPebblesQty;
+                    strOtherProductDisplay = `Pebbles (${strPebblesType}): ${intPebblesQty}`;
+                } else if (strOtherProduct && strOtherProduct !== '') {
+                    fltOtherProductPrice = (objOtherProductPrices[strOtherProduct] || 0) * intOtherQuantity;
+                }
+
+                // Calculate and return total
+                const fltTotalPrice = (fltAreaSqm * fltTurfPricePerUnit) + fltOtherProductPrice;
+
+                // Update summary display
+                updateQuoteSummaryDisplay(txtClientName, selTurfType, fltAreaSqm, strOtherProductDisplay, fltTotalPrice);
+
+                return fltTotalPrice;
+            } catch (error) {
+                console.error('Error calculating quote total:', error);
+                return 0;
+            }
+        }
+
+        /**
+         * Quote Summary Display Update Function
+         * Purpose: Updates the quote summary display with calculated values
+         * @param {string} strClientName - Client name
+         * @param {string} strTurfType - Selected turf type
+         * @param {number} fltArea - Area in square meters
+         * @param {string} strOtherProduct - Other product description
+         * @param {number} fltTotal - Total calculated price
+         */
+        function updateQuoteSummaryDisplay(strClientName, strTurfType, fltArea, strOtherProduct, fltTotal) {
+            // Update summary elements with existence checks
+            const spanClient = document.getElementById('span_summary_client');
+            const spanTurf = document.getElementById('span_summary_turf');
+            const spanSize = document.getElementById('span_summary_size');
+            const spanOther = document.getElementById('span_summary_other');
+            const spanTotal = document.getElementById('span_summary_total');
+
+            if (spanClient) spanClient.textContent = strClientName;
+            if (spanTurf) spanTurf.textContent = strTurfType;
+            if (spanSize) spanSize.textContent = fltArea.toString();
+            if (spanOther) spanOther.textContent = strOtherProduct;
+            if (spanTotal) spanTotal.textContent = fltTotal.toFixed(PRICE_PRECISION);
+
+            // Show summary
+            const divSummary = document.getElementById('div_quote_summary');
+            if (divSummary) {
+                divSummary.style.display = 'block';
+            }
+        }
+
+        /**
+         * Print Summary Function
+         * =====================
+         * Purpose: Opens print dialog for quote summary
+         * @returns {void}
+         */
+        function printQuoteSummary() {
+            const divSummary = document.getElementById('div_quote_summary');
+            if (!divSummary) {
+                console.error('Quote summary not found');
+                return;
+            }
+
+            const objPrintWindow = window.open('', '_blank');
+            objPrintWindow.document.write('<html><head><title>Quote Summary - Golden Turf</title>');
+            objPrintWindow.document.write('<style>body{font-family:Arial,sans-serif;margin:20px;}</style>');
+            objPrintWindow.document.write('</head><body>');
+            objPrintWindow.document.write('<h1>Golden Turf - Quote Summary</h1>');
+            objPrintWindow.document.write(divSummary.outerHTML);
+            objPrintWindow.document.write('</body></html>');
+            objPrintWindow.document.close();
+            objPrintWindow.print();
+        }
+
+        /**
+         * Form Validation Setup Function
+         * ==============================
+         * Purpose: Initialize form validation handlers
+         */
+        function setupFormValidation() {
+            // Area validation
+            const numAreaInput = document.getElementById('num_area_sqm');
+            if (numAreaInput) {
+                numAreaInput.addEventListener('blur', function() {
+                    const objValidation = validateFormInput('number', this.value, {
+                        required: true,
+                        min: MIN_AREA_SIZE,
+                        max: MAX_AREA_SIZE
+                    });
+                    if (!objValidation.isValid) {
+                        this.style.borderColor = 'red';
+                        console.warn(`Area validation: ${objValidation.message}`);
+                    } else {
+                        this.style.borderColor = '';
+                    }
+                });
+            }
+
+            // Custom price validation
+            const numCustomPriceInput = document.getElementById('num_custom_price');
+            if (numCustomPriceInput) {
+                numCustomPriceInput.addEventListener('blur', function() {
+                    const objValidation = validateFormInput('number', this.value, {
+                        min: MIN_CUSTOM_PRICE,
+                        max: MAX_CUSTOM_PRICE
+                    });
+                    if (!objValidation.isValid) {
+                        this.style.borderColor = 'red';
+                        console.warn(`Custom price validation: ${objValidation.message}`);
+                    } else {
+                        this.style.borderColor = '';
+                    }
+                });
+            }
+
+            // Client name validation
+            const txtClientInput = document.getElementById('txt_client_name');
+            if (txtClientInput) {
+                txtClientInput.addEventListener('blur', function() {
+                    const objValidation = validateFormInput('text', this.value, {
+                        required: true,
+                        minLength: 2
+                    });
+                    if (!objValidation.isValid) {
+                        this.style.borderColor = 'red';
+                        console.warn(`Client name validation: ${objValidation.message}`);
+                    } else {
+                        this.style.borderColor = '';
+                    }
+                });
+            }
+        }
+
+        /**
+         * Event Listeners Setup
+         * ====================
+         * Purpose: Initialize all event handlers
+         */
+        if (selOtherProducts) {
+            selOtherProducts.addEventListener('change', handleConditionalFieldsDisplay);
+        }
+
+        if (frmGenerateQuote) {
+            frmGenerateQuote.addEventListener('submit', function(eventObject) {
+                calculateQuoteTotal();
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFormValidation();
+            handleConditionalFieldsDisplay(); // Set initial state
+        });
     </script>
 </body>
 </html>

@@ -1,48 +1,94 @@
-            
-    <!-- Admin details moved below buttons -->
+<!--
+Purpose:
+    - Primary dashboard interface for Golden Turf business management system
+    - Displays key performance indicators (KPIs) and business metrics
+    - Provides quick access to core functionalities (quotes, calendar)
+    - Shows admin user management and overdue job alerts
+
+Template Variables (Jinja2):
+    - total_clients (int): Total number of registered clients
+    - yesterday_sales (float): Revenue generated yesterday
+    - today_sales (float): Revenue generated today  
+    - last_7_days_sales (float): Revenue generated in last 7 days
+    - total_sales (float): Total revenue from all invoices
+    - overdue_jobs (list): Array of overdue job objects with client_name and job_date
+    - user_role (str): Current user's role ('admin', 'owner', 'user')
+    - admins (list): Array of admin user tuples (name, email)
+
+Dependencies:
+    - dashboard.css: Main styling for dashboard layout and KPI tiles
+    - _sidebar.html: Shared navigation sidebar component
+    - Flask routing: /quotes, /calendar endpoints
+    
+Features:
+    - Responsive KPI grid with color-coded metrics
+    - Role-based button visibility (admin/owner only)
+    - Real-time sales data display with currency formatting
+    - Overdue job alert system
+    - Admin user listing section
+    - Sidebar navigation integration
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Golden Turf Dashboard</title>
+    <!-- CSS Dependencies -->
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
     <style>
+        /* Dropdown Hover Styles */
         .nav-dropdown:hover .dropdown-content {
             display: block;
         }
     </style>
 </head>
 <body>
+    <!-- Navigation Sidebar Integration -->
     {% include '_sidebar.html' %}
-    <div class="main-content" style="margin-left: 280px; padding: 30px 50px; width: calc(100vw - 330px); box-sizing: border-box;">
-        <h1>Golden Turf Dashboard</h1>
+    
+    <!-- Main Dashboard Content Area -->
+    <div id="main_content" class="main-content" style="margin-left: 280px; padding: 30px 50px; width: calc(100vw - 330px); box-sizing: border-box;">
+        
+        <!-- Dashboard Header -->
+        <h1 id="dashboard_title">Golden Turf Dashboard</h1>
 
-        <div class="kpi-grid">
-            <div class="kpi-tile orange">
+        <!-- Key Performance Indicators Grid -->
+        <div id="kpi_grid" class="kpi-grid">
+            <!-- Total Clients KPI Tile -->
+            <div id="kpi_total_clients" class="kpi-tile orange" data-metric="total_clients">
                 <div class="kpi-label">Total Clients</div>
                 <div class="kpi-value">{{ total_clients }}</div>
             </div>
-            <div class="kpi-tile green">
+            
+            <!-- Yesterday Sales KPI Tile -->
+            <div id="kpi_yesterday_sales" class="kpi-tile green" data-metric="yesterday_sales">
                 <div class="kpi-label">Yesterday Sales ($)</div>
                 <div class="kpi-value">{{ yesterday_sales|default(0)|float|round(2) }}</div>
             </div>
-            <div class="kpi-tile orange">
+            
+            <!-- Today Sales KPI Tile -->
+            <div id="kpi_today_sales" class="kpi-tile orange" data-metric="today_sales">
                 <div class="kpi-label">Today Sales ($)</div>
                 <div class="kpi-value">{{ today_sales|default(0)|float|round(2) }}</div>
             </div>
-            <div class="kpi-tile green">
+            
+            <!-- Last 7 Days Sales KPI Tile -->
+            <div id="kpi_last_7_days_sales" class="kpi-tile green" data-metric="last_7_days_sales">
                 <div class="kpi-label">Last 7 Days Sales ($)</div>
                 <div class="kpi-value">{{ last_7_days_sales|default(0)|float|round(2) }}</div>
             </div>
-            <div class="kpi-tile orange">
+            
+            <!-- Total Sales KPI Tile -->
+            <div id="kpi_total_sales" class="kpi-tile orange" data-metric="total_sales">
                 <div class="kpi-label">Total Sales (All Invoices) ($)</div>
                 <div class="kpi-value">{{ "{:,.2f}".format(total_sales|default(0)|float) }}</div>
             </div>
         </div>
 
+        <!-- Overdue Jobs Alert Section -->
         {% if overdue_jobs %}
-        <div class="alerts">
+        <div id="alerts_section" class="alerts">
             <div class="alert-title">Overdue Jobs:</div>
             {% for job in overdue_jobs %}
                 <div class="alert-item">{{ job.client_name }} was due on {{ job.job_date }}</div>
@@ -50,28 +96,334 @@
         </div>
         {% endif %}
 
-
-        <div class="admin-buttons" style="margin-bottom: 20px;">
+        <!-- Admin Action Buttons Section -->
+        <div id="admin_buttons" class="admin-buttons" style="margin-bottom: 20px;">
             {% if user_role == 'admin' or user_role == 'owner' %}
-            <button onclick="window.location.href='/quotes';">Generate Quote</button>
-            <button onclick="window.location.href='/calendar';">View Calendar</button>
+            <button id="btn_generate_quote" type="button" onclick="window.location.href='/quotes';">Generate Quote</button>
+            <button id="btn_view_calendar" type="button" onclick="window.location.href='/calendar';">View Calendar</button>
             {% endif %}
         </div>
-        <section class="admin-list" style="margin-bottom: 30px;">
-            <h2>Admin Users</h2>
-            <ul>
-                {% for admin in admins %}
-                    <li><strong>{{ admin[0] }}</strong> &lt;{{ admin[1] }}&gt;</li>
-                {% endfor %}
-            </ul>
+        
+        <!-- Current User Status Section -->
+        <section id="user_status_section" class="user-status" style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; color: white;">
+            <h2 style="margin: 0 0 10px 0; font-size: 18px;">Current User Status</h2>
+            <div style="font-size: 16px;">
+                <strong>You are logged in as:</strong> {{ session.user_name or 'User' }} (ID: {{ session.user_id }})<br>
+                <strong>Role:</strong> 
+                {% if session.user_role == 'admin' %}
+                    <span style="color: #ffd700; font-weight: bold;">ADMIN</span>
+                {% else %}
+                    <span style="color: #lightblue;">User</span>
+                {% endif %}
+                <br>
+                <strong>Email:</strong> {{ session.user_email or session.email or 'Email not found' }}
+            </div>
         </section>
 
-        <footer>
+        <!-- Admin Users List Section -->
+        <section id="admin_list_section" class="admin-list" style="margin-bottom: 30px;">
+            <h2 id="admin_list_title">Admin Users</h2>
+            <div id="admin_users_container" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 2px solid #e9ecef;">
+                {% if admins %}
+                    <ul id="admin_users_list" style="list-style: none; padding: 0; margin: 0;">
+                        {% for admin in admins %}
+                            <li style="padding: 12px 0; border-bottom: 1px solid #dee2e6; display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; flex-direction: column;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <strong style="color: #495057; font-size: 16px;">{{ admin[1] }}</strong>
+                                        {% if admin[0] == session.user_id %}
+                                            <span style="background: #28a745; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">YOU</span>
+                                        {% endif %}
+                                    </div>
+                                    <div style="color: #6c757d; font-size: 14px; margin-top: 2px;">
+                                        <span style="font-weight: 500;">Email:</span> {{ admin[2] }}
+                                    </div>
+                                    <div style="color: #6c757d; font-size: 12px; margin-top: 1px;">
+                                        <span style="font-weight: 500;">ID:</span> {{ admin[0] }}
+                                    </div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div style="text-align: center; color: #6c757d; font-style: italic;">
+                        Loading admin information... 
+                        <br><small>If you just registered, you should be the admin (ID 1)</small>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <footer id="dashboard_footer">
         </footer>
     </div>
+
+    <!-- JavaScript Dashboard Functionality -->
+    <script>
+        /**
+         * Dashboard Management Module
+         * Provides utility functions for dashboard data management and user interaction
+         * 
+         * Naming Conventions:
+         * - Variables: camelCase (e.g., kpiElements, dashboardData)
+         * - Constants: UPPER_SNAKE_CASE (e.g., CURRENCY_FORMAT, REFRESH_INTERVAL)
+         * - Functions: camelCase (e.g., formatCurrency, validateKpiData)
+         * - DOM Elements: Hungarian notation (e.g., divKpiGrid, btnQuotes)
+         */
+
+        // Dashboard Constants (UPPER_SNAKE_CASE naming convention)
+        const CURRENCY_PRECISION = 2;
+        const REFRESH_INTERVAL = 30000; // 30 seconds
+        const MAX_ALERT_ITEMS = 10;
+        const KPI_ANIMATION_DURATION = 500;
+
+        // DOM Element References (Hungarian notation)
+        const divMainContent = document.getElementById('main_content');
+        const divKpiGrid = document.getElementById('kpi_grid');
+        const divAlertsSection = document.getElementById('alerts_section');
+        const divAdminButtons = document.getElementById('admin_buttons');
+        const btnGenerateQuote = document.getElementById('btn_generate_quote');
+        const btnViewCalendar = document.getElementById('btn_view_calendar');
+        const ulAdminUsersList = document.getElementById('admin_users_list');
+
+        /**
+         * Currency Formatting Function
+         * Purpose: Formats numeric values as currency with proper precision
+         * @param {number|string} numValue - Numeric value to format
+         * @returns {string} Formatted currency string
+         */
+        function formatCurrency(numValue) {
+            // Type check - ensure numeric value
+            const fltParsedValue = parseFloat(numValue);
+            if (isNaN(fltParsedValue)) {
+                return '$0.00';
+            }
+
+            // Range check - ensure positive value
+            const fltValidValue = Math.max(0, fltParsedValue);
+
+            // Format with currency symbol and commas
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: CURRENCY_PRECISION,
+                maximumFractionDigits: CURRENCY_PRECISION
+            }).format(fltValidValue);
+        }
+
+        /**
+         * KPI Data Validation Function
+         * Purpose: Validates KPI data values for type and range
+         * @param {object} objKpiData - KPI data object to validate
+         * @returns {object} Validation result with isValid boolean and errors array
+         */
+        function validateKpiData(objKpiData) {
+            const arrErrors = [];
+            let boolIsValid = true;
+
+            // Existence check - ensure data object exists
+            if (!objKpiData || typeof objKpiData !== 'object') {
+                return {
+                    isValid: false,
+                    errors: ['KPI data object is required']
+                };
+            }
+
+            // Validate total_clients
+            if (objKpiData.hasOwnProperty('total_clients')) {
+                const intTotalClients = parseInt(objKpiData.total_clients);
+                if (isNaN(intTotalClients) || intTotalClients < 0) {
+                    arrErrors.push('Total clients must be a non-negative integer');
+                    boolIsValid = false;
+                }
+            }
+
+            // Validate sales values (yesterday, today, 7-day, total)
+            const arrSalesFields = ['yesterday_sales', 'today_sales', 'last_7_days_sales', 'total_sales'];
+            arrSalesFields.forEach(strField => {
+                if (objKpiData.hasOwnProperty(strField)) {
+                    const fltSalesValue = parseFloat(objKpiData[strField]);
+                    if (isNaN(fltSalesValue) || fltSalesValue < 0) {
+                        arrErrors.push(`${strField.replace('_', ' ')} must be a non-negative number`);
+                        boolIsValid = false;
+                    }
+                    // Range check - reasonable maximum value
+                    if (fltSalesValue > 1000000) {
+                        arrErrors.push(`${strField.replace('_', ' ')} exceeds reasonable maximum`);
+                        boolIsValid = false;
+                    }
+                }
+            });
+
+            return {
+                isValid: boolIsValid,
+                errors: arrErrors
+            };
+        }
+
+        /**
+         * Update KPI Display Function
+         * Purpose: Updates KPI tile values with animation
+         * @param {string} strKpiId - ID of KPI tile to update
+         * @param {number|string} numNewValue - New value to display
+         * @returns {boolean} Success status of update operation
+         */
+        function updateKpiDisplay(strKpiId, numNewValue) {
+            // Existence check - ensure KPI element exists
+            const divKpiTile = document.getElementById(strKpiId);
+            if (!divKpiTile) {
+                console.warn(`KPI tile with ID '${strKpiId}' not found`);
+                return false;
+            }
+
+            // Find value display element
+            const divKpiValue = divKpiTile.querySelector('.kpi-value');
+            if (!divKpiValue) {
+                console.warn(`KPI value element not found in tile '${strKpiId}'`);
+                return false;
+            }
+
+            // Format value based on metric type
+            let strFormattedValue;
+            if (strKpiId.includes('sales') || strKpiId.includes('total')) {
+                strFormattedValue = formatCurrency(numNewValue);
+            } else {
+                strFormattedValue = String(numNewValue);
+            }
+
+            // Update display with animation
+            divKpiValue.style.transition = `opacity ${KPI_ANIMATION_DURATION}ms`;
+            divKpiValue.style.opacity = '0.5';
+            
+            setTimeout(() => {
+                divKpiValue.textContent = strFormattedValue;
+                divKpiValue.style.opacity = '1';
+            }, KPI_ANIMATION_DURATION / 2);
+
+            return true;
+        }
+
+        /**
+         * Alert Management Function
+         * Purpose: Manages display of overdue job alerts
+         * @param {Array} arrAlerts - Array of alert objects
+         * @returns {boolean} Success status of alert display
+         */
+        function displayAlerts(arrAlerts) {
+            // Type check - ensure alerts is array
+            if (!Array.isArray(arrAlerts)) {
+                console.warn('Alerts parameter must be an array');
+                return false;
+            }
+
+            // Range check - limit number of alerts
+            const arrLimitedAlerts = arrAlerts.slice(0, MAX_ALERT_ITEMS);
+
+            // Update alerts section if it exists
+            if (divAlertsSection) {
+                // Clear existing alerts
+                const arrAlertItems = divAlertsSection.querySelectorAll('.alert-item');
+                arrAlertItems.forEach(item => item.remove());
+
+                // Add new alerts
+                arrLimitedAlerts.forEach(objAlert => {
+                    if (objAlert && objAlert.client_name && objAlert.job_date) {
+                        const divAlertItem = document.createElement('div');
+                        divAlertItem.className = 'alert-item';
+                        divAlertItem.textContent = `${objAlert.client_name} was due on ${objAlert.job_date}`;
+                        divAlertsSection.appendChild(divAlertItem);
+                    }
+                });
+
+                // Show/hide alerts section based on content
+                divAlertsSection.style.display = arrLimitedAlerts.length > 0 ? 'block' : 'none';
+            }
+
+            return true;
+        }
+
+        /**
+         * Navigation Button Handler Function
+         * Purpose: Handles navigation button clicks with validation
+         * @param {string} strDestination - Target URL for navigation
+         * @returns {boolean} Success status of navigation
+         */
+        function handleNavigation(strDestination) {
+            // Existence check - ensure destination is provided
+            if (!strDestination || typeof strDestination !== 'string') {
+                console.error('Navigation destination is required');
+                return false;
+            }
+
+            // Type check - ensure valid URL format
+            const arrValidRoutes = ['/quotes', '/calendar', '/clients', '/payments', '/products'];
+            if (!arrValidRoutes.includes(strDestination)) {
+                console.warn(`Invalid navigation route: ${strDestination}`);
+                return false;
+            }
+
+            try {
+                window.location.href = strDestination;
+                return true;
+            } catch (error) {
+                console.error('Navigation failed:', error);
+                return false;
+            }
+        }
+
+        /**
+         * Dashboard Initialization Function
+         * Purpose: Initializes dashboard functionality when page loads
+         * @returns {void}
+         */
+        function initializeDashboard() {
+            // Add click event handlers to navigation buttons
+            if (btnGenerateQuote) {
+                btnGenerateQuote.addEventListener('click', function(eventObject) {
+                    eventObject.preventDefault();
+                    handleNavigation('/quotes');
+                });
+            }
+
+            if (btnViewCalendar) {
+                btnViewCalendar.addEventListener('click', function(eventObject) {
+                    eventObject.preventDefault();
+                    handleNavigation('/calendar');
+                });
+            }
+
+            // Add hover effects to KPI tiles
+            const arrKpiTiles = divKpiGrid ? divKpiGrid.querySelectorAll('.kpi-tile') : [];
+            arrKpiTiles.forEach(divTile => {
+                divTile.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.transition = 'transform 0.2s ease';
+                });
+
+                divTile.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+
+            console.log('Dashboard initialized successfully');
+        }
+
+        /**
+         * Dashboard Event Listeners and Initialization
+         * Purpose: Set up event listeners and initialize dashboard when DOM is ready
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+        });
+
+        // Export functions for potential external use
+        window.dashboardUtils = {
+            formatCurrency,
+            validateKpiData,
+            updateKpiDisplay,
+            displayAlerts,
+            handleNavigation
+        };
+    </script>
 </body>
 </html>
-
-
-
-

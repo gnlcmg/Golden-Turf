@@ -1,13 +1,57 @@
+<!--
+    Payments Page Template
+Purpose:
+    - Comprehensive payments management interface for Golden Turf business system
+    - Dual-view display for invoices and clients with tabbed navigation
+    - Advanced sorting, filtering, and search capabilities
+    - Print functionality for invoices and client lists
+    - CRUD operations for invoice and client management
+
+Template Variables (Jinja2):
+    - invoices (list): Array of invoice objects with id, client_name, status, due_date, etc.
+    - clients (list): Array of client objects with id, client_name, phone, account_type, etc.
+    - url_for('edit_invoice'): Edit invoice endpoint
+    - url_for('delete_invoice'): Delete invoice endpoint
+    - url_for('edit_client'): Edit client endpoint
+    - url_for('delete_client'): Delete client endpoint
+
+Dependencies:
+    - dashboard.css: Base layout and styling
+    - payments.css: Specific payment interface styling
+    - _sidebar.html: Shared navigation sidebar component
+    - Inter font: Modern typography from Google Fonts
+    
+Features:
+    - Responsive tabbed interface (Invoices/Clients)
+    - Advanced table sorting (status, date, name, amount)
+    - Multi-column filtering (status, account type)
+    - Print-optimized styling with media queries
+    - AJAX-powered delete operations
+    - Real-time table manipulation
+    - Mobile-responsive design
+
+Naming Conventions Used:
+    - HTML IDs: snake_case (invoices_section, filter_status)
+    - JavaScript: camelCase (switchTab, printSection, sortTable)
+    - CSS Classes: kebab-case (filter-btn, content-area)
+    - Hungarian Notation: DOM elements (tblInvoices, selSortOptions)
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Payments - Golden Turf</title>
+    <!-- CSS Dependencies -->
+    <!-- ================ -->
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', filename='payments.css') }}" />
     <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
+    
+    <!-- Embedded Styles -->
+    <!-- =============== -->
     <style>
+        /* Print Media Styles for Invoice/Client Reports */
         @media print {
             body, html {
                 background: white !important;
@@ -33,7 +77,7 @@
                 box-shadow: none !important;
                 width: 100% !important;
             }
-            h1#dynamic-heading {
+            h1#dynamic_heading {
                 display: block !important;
                 font-size: 1.5rem !important;
                 margin-top: 0 !important;
@@ -56,6 +100,9 @@
                 page-break-inside: avoid !important;
             }
         }
+        
+        /* General Layout Styles */
+        /* ===================== */
         body { background-color: #f0f8f0; }
         .filters { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
         .filters select { padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; }
@@ -67,6 +114,8 @@
         .content-area { flex: 1; padding: 1rem; }
         .content-area h1 { margin: 0 0 1rem 0; font-size: 1.5rem; }
 
+        /* Responsive Table Styles */
+        /* ======================= */
         .responsive-container {
             max-width: 100vw;
             overflow-x: auto;
@@ -103,16 +152,30 @@
     </style>
 </head>
 <body>
-    <div class="main-wrapper">
+    <!-- Main Application Wrapper -->
+    <!-- ======================== -->
+    <div id="main_wrapper" class="main-wrapper">
+    
+    <!-- Navigation Sidebar Integration -->
+    <!-- ============================= -->
     {% include '_sidebar.html' %}
 
-            <div class="content-area" style="background: linear-gradient(135deg, #006400 50%, #f58220 50%); padding: 2rem; margin-left: 280px; width: calc(100vw - 300px); min-height: 100vh; box-sizing: border-box;">
-                <div class="tab-container" style="max-width: 900px; margin: 0 auto; text-align: center; margin-bottom: 1rem;">
-                    <button id="filter-invoices" class="filter-btn active">Invoices</button>
-                    <button id="filter-clients" class="filter-btn">Clients</button>
+            <!-- Main Content Area -->
+            <!-- ================= -->
+            <div id="content_area" class="content-area" style="background: linear-gradient(135deg, #006400 50%, #f58220 50%); padding: 2rem; margin-left: 280px; width: calc(100vw - 300px); min-height: 100vh; box-sizing: border-box;">
+                
+                <!-- Tab Navigation Container -->
+                <!-- ======================= -->
+                <div id="tab_container" class="tab-container" style="max-width: 900px; margin: 0 auto; text-align: center; margin-bottom: 1rem;">
+                    <button id="filter_invoices" class="filter-btn active" data-tab="invoices">Invoices</button>
+                    <button id="filter_clients" class="filter-btn" data-tab="clients">Clients</button>
                 </div>
-                <div class="filter-buttons" style="max-width: 900px; margin: 0 auto 1rem auto; display: flex; align-items: center; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <select id="sort-invoices">
+                
+                <!-- Filter and Sort Controls -->
+                <!-- ======================== -->
+                <div id="filter_buttons" class="filter-buttons" style="max-width: 900px; margin: 0 auto 1rem auto; display: flex; align-items: center; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <!-- Invoice Sorting and Filtering -->
+                    <select id="sel_sort_invoices" data-validation="sort-option">
                         <option value="status-asc">Status ▲</option>
                         <option value="status-desc">Status ▼</option>
                         <option value="due_date-asc">Due Date ▲</option>
@@ -122,12 +185,14 @@
                         <option value="total-asc">Total Amount ▲</option>
                         <option value="total-desc">Total Amount ▼</option>
                     </select>
-                    <select id="filter-status">
+                    <select id="sel_filter_status" data-validation="status-filter">
                         <option value="all">All</option>
                         <option value="Paid">Paid</option>
                         <option value="Unpaid">Unpaid</option>
                     </select>
-                    <select id="sort-clients" style="display: none;">
+                    
+                    <!-- Client Sorting and Filtering (Hidden by default) -->
+                    <select id="sel_sort_clients" style="display: none;" data-validation="sort-option">
                         <option value="client_name-asc">Name ▲</option>
                         <option value="client_name-desc">Name ▼</option>
                         <option value="account_type-asc">Account Type ▲</option>
@@ -135,59 +200,70 @@
                         <option value="email-asc">Email ▲</option>
                         <option value="email-desc">Email ▼</option>
                     </select>
-                    <select id="filter-account-type" style="display: none;">
+                    <select id="sel_filter_account_type" style="display: none;" data-validation="account-filter">
                         <option value="all">All</option>
                         <option value="Active">Active</option>
                         <option value="Deactivated">Deactivated</option>
                     </select>
                 </div>
+                
+                <!-- Dynamic Page Heading -->
                 <div style="max-width: 900px; margin: 0 auto; text-align: center; margin-bottom: 2rem;">
-                    <h1 id="dynamic-heading" style="color: white; font-size: 2rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Invoices</h1>
+                    <h1 id="dynamic_heading" style="color: white; font-size: 2rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Invoices</h1>
                 </div>
 
-            <div id="invoices-section" class="section" style="max-width: 900px; margin: 0 auto;">
-                <button onclick="printSection('invoices-section')" class="print-hide" style="float:right;margin-bottom:10px;">Print Invoices</button>
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <tr>
-                        <th>Invoice ID</th>
-                        <th>Clients</th>
-                        <th>Status</th>
-                        <th>Due Date</th>
-                        <th>Products</th>
-                        <th>Quantity</th>
-                        <th>Amount</th>
-                        <th>GST</th>
-                        <th>Actions</th>
-                    </tr>
-                    {% for invoice in invoices %}
-                    <tr>
-                        <td>{{ invoice.id }}</td>
-                        <td>{{ invoice.client_name }}</td>
-                        <td>{{ invoice.status }}</td>
-                        <td>{{ invoice.due_date }}</td>
-                        <td>{{ invoice.product }}{% if invoice.extras %}{% for extra in invoice.extras %}<br>{{ extra }}{% endfor %}{% endif %}</td>
-                        <td>{{ invoice.quantity }}</td>
-                        <td>{{ invoice.price }}</td>
-                        <td>{{ "%.2f"|format(invoice.gst) }}</td>
-                        <td>
-                            <a href="{{ url_for('edit_invoice', invoice_id=invoice.id) }}" style="color: black; text-decoration: none; margin-right: 10px; padding: 4px 8px; background: #f0f0f0; border-radius: 4px; border: 1px solid #ccc;">Edit</a>
-                            <form method="POST" action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this invoice?');" class="delete-invoice-form">
-                                <button type="submit" style="background: #ff4757; border: none; color: white; cursor: pointer; text-decoration: none; padding: 4px 8px; border-radius: 4px; margin-left: 5px;">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="9">No invoices found.</td>
-                    </tr>
-                    {% endfor %}
+            <!-- Invoices Data Section -->
+            <div id="invoices_section" class="section" style="max-width: 900px; margin: 0 auto;">
+                <button onclick="printSection('invoices_section')" id="btn_print_invoices" class="print-hide" style="float:right;margin-bottom:10px;">Print Invoices</button>
+                <table id="tbl_invoices" style="width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <thead>
+                        <tr>
+                            <th>Invoice ID</th>
+                            <th>Client</th>
+                            <th>Turf Type</th>
+                            <th>Area (sqm)</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Extras</th>
+                            <th>GST</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr data-invoice-id="{{ invoice[0] }}">
+                            <td>{{ invoice[0] }}</td>
+                            <td>{{ invoice[1] }}</td>
+                            <td>{{ invoice[2] or 'N/A' }}</td>
+                            <td>{{ invoice[3] or 'N/A' }}</td>
+                            <td>{{ invoice[4] }}</td>
+                            <td>{{ invoice[10] }}</td>
+                            <td>{{ invoice[8] or 'None' }}</td>
+                            <td>${{ "%.2f"|format(invoice[5]) }}</td>
+                            <td>${{ "%.2f"|format(invoice[7]) }}</td>
+                            <td>
+                                <a href="{{ url_for('edit_invoice', invoice_id=invoice[0]) }}" class="btn-edit" style="color: black; text-decoration: none; margin-right: 10px; padding: 4px 8px; background: #f0f0f0; border-radius: 4px; border: 1px solid #ccc;">Edit</a>
+                                <form method="POST" action="{{ url_for('delete_invoice', invoice_id=invoice[0]) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this invoice?');" class="frm_delete_invoice">
+                                    <button type="submit" class="btn-delete" style="background: #ff4757; border: none; color: white; cursor: pointer; text-decoration: none; padding: 4px 8px; border-radius: 4px;">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="10">No invoices found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
                 </table>
             </div>
 
-            <div id="clients-section" class="section" style="display: none; max-width: 900px; margin: 0 auto;">
-                <button onclick="printSection('clients-section')" class="print-hide" style="float:right;margin-bottom:10px;">Print Clients</button>
+            <!-- Clients Data Section -->
+            <!-- =================== -->
+            <div id="clients_section" class="section" style="display: none; max-width: 900px; margin: 0 auto;">
+                <button onclick="printSection('clients_section')" id="btn_print_clients" class="print-hide" style="float:right;margin-bottom:10px;">Print Clients</button>
 
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <table id="tbl_clients" style="width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
                     <thead>
                         <tr>
                             <th>Account ID</th>
@@ -202,7 +278,7 @@
                     </thead>
                     <tbody>
                         {% for client in clients %}
-                        <tr>
+                        <tr data-client-id="{{ client.id }}">
                             <td>{{ client.id }}</td>
                             <td>{{ client.client_name }}</td>
                             <td>{{ client.phone }}</td>
@@ -211,9 +287,9 @@
                             <td>{{ client.email or '' }}</td>
                         <td>
                             <div style="display: inline-block; white-space: nowrap;">
-                                <a href="{{ url_for('edit_client', client_id=client.id) }}" style="color: black; text-decoration: none; margin-right: 10px; padding: 4px 8px; background: #f0f0f0; border-radius: 4px; border: 1px solid #ccc; display: inline-block;">Edit</a>
-                                <form method="POST" action="{{ url_for('delete_client', client_id=client.id) }}" style="display: inline-block; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this client?');" class="delete-client-form">
-                                    <button type="submit" style="background: #ff4757; border: none; color: white; cursor: pointer; text-decoration: none; padding: 4px 8px; border-radius: 4px; margin-left: 5px;">Delete</button>
+                                <a href="{{ url_for('edit_client', client_id=client.id) }}" class="btn-edit" style="color: black; text-decoration: none; margin-right: 10px; padding: 4px 8px; background: #f0f0f0; border-radius: 4px; border: 1px solid #ccc; display: inline-block;">Edit</a>
+                                <form method="POST" action="{{ url_for('delete_client', client_id=client.id) }}" style="display: inline-block; margin: 0;" onsubmit="return confirm('Are you sure you want to delete this client?');" class="frm_delete_client">
+                                    <button type="submit" class="btn-delete" style="background: #ff4757; border: none; color: white; cursor: pointer; text-decoration: none; padding: 4px 8px; border-radius: 4px; margin-left: 5px;">Delete</button>
                                 </form>
                             </div>
                         </td>
@@ -232,76 +308,383 @@
     </div>
 
     <script>
-        const filterButtons = document.querySelectorAll('.filter-btn');
-        const sections = document.querySelectorAll('.section');
-        const dynamicHeading = document.getElementById('dynamic-heading');
+        /**
+         * Payments Management Module
+         * Provides tab switching, table sorting, filtering, and print functionality
+         * 
+         * Naming Conventions:
+         * - Variables: camelCase (e.g., filterButtons, currentSection)
+         * - Constants: UPPER_SNAKE_CASE (e.g., PRINT_SECTION_DELAY, TAB_TYPES)
+         * - Functions: camelCase (e.g., switchTab, printSection, sortTable)
+         * - DOM Elements: Hungarian notation (e.g., btnFilterInvoices, tblInvoices)
+         */
 
-        function switchTab(tabId) {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            sections.forEach(section => section.style.display = 'none');
-            if (tabId === 'filter-invoices') {
-                document.getElementById('invoices-section').style.display = 'block';
-                document.getElementById('sort-invoices').style.display = 'inline-block';
-                document.getElementById('filter-status').style.display = 'inline-block';
-                document.getElementById('sort-clients').style.display = 'none';
-                document.getElementById('filter-account-type').style.display = 'none';
-                dynamicHeading.textContent = 'Invoices';
-            } else if (tabId === 'filter-clients') {
-                document.getElementById('clients-section').style.display = 'block';
-                document.getElementById('sort-invoices').style.display = 'none';
-                document.getElementById('filter-status').style.display = 'none';
-                document.getElementById('sort-clients').style.display = 'inline-block';
-                document.getElementById('filter-account-type').style.display = 'inline-block';
-                dynamicHeading.textContent = 'Clients';
-            } else if (tabId === 'filter-quotes') {
-                document.getElementById('quotes-section').style.display = 'block';
-                document.getElementById('sort-invoices').style.display = 'none';
-                document.getElementById('filter-status').style.display = 'none';
-                document.getElementById('sort-clients').style.display = 'none';
-                document.getElementById('filter-account-type').style.display = 'none';
-                dynamicHeading.textContent = 'Quotes';
+        // Module Constants (UPPER_SNAKE_CASE naming convention)
+        const PRINT_SECTION_DELAY = 100;
+        const FADE_TRANSITION_TIME = 300;
+        const TAB_TYPES = {
+            INVOICES: 'invoices',
+            CLIENTS: 'clients',
+            QUOTES: 'quotes'
+        };
+
+        // Element References (Hungarian notation)
+        const arrFilterButtons = document.querySelectorAll('.filter-btn');
+        const arrSections = document.querySelectorAll('.section');
+        const h1DynamicHeading = document.getElementById('dynamic_heading');
+        const btnFilterInvoices = document.getElementById('filter_invoices');
+        const btnFilterClients = document.getElementById('filter_clients');
+        const selSortInvoices = document.getElementById('sel_sort_invoices');
+        const selFilterStatus = document.getElementById('sel_filter_status');
+        const selSortClients = document.getElementById('sel_sort_clients');
+        const selFilterAccountType = document.getElementById('sel_filter_account_type');
+        const divInvoicesSection = document.getElementById('invoices_section');
+        const divClientsSection = document.getElementById('clients_section');
+        const tblInvoices = document.getElementById('tbl_invoices');
+        const tblClients = document.getElementById('tbl_clients');
+
+        /**
+         * Tab Switching Function
+         * ======================
+         * Purpose: Switches between invoice and client views with validation
+         * @param {string} strTabId - ID of the tab button to activate
+         * @returns {boolean} Success status of tab switch operation
+         */
+        function switchTab(strTabId) {
+            // Existence check - ensure tab ID is provided
+            if (!strTabId || typeof strTabId !== 'string') {
+                console.error('Tab ID is required for switching');
+                return false;
             }
+
+            // Clear all active states
+            arrFilterButtons.forEach(btnTab => btnTab.classList.remove('active'));
+            
+            // Find and activate target tab button
+            const btnTargetTab = document.getElementById(strTabId);
+            if (!btnTargetTab) {
+                console.error(`Tab button with ID '${strTabId}' not found`);
+                return false;
+            }
+            btnTargetTab.classList.add('active');
+            
+            // Hide all sections
+            arrSections.forEach(divSection => divSection.style.display = 'none');
+            
+            // Show appropriate section based on tab
+            if (strTabId === 'filter_invoices') {
+                if (divInvoicesSection) {
+                    divInvoicesSection.style.display = 'block';
+                    selSortInvoices.style.display = 'inline-block';
+                    selFilterStatus.style.display = 'inline-block';
+                    selSortClients.style.display = 'none';
+                    selFilterAccountType.style.display = 'none';
+                    h1DynamicHeading.textContent = 'Invoices';
+                }
+            } else if (strTabId === 'filter_clients') {
+                if (divClientsSection) {
+                    divClientsSection.style.display = 'block';
+                    selSortInvoices.style.display = 'none';
+                    selFilterStatus.style.display = 'none';
+                    selSortClients.style.display = 'inline-block';
+                    selFilterAccountType.style.display = 'inline-block';
+                    h1DynamicHeading.textContent = 'Clients';
+                }
+            }
+            
+            return true;
         }
 
-        function printSection(sectionId) {
+        /**
+         * Print Section Function
+         * Purpose: Prints specific section with proper visibility management
+         * @param {string} strSectionId - ID of section to print
+         * @returns {boolean} Success status of print operation
+         */
+        function printSection(strSectionId) {
+            // Existence check - ensure section ID is provided
+            if (!strSectionId || typeof strSectionId !== 'string') {
+                console.error('Section ID is required for printing');
+                return false;
+            }
+
             // Save currently visible section
-            const allSections = document.querySelectorAll('.section');
-            let prevVisible = null;
-            allSections.forEach(section => {
-                if (section.style.display !== 'none') prevVisible = section;
-                section.style.display = 'none';
+            const arrAllSections = document.querySelectorAll('.section');
+            let divPrevVisible = null;
+            
+            arrAllSections.forEach(divSection => {
+                if (divSection.style.display !== 'none') {
+                    divPrevVisible = divSection;
+                }
+                divSection.style.display = 'none';
             });
-            const section = document.getElementById(sectionId);
-            section.style.display = 'block';
-            window.print();
-            // Restore only the previously visible section
-            allSections.forEach(sec => sec.style.display = 'none');
-            if (prevVisible) prevVisible.style.display = 'block';
+            
+            // Show target section for printing
+            const divTargetSection = document.getElementById(strSectionId);
+            if (!divTargetSection) {
+                console.error(`Section with ID '${strSectionId}' not found`);
+                return false;
+            }
+            
+            divTargetSection.style.display = 'block';
+            
+            // Print after small delay
+            setTimeout(() => {
+                window.print();
+                
+                // Restore previous visibility state
+                arrAllSections.forEach(divSection => divSection.style.display = 'none');
+                if (divPrevVisible) {
+                    divPrevVisible.style.display = 'block';
+                }
+            }, PRINT_SECTION_DELAY);
+
+            return true;
         }
 
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                switchTab(button.id);
+        /**
+         * Table Sorting Function
+         * ======================
+         * Purpose: Sorts table data by column with type validation
+         * @param {HTMLElement} tblTable - Table element to sort
+         * @param {number} intColumnIndex - Column index to sort by
+         * @param {boolean} boolIsNumeric - Whether to use numeric sorting
+         * @returns {boolean} Success status of sort operation
+         */
+        function sortTable(tblTable, intColumnIndex, boolIsNumeric = false) {
+            // Existence check - ensure table element exists
+            if (!tblTable || !tblTable.querySelector) {
+                console.error('Valid table element is required');
+                return false;
+            }
+
+            // Type check - ensure column index is valid number
+            if (typeof intColumnIndex !== 'number' || intColumnIndex < 0) {
+                console.error('Valid column index is required');
+                return false;
+            }
+
+            const tbodyElement = tblTable.querySelector('tbody') || tblTable;
+            const arrRows = Array.from(tbodyElement.rows).slice(1); // Skip header row
+            
+            // Range check - ensure rows exist
+            if (arrRows.length === 0) {
+                console.warn('No data rows found to sort');
+                return false;
+            }
+
+            // Sort rows based on column content
+            arrRows.sort((rowA, rowB) => {
+                // Range check - ensure column exists in both rows
+                if (!rowA.cells[intColumnIndex] || !rowB.cells[intColumnIndex]) {
+                    return 0;
+                }
+                
+                const strValueA = rowA.cells[intColumnIndex].textContent.trim();
+                const strValueB = rowB.cells[intColumnIndex].textContent.trim();
+                
+                if (boolIsNumeric) {
+                    const fltValueA = parseFloat(strValueA) || 0;
+                    const fltValueB = parseFloat(strValueB) || 0;
+                    return fltValueA - fltValueB;
+                } else {
+                    return strValueA.localeCompare(strValueB);
+                }
+            });
+            
+            // Append sorted rows back to table
+            arrRows.forEach(rowElement => tbodyElement.appendChild(rowElement));
+            return true;
+        }
+
+        /**
+         * Table Filtering Function
+         * Purpose: Filters table rows based on column value
+         * @param {HTMLElement} tblTable - Table element to filter
+         * @param {number} intColumnIndex - Column index to filter by
+         * @param {string} strFilterValue - Value to filter for
+         * @returns {boolean} Success status of filter operation
+         */
+        function filterTable(tblTable, intColumnIndex, strFilterValue) {
+            // Existence check - ensure table element exists
+            if (!tblTable || !tblTable.querySelector) {
+                console.error('Valid table element is required');
+                return false;
+            }
+
+            // Type checks
+            if (typeof intColumnIndex !== 'number' || intColumnIndex < 0) {
+                console.error('Valid column index is required');
+                return false;
+            }
+
+            if (typeof strFilterValue !== 'string') {
+                console.error('Filter value must be a string');
+                return false;
+            }
+
+            const tbodyElement = tblTable.querySelector('tbody') || tblTable;
+            const arrRows = Array.from(tbodyElement.rows).slice(1); // Skip header row
+            
+            // Apply filter to each row
+            arrRows.forEach(rowElement => {
+                // Range check - ensure column exists
+                if (!rowElement.cells[intColumnIndex]) {
+                    rowElement.style.display = 'none';
+                    return;
+                }
+                
+                const strCellValue = rowElement.cells[intColumnIndex].textContent.trim();
+                
+                if (strFilterValue === 'all' || strCellValue === strFilterValue) {
+                    rowElement.style.display = '';
+                } else {
+                    rowElement.style.display = 'none';
+                }
+            });
+
+            return true;
+        }
+
+        /**
+         * Delete Form Validation Function
+         * ===============================
+         * Purpose: Validates delete operation with confirmation
+         * @param {string} strItemType - Type of item being deleted (client/invoice)
+         * @param {string} strItemId - ID of item being deleted
+         * @returns {boolean} Whether deletion should proceed
+         */
+        function validateDeleteOperation(strItemType, strItemId) {
+            // Type checks
+            if (!strItemType || typeof strItemType !== 'string') {
+                console.error('Item type is required for delete validation');
+                return false;
+            }
+
+            if (!strItemId || (typeof strItemId !== 'string' && typeof strItemId !== 'number')) {
+                console.error('Item ID is required for delete validation');
+                return false;
+            }
+
+            // Existence check - valid item types
+            const arrValidTypes = ['client', 'invoice'];
+            if (!arrValidTypes.includes(strItemType.toLowerCase())) {
+                console.error(`Invalid item type: ${strItemType}`);
+                return false;
+            }
+
+            // Confirmation dialog
+            const boolConfirmed = confirm(`Are you sure you want to delete this ${strItemType}?`);
+            return boolConfirmed;
+        }
+
+        /**
+         * Event Listeners Setup
+         * Purpose: Initialize all event handlers with validation
+         */
+
+        // Tab switching event handlers
+        arrFilterButtons.forEach(btnElement => {
+            btnElement.addEventListener('click', () => {
+                const boolSwitchSuccess = switchTab(btnElement.id);
+                if (!boolSwitchSuccess) {
+                    console.error('Failed to switch tab');
+                }
             });
         });
 
-        // Check URL hash on page load and switch to clients tab if #clients
-        if (window.location.hash === '#clients') {
-            switchTab('filter-clients');
-        } else if (window.location.hash === '#invoices') {
-            switchTab('filter-invoices');
+        // Invoice sorting event handler
+        if (selSortInvoices) {
+            selSortInvoices.addEventListener('change', function() {
+                const strSortBy = this.value;
+                let intColumnIndex;
+                let boolIsNumeric = false;
+                
+                // Map sort options to column indices
+                switch (strSortBy) {
+                    case 'status-asc': 
+                    case 'status-desc': intColumnIndex = 2; break;
+                    case 'due_date-asc': 
+                    case 'due_date-desc': intColumnIndex = 3; break;
+                    case 'client_name-asc': 
+                    case 'client_name-desc': intColumnIndex = 1; break;
+                    case 'total-asc': 
+                    case 'total-desc': intColumnIndex = 6; boolIsNumeric = true; break;
+                    default: intColumnIndex = 0;
+                }
+                
+                if (tblInvoices && sortTable(tblInvoices, intColumnIndex, boolIsNumeric)) {
+                    // Reverse for descending order
+                    if (strSortBy.endsWith('-desc')) {
+                        const tbodyElement = tblInvoices.querySelector('tbody') || tblInvoices;
+                        const arrRows = Array.from(tbodyElement.rows).slice(1);
+                        arrRows.reverse().forEach(rowElement => tbodyElement.appendChild(rowElement));
+                    }
+                }
+            });
         }
 
-        // Add event listener to delete client forms to prevent redirect and refresh list dynamically
-        document.querySelectorAll('.delete-client-form').forEach(form => {
-            form.addEventListener('submit', function(event) {
-                event.preventDefault();
-                if (!confirm('Are you sure you want to delete this client?')) {
+        // Invoice filtering event handler
+        if (selFilterStatus) {
+            selFilterStatus.addEventListener('change', function() {
+                const strFilterValue = this.value;
+                if (tblInvoices) {
+                    filterTable(tblInvoices, 2, strFilterValue); // Status column
+                }
+            });
+        }
+
+        // Client sorting event handler
+        if (selSortClients) {
+            selSortClients.addEventListener('change', function() {
+                const strSortBy = this.value;
+                let intColumnIndex;
+                
+                switch (strSortBy) {
+                    case 'client_name-asc': 
+                    case 'client_name-desc': intColumnIndex = 1; break;
+                    case 'account_type-asc': 
+                    case 'account_type-desc': intColumnIndex = 3; break;
+                    case 'email-asc': 
+                    case 'email-desc': intColumnIndex = 5; break;
+                    default: intColumnIndex = 1;
+                }
+                
+                if (tblClients && sortTable(tblClients, intColumnIndex)) {
+                    // Reverse for descending order
+                    if (strSortBy.endsWith('-desc')) {
+                        const tbodyElement = tblClients.querySelector('tbody') || tblClients;
+                        const arrRows = Array.from(tbodyElement.rows).slice(1);
+                        arrRows.reverse().forEach(rowElement => tbodyElement.appendChild(rowElement));
+                    }
+                }
+            });
+        }
+
+        // Client filtering event handler
+        if (selFilterAccountType) {
+            selFilterAccountType.addEventListener('change', function() {
+                const strFilterValue = this.value;
+                if (tblClients) {
+                    filterTable(tblClients, 3, strFilterValue); // Account type column
+                }
+            });
+        }
+
+        // Delete form handlers with AJAX and validation
+        document.querySelectorAll('.frm_delete_client').forEach(frmElement => {
+            frmElement.addEventListener('submit', function(eventObject) {
+                eventObject.preventDefault();
+                
+                // Get client ID from data attribute or form action
+                const strClientId = this.closest('tr').dataset.clientId || 'unknown';
+                
+                if (!validateDeleteOperation('client', strClientId)) {
                     return;
                 }
-                const action = this.action;
-                fetch(action, {
+                
+                const strAction = this.action;
+                fetch(strAction, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
@@ -310,7 +693,6 @@
                     body: new URLSearchParams(new FormData(this))
                 }).then(response => {
                     if (response.ok) {
-                        // Reload the clients section without full page reload
                         location.reload();
                     } else {
                         alert('Failed to delete client.');
@@ -321,106 +703,22 @@
             });
         });
 
-        // Sorting and filtering functions
-        function sortTable(table, columnIndex, isNumeric = false) {
-            const tbody = table.querySelector('tbody') || table;
-            const rows = Array.from(tbody.rows).slice(1); // Skip header row
-            rows.sort((a, b) => {
-                const aVal = a.cells[columnIndex].textContent.trim();
-                const bVal = b.cells[columnIndex].textContent.trim();
-                if (isNumeric) {
-                    return parseFloat(aVal) - parseFloat(bVal);
-                } else {
-                    return aVal.localeCompare(bVal);
-                }
-            });
-            rows.forEach(row => tbody.appendChild(row));
-        }
-
-        function filterTable(table, columnIndex, filterValue) {
-            const tbody = table.querySelector('tbody') || table;
-            const rows = Array.from(tbody.rows).slice(1); // Skip header row
-            rows.forEach(row => {
-                const cellValue = row.cells[columnIndex].textContent.trim();
-                if (filterValue === 'all' || cellValue === filterValue) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-
-        // Invoices sorting and filtering
-        document.getElementById('sort-invoices').addEventListener('change', function() {
-            const table = document.querySelector('#invoices-section table');
-            const sortBy = this.value;
-            let columnIndex;
-            let isNumeric = false;
-            switch (sortBy) {
-                case 'status-asc': columnIndex = 1; break;
-                case 'status-desc': columnIndex = 1; break;
-                case 'due_date-asc': columnIndex = 2; break;
-                case 'due_date-desc': columnIndex = 2; break;
-                case 'client_name-asc': columnIndex = 0; break;
-                case 'client_name-desc': columnIndex = 0; break;
-                case 'total-asc': columnIndex = 5; isNumeric = true; break;
-                case 'total-desc': columnIndex = 5; isNumeric = true; break;
-                default: columnIndex = 0;
+        /**
+         * Page Initialization
+         * ==================
+         * Purpose: Set up page based on URL hash and initialize default state
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check URL hash and switch to appropriate tab
+            const strHashValue = window.location.hash;
+            if (strHashValue === '#clients') {
+                switchTab('filter_clients');
+            } else if (strHashValue === '#invoices') {
+                switchTab('filter_invoices');
+            } else {
+                // Default to invoices tab
+                switchTab('filter_invoices');
             }
-            sortTable(table, columnIndex, isNumeric);
-
-            // For descending order, reverse the rows
-            if (sortBy.endsWith('-desc')) {
-                const tbody = table.querySelector('tbody') || table;
-                const rows = Array.from(tbody.rows).slice(1);
-                rows.reverse().forEach(row => tbody.appendChild(row));
-            }
-        });
-
-        document.getElementById('filter-status').addEventListener('change', function() {
-            const table = document.querySelector('#invoices-section table');
-            const filterValue = this.value;
-            filterTable(table, 1, filterValue);
-        });
-
-        // Add filtering for client name in invoices
-        document.getElementById('filter-client-name')?.addEventListener('change', function() {
-            const table = document.querySelector('#invoices-section table');
-            const filterValue = this.value;
-            filterTable(table, 0, filterValue);
-        });
-
-        // Add filtering for account type in clients
-        document.getElementById('filter-account-type').addEventListener('change', function() {
-            const table = document.querySelector('#clients-section table');
-            const filterValue = this.value;
-            filterTable(table, 3, filterValue);
-        });
-
-        // Add filtering for client name in clients
-        document.getElementById('filter-client-name-clients')?.addEventListener('change', function() {
-            const table = document.querySelector('#clients-section table');
-            const filterValue = this.value;
-            filterTable(table, 1, filterValue);
-        });
-
-        // Clients sorting and filtering
-        document.getElementById('sort-clients').addEventListener('change', function() {
-            const table = document.querySelector('#clients-section table');
-            const sortBy = this.value;
-            let columnIndex;
-            switch (sortBy) {
-                case 'client_name': columnIndex = 1; break;
-                case 'account_type': columnIndex = 3; break;
-                case 'email': columnIndex = 5; break;
-            }
-            sortTable(table, columnIndex);
-        });
-
-        document.getElementById('filter-account-type').addEventListener('change', function() {
-            const table = document.querySelector('#clients-section table');
-            const filterValue = this.value;
-            filterTable(table, 3, filterValue);
         });
     </script>
 </body>

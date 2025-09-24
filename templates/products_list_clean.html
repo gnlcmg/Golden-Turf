@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Products List</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    
+    <style>
+        .sidebar div[style*="position: absolute; bottom: 70px"] {
+            bottom: 66px !important;
+        }
+        
+        .products-list-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .products-list-table th, .products-list-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .products-list-table th {
+            background-color: #006400;
+            color: white;
+        }
+        
+        .products-title {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #f58220 0%, #006400 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        @supports not (-webkit-background-clip: text) {
+            .products-title {
+                color: #006400;
+                text-shadow: 2px 2px 4px rgba(245, 130, 32, 0.3);
+            }
+        }
+    </style>
+</head>
+<body style="margin:0;">
+    {% include '_sidebar.html' %}
+    
+    <div id="main_content" class="main-content" style="margin-left: 280px; color:#222; padding:48px 24px 48px 24px; width: calc(100vw - 300px); background:#fff; min-height:100vh; box-sizing:border-box;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div id="flash_messages_container">
+                    {% for category, message in messages %}
+                        <div class="flash-message" style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px 0; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div id="products_title" class="products-title" style="text-align:center; font-size:3.5em; font-weight:bold; margin:30px 0 40px 0; color: #FFA726;">Products</div>
+        
+        <div id="products_table_container" style="overflow-x:auto;">
+            <form id="frm_products_management" method="POST" action="{{ url_for('products_list') }}">
+                <table id="tbl_products_list" class="products-list-table" style="min-width: 700px;">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Description</th>
+                            <th>Stock</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Bamboo Products -->
+                        <tr data-product="bamboo_24m">
+                            <td>Bamboo 2.4m</td>
+                            <td>Longer, for fencing/screens</td>
+                            <td><input type="number" name="bamboo_24m_stock" value="{{ bamboo_24m_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="bamboo_24m_price" value="{{ bamboo_24m_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        <tr data-product="bamboo_2m">
+                            <td>Bamboo 2.0m</td>
+                            <td>Standard length</td>
+                            <td><input type="number" name="bamboo_2m_stock" value="{{ bamboo_2m_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="bamboo_2m_price" value="{{ bamboo_2m_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        <tr data-product="bamboo_18m">
+                            <td>Bamboo 1.8m</td>
+                            <td>Shorter, for borders/edging</td>
+                            <td><input type="number" name="bamboo_18m_stock" value="{{ bamboo_18m_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="bamboo_18m_price" value="{{ bamboo_18m_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        
+                        <!-- Pebbles Products -->
+                        <tr data-product="pebbles_black">
+                            <td>Black Pebbles (20kg bag)</td>
+                            <td>Decorative pebbles</td>
+                            <td><input type="number" name="pebbles_black_stock" value="{{ pebbles_black_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="pebbles_black_price" value="{{ pebbles_black_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        <tr data-product="pebbles_white">
+                            <td>White Pebbles (20kg bag)</td>
+                            <td>Decorative pebbles</td>
+                            <td><input type="number" name="pebbles_white_stock" value="{{ pebbles_white_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="pebbles_white_price" value="{{ pebbles_white_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        
+                        <!-- Fountains -->
+                        <tr data-product="fountain">
+                            <td>Fountains</td>
+                            <td>Custom water features for premium landscaping projects</td>
+                            <td><input type="number" name="fountain_stock" value="{{ fountain_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="text" name="fountain_price" value="{{ fountain_price }}" style="width:80px;"></td>
+                        </tr>
+
+                        <!-- Premium Turf Products -->
+                        <tr data-product="premium">
+                            <td>Golden Premium Turf</td>
+                            <td>Premium synthetic turf designed for a lush, natural look</td>
+                            <td><input type="number" name="premium_stock" value="{{ premium_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="premium_price" value="{{ premium_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        <tr data-product="green_lush">
+                            <td>Golden Green Lush</td>
+                            <td>Artificial grass with vibrant green color, ideal for backyards</td>
+                            <td><input type="number" name="green_lush_stock" value="{{ green_lush_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="green_lush_price" value="{{ green_lush_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        <tr data-product="natural_40mm">
+                            <td>Golden Natural 40mm</td>
+                            <td>Realistic 40mm pile height turf, perfect for residential lawns</td>
+                            <td><input type="number" name="natural_40mm_stock" value="{{ natural_40mm_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="natural_40mm_price" value="{{ natural_40mm_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        <tr data-product="golf_turf">
+                            <td>Golden Golf Turf</td>
+                            <td>Specially crafted for golf putting and chipping</td>
+                            <td><input type="number" name="golf_turf_stock" value="{{ golf_turf_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="golf_turf_price" value="{{ golf_turf_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        <tr data-product="imperial_lush">
+                            <td>Golden Imperial Lush</td>
+                            <td>High-grade synthetic grass for premium landscaping projects</td>
+                            <td><input type="number" name="imperial_lush_stock" value="{{ imperial_lush_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="imperial_lush_price" value="{{ imperial_lush_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        
+                        <!-- Accessory Products -->
+                        <tr data-product="pegs">
+                            <td>Pegs (U-Pins/Nails)</td>
+                            <td>Used for securing turf</td>
+                            <td><input type="number" name="pegs_stock" value="{{ pegs_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="pegs_price" value="{{ pegs_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        <tr data-product="artificial_hedges">
+                            <td>Artificial Hedges (per 50cm x 50cm)</td>
+                            <td>Hedges for decoration</td>
+                            <td><input type="number" name="artificial_hedges_stock" value="{{ artificial_hedges_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="artificial_hedges_price" value="{{ artificial_hedges_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                        <tr data-product="adhesive_tape">
+                            <td>Adhesive Joining Tape (15m)</td>
+                            <td>Tape for joining turf</td>
+                            <td><input type="number" name="adhesive_tape_stock" value="{{ adhesive_tape_stock }}" min="0" style="width:60px;"></td>
+                            <td><input type="number" name="adhesive_tape_price" value="{{ adhesive_tape_price }}" step="0.01" style="width:80px;"></td>
+                        </tr>
+                    </tbody>
+                </table>
+        
+                <div style="text-align: center; margin: 20px 0;">
+                    <button type="submit" style="background-color: #006400; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

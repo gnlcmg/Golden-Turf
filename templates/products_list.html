@@ -1,248 +1,204 @@
-<!D    <title>Products List</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
-    <style>
-        /* Push sidebar bottom section down by 4px on products page */
-        .sidebar div[style*="position: absolute; bottom: 70px"] {
-            bottom: 66px !important;
-        }
-    </style>tml>
+<!--
+File: templates/products_list.html
+Purpose:
+    - Product inventory management interface for Golden Turf business system
+    - Interactive table with stock and pricing controls for all product categories
+    - Real-time form submission for inventory updates
+
+Template Variables (Jinja2):
+    - Product stock variables: bamboo_24m_stock, bamboo_2m_stock, pebbles_black_stock, etc.
+    - Product price variables: bamboo_24m_price, premium_price, fountain_price, etc.
+    - get_flashed_messages(): Flask flash messaging system for feedback
+    - url_for('products_list'): Form action endpoint for product updates
+
+Dependencies:
+    - dashboard.css: Base layout and styling
+    - _sidebar.html: Shared navigation sidebar component
+    
+Features:
+    - Interactive product table with editable stock/price fields
+    - Flash message display for form feedback
+    - Responsive design with horizontal scroll for large tables
+    - Custom gradient styling for product title
+
+Product Categories:
+    - Bamboo Products: Various lengths (1.8m, 2.0m, 2.4m)
+    - Pebbles: Black and white decorative stones
+    - Fountains: Custom water features
+    - Premium Turf: Multiple synthetic grass varieties
+    - Accessories: Pegs, hedges, adhesive tape
+
+Naming Conventions Used:
+    - HTML IDs: snake_case (products_table)
+    - camelCase for JavaScript functions
+    - CSS Classes: kebab-case (products-list-table)
+    - Hungarian Notation: DOM elements (tblProducts)
+-->
+<!DOCTYPE html>
 <html>
 <head>
     <title>Products List</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    
+    <!-- Custom Styles -->
     <style>
-        /* Push sidebar bottom section down by 2px on products page */
+        /* Sidebar Adjustment for Products Page */
         .sidebar div[style*="position: absolute; bottom: 70px"] {
-            bottom: 68px !important;
+            bottom: 66px !important;
         }
     </style>
 </head>
 <body style="margin:0;">
+    <!-- Navigation Sidebar Integration -->
     {% include '_sidebar.html' %}
-    <div class="main-content" style="margin-left: 280px; color:#222; padding:48px 24px 48px 24px; width: calc(100vw - 300px); background:#fff; min-height:100vh; box-sizing:border-box;">
-        <div class="products-list-header">
+    
+    <!-- Main Content Area -->
+    <div id="main_content" class="main-content" style="margin-left: 280px; color:#222; padding:48px 24px 48px 24px; width: calc(100vw - 300px); background:#fff; min-height:100vh; box-sizing:border-box;">
+        
+        <!-- Products List Header Section -->
+        <div id="products_list_header" class="products-list-header">
             <!-- Logo already in sidebar -->
         </div>
         
-        <!-- Flash messages -->
+        <!-- Flash Messages Display -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    <div style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px 0; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
-                        {{ message }}
-                    </div>
-                {% endfor %}
+                <div id="flash_messages_container">
+                    {% for category, message in messages %}
+                        <div class="flash-message" style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px 0; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
         {% endwith %}
         
-        <div class="products-title" style="text-align:center; font-size:3.5em; font-weight:bold; margin:30px 0 40px 0; color: #FFA726;">Products</div>
-        <div style="overflow-x:auto;">
-        <form method="POST" action="{{ url_for('products_list') }}">
-        <table class="products-list-table" style="min-width: 900px;">
-            <tr>
-                <th>Product Name</th>
-                <th>Description</th>
-                <th>Stock</th>
-                <th>Price</th>
-                <th>Image</th>
-            </tr>
-            <!-- Bamboo Products -->
-            <tr>
-                <td>Bamboo 2.4m</td>
-                <td>Longer, for fencing/screens</td>
-                <td><input type="number" name="bamboo_24m_stock" value="{{ bamboo_24m_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="bamboo_24m_price" value="{{ bamboo_24m_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ bamboo_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ bamboo_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>Bamboo 2.0m</td>
-                <td>Standard length</td>
-                <td><input type="number" name="bamboo_2m_stock" value="{{ bamboo_2m_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="bamboo_2m_price" value="{{ bamboo_2m_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ bamboo_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ bamboo_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>Bamboo 1.8m</td>
-                <td>Shorter, for borders/edging</td>
-                <td><input type="number" name="bamboo_18m_stock" value="{{ bamboo_18m_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="bamboo_18m_price" value="{{ bamboo_18m_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ bamboo_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ bamboo_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <!-- Pebbles Products -->
-            <tr>
-                <td>Black Pebbles (20kg bag)</td>
-                <td>Decorative pebbles</td>
-                <td><input type="number" name="pebbles_black_stock" value="{{ pebbles_black_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="pebbles_black_price" value="{{ pebbles_black_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ pebbles_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ pebbles_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>White Pebbles (20kg bag)</td>
-                <td>Decorative pebbles</td>
-                <td><input type="number" name="pebbles_white_stock" value="{{ pebbles_white_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="pebbles_white_price" value="{{ pebbles_white_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ pebbles_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ pebbles_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <!-- Fountains Row -->
-            <tr>
-                <td>Fountains</td>
-                <td>Custom water features for premium landscaping projects</td>
-                <td><input type="number" name="fountain_stock" value="{{ fountain_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="text" name="fountain_price" value="{{ fountain_price }}" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ fountain_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ fountain_images[0] }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
+        <!-- Products Page Title -->
+        <div id="products_title" class="products-title" style="text-align:center; font-size:3.5em; font-weight:bold; margin:30px 0 40px 0; color: #FFA726;">Products</div>
+        
+        <!-- Products Table Container -->
+        <div id="products_table_container" style="overflow-x:auto;">
+            
+            <!-- Products Management Form -->
+            <form id="frm_products_management" method="POST" action="{{ url_for('products_list') }}">
+                
+                <!-- Main Products Table -->
+                <table id="tbl_products_list" class="products-list-table" style="min-width: 900px;">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Description</th>
+                            <th>Stock</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Bamboo Products Section -->
+                        <tr data-product="bamboo_24m">
+                            <td>Bamboo 2.4m</td>
+                            <td>Longer, for fencing/screens</td>
+                            <td><input id="inp_bamboo_24m_stock" type="number" name="bamboo_24m_stock" value="{{ bamboo_24m_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_bamboo_24m_price" type="number" name="bamboo_24m_price" value="{{ bamboo_24m_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        <tr data-product="bamboo_2m">
+                            <td>Bamboo 2.0m</td>
+                            <td>Standard length</td>
+                            <td><input id="inp_bamboo_2m_stock" type="number" name="bamboo_2m_stock" value="{{ bamboo_2m_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_bamboo_2m_price" type="number" name="bamboo_2m_price" value="{{ bamboo_2m_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        <tr data-product="bamboo_18m">
+                            <td>Bamboo 1.8m</td>
+                            <td>Shorter, for borders/edging</td>
+                            <td><input id="inp_bamboo_18m_stock" type="number" name="bamboo_18m_stock" value="{{ bamboo_18m_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_bamboo_18m_price" type="number" name="bamboo_18m_price" value="{{ bamboo_18m_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        
+                        <!-- Pebbles Products Section -->
+                        <tr data-product="pebbles_black">
+                            <td>Black Pebbles (20kg bag)</td>
+                            <td>Decorative pebbles</td>
+                            <td><input id="inp_pebbles_black_stock" type="number" name="pebbles_black_stock" value="{{ pebbles_black_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_pebbles_black_price" type="number" name="pebbles_black_price" value="{{ pebbles_black_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        <tr data-product="pebbles_white">
+                            <td>White Pebbles (20kg bag)</td>
+                            <td>Decorative pebbles</td>
+                            <td><input id="inp_pebbles_white_stock" type="number" name="pebbles_white_stock" value="{{ pebbles_white_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_pebbles_white_price" type="number" name="pebbles_white_price" value="{{ pebbles_white_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        
+                        <!-- Fountains Product Section -->
+                        <tr data-product="fountain">
+                            <td>Fountains</td>
+                            <td>Custom water features for premium landscaping projects</td>
+                            <td><input id="inp_fountain_stock" type="number" name="fountain_stock" value="{{ fountain_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_fountain_price" type="text" name="fountain_price" value="{{ fountain_price }}" style="width:80px;" data-validation="custom-price"></td>
+                        </tr>
 
-            <!-- Premium Turf Products -->
-            <tr>
-                <td>Golden Premium Turf</td>
-                <td>Premium synthetic turf designed for a lush, natural look</td>
-                <td><input type="number" name="premium_stock" value="{{ premium_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="premium_price" value="{{ premium_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ premium_turf_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ premium_turf_images[0] if premium_turf_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>Golden Green Lush</td>
-                <td>Artificial grass with vibrant green color, ideal for backyards</td>
-                <td><input type="number" name="green_lush_stock" value="{{ green_lush_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="green_lush_price" value="{{ green_lush_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ green_lush_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ green_lush_images[0] if green_lush_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>Golden Natural 40mm</td>
-                <td>Realistic 40mm pile height turf, perfect for residential lawns</td>
-                <td><input type="number" name="natural_40mm_stock" value="{{ natural_40mm_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="natural_40mm_price" value="{{ natural_40mm_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ natural_40mm_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ natural_40mm_images[0] if natural_40mm_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>Golden Golf Turf</td>
-                <td>Specially crafted for golf putting and chipping</td>
-                <td><input type="number" name="golf_turf_stock" value="{{ golf_turf_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="golf_turf_price" value="{{ golf_turf_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ golf_turf_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ golf_turf_images[0] if golf_turf_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>Golden Imperial Lush</td>
-                <td>High-grade synthetic grass for premium landscaping projects</td>
-                <td><input type="number" name="imperial_lush_stock" value="{{ imperial_lush_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="imperial_lush_price" value="{{ imperial_lush_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ imperial_lush_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ imperial_lush_images[0] if imperial_lush_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <!-- Accessory Products -->
-            <tr>
-                <td>Pegs (U-Pins/Nails)</td>
-                <td>Used for securing turf</td>
-                <td><input type="number" name="pegs_stock" value="{{ pegs_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="pegs_price" value="{{ pegs_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ peg_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ peg_images[0] if peg_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>Artificial Hedges (per 50cm x 50cm)</td>
-                <td>Hedges for decoration</td>
-                <td><input type="number" name="artificial_hedges_stock" value="{{ artificial_hedges_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="artificial_hedges_price" value="{{ artificial_hedges_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ artificial_hedges_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ artificial_hedges_images[0] if artificial_hedges_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>Adhesive Joining Tape (15m)</td>
-                <td>Tape for joining turf</td>
-                <td><input type="number" name="adhesive_tape_stock" value="{{ adhesive_tape_stock }}" min="0" style="width:60px;"></td>
-                <td><input type="number" name="adhesive_tape_price" value="{{ adhesive_tape_price }}" step="0.01" style="width:80px;"></td>
-                <td>
-                    <div class="image-slider" data-images='{{ tape_images|tojson }}'>
-                        <button type="button" class="img-arrow" onclick="prevImage(this)">&#8592;</button>
-                        <img src="{{ tape_images[0] if tape_images else '/static/logo.png' }}" style="max-width:100px; max-height:60px;" class="slider-img">
-                        <button type="button" class="img-arrow" onclick="nextImage(this)">&#8594;</button>
-                    </div>
-                </td>
-            </tr>
-        </table>
+                        <!-- Premium Turf Products Section -->
+                        <tr data-product="premium">
+                            <td>Golden Premium Turf</td>
+                            <td>Premium synthetic turf designed for a lush, natural look</td>
+                            <td><input id="inp_premium_stock" type="number" name="premium_stock" value="{{ premium_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_premium_price" type="number" name="premium_price" value="{{ premium_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        <tr data-product="green_lush">
+                            <td>Golden Green Lush</td>
+                            <td>Artificial grass with vibrant green color, ideal for backyards</td>
+                            <td><input id="inp_green_lush_stock" type="number" name="green_lush_stock" value="{{ green_lush_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_green_lush_price" type="number" name="green_lush_price" value="{{ green_lush_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        <tr data-product="natural_40mm">
+                            <td>Golden Natural 40mm</td>
+                            <td>Realistic 40mm pile height turf, perfect for residential lawns</td>
+                            <td><input id="inp_natural_40mm_stock" type="number" name="natural_40mm_stock" value="{{ natural_40mm_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_natural_40mm_price" type="number" name="natural_40mm_price" value="{{ natural_40mm_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        <tr data-product="golf_turf">
+                            <td>Golden Golf Turf</td>
+                            <td>Specially crafted for golf putting and chipping</td>
+                            <td><input id="inp_golf_turf_stock" type="number" name="golf_turf_stock" value="{{ golf_turf_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_golf_turf_price" type="number" name="golf_turf_price" value="{{ golf_turf_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        <tr data-product="imperial_lush">
+                            <td>Golden Imperial Lush</td>
+                            <td>High-grade synthetic grass for premium landscaping projects</td>
+                            <td><input id="inp_imperial_lush_stock" type="number" name="imperial_lush_stock" value="{{ imperial_lush_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_imperial_lush_price" type="number" name="imperial_lush_price" value="{{ imperial_lush_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        
+                        <!-- Accessory Products Section -->
+                        <tr data-product="pegs">
+                            <td>Pegs (U-Pins/Nails)</td>
+                            <td>Used for securing turf</td>
+                            <td><input id="inp_pegs_stock" type="number" name="pegs_stock" value="{{ pegs_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_pegs_price" type="number" name="pegs_price" value="{{ pegs_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        <tr data-product="artificial_hedges">
+                            <td>Artificial Hedges (per 50cm x 50cm)</td>
+                            <td>Hedges for decoration</td>
+                            <td><input id="inp_artificial_hedges_stock" type="number" name="artificial_hedges_stock" value="{{ artificial_hedges_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_artificial_hedges_price" type="number" name="artificial_hedges_price" value="{{ artificial_hedges_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                        <tr data-product="adhesive_tape">
+                            <td>Adhesive Joining Tape (15m)</td>
+                            <td>Tape for joining turf</td>
+                            <td><input id="inp_adhesive_tape_stock" type="number" name="adhesive_tape_stock" value="{{ adhesive_tape_stock }}" min="0" style="width:60px;" data-validation="stock"></td>
+                            <td><input id="inp_adhesive_tape_price" type="number" name="adhesive_tape_price" value="{{ adhesive_tape_price }}" step="0.01" style="width:80px;" data-validation="price"></td>
+                        </tr>
+                    </tbody>
+                </table>
         
-        <div style="text-align: center; margin: 20px 0;">
-            <button type="submit" style="background-color: #006400; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                Save Changes
-            </button>
+                <!-- Form Submit Button Section -->
+                <div id="submit_button_container" style="text-align: center; margin: 20px 0;">
+                    <button id="btn_save_changes" type="submit" style="background-color: #006400; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                        Save Changes
+                    </button>
+                </div>
+        
+            </form>
         </div>
-        
-        </form>
 
         <style>
             /* Make Actions column bold in tables on products and clients tabs */
@@ -261,21 +217,12 @@
                 padding: 8px;
                 text-align: left;
             }
-            .products-list-table th:last-child, .products-list-table td:last-child {
-                width: 180px;
-                text-align: center;
-            }
+
             .products-list-table th {
                 background-color: #006400;
                 color: white;
             }
-            
-            /* Smaller table images */
-            .slider-img {
-                max-width: 75px !important; 
-                max-height: 45px !important; 
-                object-fit: cover !important;
-            }
+
             
             /* Enhanced gradient heading */
             .products-title {
@@ -295,211 +242,126 @@
                     text-shadow: 2px 2px 4px rgba(245, 130, 32, 0.3);
                 }
             }
-            
-            /* Image slider styles */
-            .image-slider {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                justify-content: center;
-                min-height: 100px;
-                padding: 5px;
-            }
-            .img-arrow {
-                background: #006400;
-                color: white;
-                border: none;
-                padding: 5px 10px;
-                cursor: pointer;
-                border-radius: 3px;
-                font-size: 14px;
-            }
-            .img-arrow:hover {
-                background: #004d00;
-            }
-            .slider-img {
-                cursor: pointer;
-                transition: opacity 0.3s ease;
-                max-width: 150px !important;
-                max-height: 90px !important;
-                width: auto;
-                height: auto;
-            }
-            .slider-img:hover {
-                opacity: 0.8;
-            }
-            
-            /* Modal styles */
-            .image-modal {
-                display: none;
-                position: fixed;
-                z-index: 1000;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0,0,0,0.8);
-            }
-            .modal-content {
-                position: relative;
-                margin: auto;
-                display: block;
-                width: 60%;
-                max-width: 600px;
-                max-height: 70vh;
-                margin-top: 8%;
-            }
-            .modal-img {
-                width: 100%;
-                height: auto;
-                max-height: 70vh;
-                object-fit: contain;
-                border-radius: 5px;
-            }
-            .modal-close {
-                position: absolute;
-                top: 15px;
-                right: 35px;
-                color: #fff;
-                font-size: 40px;
-                font-weight: bold;
-                cursor: pointer;
-            }
-            .modal-close:hover {
-                color: #ccc;
-            }
-            .modal-nav {
-                position: absolute;
-                top: 50%;
-                transform: translateY(-50%);
-                background: rgba(0,100,0,0.8);
-                color: white;
-                border: none;
-                padding: 10px 15px;
-                cursor: pointer;
-                font-size: 20px;
-                border-radius: 5px;
-            }
-            .modal-nav:hover {
-                background: rgba(0,77,0,0.9);
-            }
-            .modal-prev {
-                left: 20px;
-            }
-            .modal-next {
-                right: 20px;
-            }
+
         </style>
-        
-        <!-- Image Modal -->
-        <div id="imageModal" class="image-modal">
-            <div class="modal-content">
-                <span class="modal-close" onclick="closeModal()">&times;</span>
-                <button class="modal-nav modal-prev" onclick="modalPrevImage()">&#8592;</button>
-                <img id="modalImg" class="modal-img" src="" alt="">
-                <button class="modal-nav modal-next" onclick="modalNextImage()">&#8594;</button>
-            </div>
-        </div>
 
         <script>
-            // Global variables for modal
-            let currentModalImages = [];
-            let currentModalIndex = 0;
-            
-            // Initialize image sliders with current index
-            document.querySelectorAll('.image-slider').forEach(slider => {
-                slider.currentIndex = 0;
-            });
+            /**
+             * Products Management Module
+             * Provides form validation for products list
+             * 
+             * Naming Conventions:
+             * - Variables: camelCase (e.g., validationResults, inputElements)
+             * - Constants: UPPER_SNAKE_CASE (e.g., MAX_STOCK_VALUE)
+             * - Functions: camelCase (e.g., validateStockInput)
+             * - DOM Elements: Hungarian notation (e.g., tblProducts)
+             */
 
-            // Previous image function
-            function prevImage(button) {
-                const slider = button.parentElement;
-                const img = slider.querySelector('.slider-img');
-                const images = JSON.parse(slider.getAttribute('data-images'));
-                
-                if (images.length > 1) {
-                    slider.currentIndex = (slider.currentIndex - 1 + images.length) % images.length;
-                    img.src = images[slider.currentIndex];
+            // Module Constants (UPPER_SNAKE_CASE naming convention)
+            const MAX_STOCK_VALUE = 9999;
+            const MIN_STOCK_VALUE = 0;
+            const MAX_PRICE_VALUE = 99999.99;
+            const MIN_PRICE_VALUE = 0;
+
+            /**
+             * Stock Input Validation Function
+             * Purpose: Validates stock input values for range and type
+             * @param {number} intStockValue - Stock value to validate
+             * @returns {object} Validation result with isValid boolean and message
+             */
+            function validateStockInput(intStockValue) {
+                // Type check - ensure numeric value
+                const intParsedValue = parseInt(intStockValue);
+                if (isNaN(intParsedValue)) {
+                    return { isValid: false, message: 'Stock must be a valid number' };
                 }
+
+                // Range check - minimum value
+                if (intParsedValue < MIN_STOCK_VALUE) {
+                    return { isValid: false, message: `Stock cannot be less than ${MIN_STOCK_VALUE}` };
+                }
+
+                // Range check - maximum value
+                if (intParsedValue > MAX_STOCK_VALUE) {
+                    return { isValid: false, message: `Stock cannot exceed ${MAX_STOCK_VALUE}` };
+                }
+
+                return { isValid: true, message: '' };
             }
 
-            // Next image function
-            function nextImage(button) {
-                const slider = button.parentElement;
-                const img = slider.querySelector('.slider-img');
-                const images = JSON.parse(slider.getAttribute('data-images'));
-                
-                if (images.length > 1) {
-                    slider.currentIndex = (slider.currentIndex + 1) % images.length;
-                    img.src = images[slider.currentIndex];
+            /**
+             * Price Input Validation Function
+             * Purpose: Validates price input values for range and format
+             * @param {string|number} strPriceValue - Price value to validate
+             * @returns {object} Validation result with isValid boolean and message
+             */
+            function validatePriceInput(strPriceValue) {
+                // Handle special case for fountain "POA" pricing
+                if (typeof strPriceValue === 'string' && strPriceValue.toUpperCase() === 'POA') {
+                    return { isValid: true, message: '' };
                 }
+
+                // Type check - ensure numeric value
+                const fltParsedValue = parseFloat(strPriceValue);
+                if (isNaN(fltParsedValue)) {
+                    return { isValid: false, message: 'Price must be a valid number or "POA"' };
+                }
+
+                // Range check - minimum value
+                if (fltParsedValue < MIN_PRICE_VALUE) {
+                    return { isValid: false, message: `Price cannot be less than ${MIN_PRICE_VALUE}` };
+                }
+
+                // Range check - maximum value
+                if (fltParsedValue > MAX_PRICE_VALUE) {
+                    return { isValid: false, message: `Price cannot exceed ${MAX_PRICE_VALUE}` };
+                }
+
+                return { isValid: true, message: '' };
             }
 
-            // Add click listener to all slider images for modal
-            document.addEventListener('DOMContentLoaded', function() {
-                document.querySelectorAll('.slider-img').forEach(img => {
-                    img.addEventListener('click', function() {
-                        const slider = this.parentElement;
-                        const images = JSON.parse(slider.getAttribute('data-images'));
-                        openModal(images, slider.currentIndex || 0);
+
+
+            /**
+             * Form Validation Setup Function
+             * Purpose: Add validation to stock and price inputs
+             * @returns {void}
+             */
+            function setupFormValidation() {
+                // Stock input validation
+                document.querySelectorAll('input[data-validation="stock"]').forEach(inputElement => {
+                    inputElement.addEventListener('blur', function() {
+                        const objValidation = validateStockInput(this.value);
+                        if (!objValidation.isValid) {
+                            this.style.borderColor = 'red';
+                            console.warn(`Stock validation error: ${objValidation.message}`);
+                        } else {
+                            this.style.borderColor = '';
+                        }
                     });
                 });
-            });
 
-            // Open modal function
-            function openModal(images, index) {
-                currentModalImages = images;
-                currentModalIndex = index;
-                const modal = document.getElementById('imageModal');
-                const modalImg = document.getElementById('modalImg');
-                
-                modal.style.display = 'block';
-                modalImg.src = images[index];
-                
-                // Hide nav buttons if only one image
-                const prevBtn = modal.querySelector('.modal-prev');
-                const nextBtn = modal.querySelector('.modal-next');
-                if (images.length <= 1) {
-                    prevBtn.style.display = 'none';
-                    nextBtn.style.display = 'none';
-                } else {
-                    prevBtn.style.display = 'block';
-                    nextBtn.style.display = 'block';
-                }
+                // Price input validation
+                document.querySelectorAll('input[data-validation="price"], input[data-validation="custom-price"]').forEach(inputElement => {
+                    inputElement.addEventListener('blur', function() {
+                        const objValidation = validatePriceInput(this.value);
+                        if (!objValidation.isValid) {
+                            this.style.borderColor = 'red';
+                            console.warn(`Price validation error: ${objValidation.message}`);
+                        } else {
+                            this.style.borderColor = '';
+                        }
+                    });
+                });
             }
 
-            // Close modal function
-            function closeModal() {
-                document.getElementById('imageModal').style.display = 'none';
-            }
-
-            // Modal navigation functions
-            function modalPrevImage() {
-                if (currentModalImages.length > 1) {
-                    currentModalIndex = (currentModalIndex - 1 + currentModalImages.length) % currentModalImages.length;
-                    document.getElementById('modalImg').src = currentModalImages[currentModalIndex];
-                }
-            }
-
-            function modalNextImage() {
-                if (currentModalImages.length > 1) {
-                    currentModalIndex = (currentModalIndex + 1) % currentModalImages.length;
-                    document.getElementById('modalImg').src = currentModalImages[currentModalIndex];
-                }
-            }
-
-            // Close modal when clicking outside the image
-            document.getElementById('imageModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
-            });
-
-            // Close modal with escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeModal();
-                }
+            /**
+             * Event Listeners Setup
+             * Purpose: Initialize all event handlers and functionality
+             */
+            document.addEventListener('DOMContentLoaded', function() {
+                // Setup form validation
+                setupFormValidation();
             });
         </script>
     </div>

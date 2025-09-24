@@ -1,36 +1,357 @@
+<!--
+    Login Page Template
+Purpose:
+    - User login authentication interface for Golden Turf business system
+    - Secure credential validation with client-side and server-side checks
+    - Flash message display for login feedback and error handling
+    - Responsive design with branded left panel and form on right
+
+Template Variables (Jinja2):
+    - get_flashed_messages(): Flask flash messaging system for feedback
+    - url_for('login'): Form action endpoint for authentication
+    - url_for('forgotpassword'): Password reset link
+    - url_for('register'): User registration link
+    - url_for('static', filename='...'): Static asset URLs
+
+Dependencies:
+    - login.css: Main styling for login interface and responsive layout
+    - logo.png: Brand logo displayed in left panel
+    - Flask routes: login, register, forgotpassword endpoints
+    
+Features:
+    - Client-side validation (email format, password length)
+    - Accessibility features (ARIA labels, screen reader support)
+    - Auto-hide flash messages with smooth transitions
+    - Prevent double form submission with loading state
+    - Real-time validation feedback on field blur/focus
+
+Naming Conventions Used:
+    - HTML IDs: snake_case (login_form, user_email)
+    - JavaScript: camelCase (validateEmail, showFieldError)
+    - CSS Classes: kebab-case (flash-message, input-group)
+    - Hungarian Notation: DOM elements (txtUserEmail, btnSubmitLogin)
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Golden Turf</title>
+    <title>Login - Golden Turf Business Management System</title>
+    <!-- CSS Dependencies -->
+    <!-- ================ -->
     <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" type="image/png">
 </head>
 <body>
-    <div class="container">
-        <div class="left-panel">
-            <header class="logo">
+    <!-- Main Login Container -->
+    <!-- =================== -->
+    <div id="main_container" class="container">
+        
+        <!-- Left Brand Panel -->
+        <!-- ================ -->
+        <div id="left_panel" class="left-panel">
+            <header id="brand_logo" class="logo">
                 <span class="golden">GOLDEN</span><span class="turf">TURF</span>
             </header>
         </div>
-        <div class="right-panel">
-            <h1>Login</h1>
-            <form action="{{ url_for('login') }}" method="POST" autocomplete="off">
+        
+        <!-- Right Form Panel -->
+        <!-- ================ -->
+        <div id="right_panel" class="right-panel">
+            <h1 id="login_title">Login</h1>
+            
+            <!-- Flash Messages Display Section -->
+            <!-- =============================== -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div id="flash_messages_container" class="flash-messages" role="alert" aria-live="polite">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Login Form Section -->
+            <form id="login_form" action="{{ url_for('login') }}" method="POST" autocomplete="off" novalidate>
+                
+                <!-- Email Input Group -->
                 <div class="input-group">
-                    <input type="email" name="email" placeholder="EMAIL" required>
+                    <label for="txt_user_email" class="sr-only">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="txt_user_email"
+                        name="email" 
+                        placeholder="EMAIL" 
+                        required
+                        maxlength="254"
+                        autocomplete="email"
+                        aria-describedby="err_email"
+                        data-validation="email"
+                    >
+                    <span id="err_email" class="error-message" role="alert"></span>
                 </div>
+                
+                <!-- Password Input Group -->
                 <div class="input-group">
-                    <input type="password" name="password" placeholder="PASSWORD" required>
+                    <label for="pwd_user_password" class="sr-only">Password</label>
+                    <input 
+                        type="password" 
+                        id="pwd_user_password"
+                        name="password" 
+                        placeholder="PASSWORD" 
+                        required
+                        minlength="6"
+                        maxlength="128"
+                        autocomplete="current-password"
+                        aria-describedby="err_password"
+                        data-validation="password"
+                    >
+                    <span id="err_password" class="error-message" role="alert"></span>
                 </div>
-                <button type="submit" class="btn-login">LOGIN</button>
+                
+                <!-- Submit Button -->
+                <button type="submit" class="btn-login" id="btn_submit_login">LOGIN</button>
             </form>
+            
+            <!-- Navigation Links Section -->
+            <!-- ======================== -->
             <div class="login-link">
-                <a href="{{ url_for('forgot_password') }}">Forgot password?</a>
+                <a href="{{ url_for('forgotpassword') }}" id="link_forgot_password" aria-label="Reset your password">Forgot password?</a>
             </div>
             <div class="login-link">
-                Don't have an account? <a href="{{ url_for('register') }}">Register</a>
+                Don't have an account? <a href="{{ url_for('register') }}" id="link_register" aria-label="Create a new account">Register</a>
             </div>
         </div>
     </div>
+
+    <!-- JavaScript Login Validation and Enhancement -->
+    <!-- ============================================ -->
+    <script>
+        /**
+         * Login Form Validation Module
+         * ============================
+         * Implements lightweight client-side validation with proper error handling
+         * 
+         * Naming Conventions:
+         * - Variables: camelCase (e.g., loginFormValidator, txtUserEmail)
+         * - Constants: UPPER_SNAKE_CASE (e.g., MIN_PASSWORD_LENGTH, EMAIL_REGEX)
+         * - Functions: camelCase (e.g., validateEmail, showFieldError)
+         * - DOM Elements: Hungarian notation (e.g., txtUserEmail, btnSubmitLogin)
+         */
+        
+        // Validation Constants (UPPER_SNAKE_CASE naming convention)
+        const MIN_EMAIL_LENGTH = 5;
+        const MAX_EMAIL_LENGTH = 254;
+        const MIN_PASSWORD_LENGTH = 6;
+        const MAX_PASSWORD_LENGTH = 128;
+        const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const FLASH_MESSAGE_TIMEOUT = 5000;
+        
+        // DOM Element References (Hungarian notation)
+        const frmLoginForm = document.getElementById('login_form');
+        const txtUserEmail = document.getElementById('txt_user_email');
+        const pwdUserPassword = document.getElementById('pwd_user_password');
+        const btnSubmitLogin = document.getElementById('btn_submit_login');
+        const errEmailSpan = document.getElementById('err_email');
+        const errPasswordSpan = document.getElementById('err_password');
+        
+        /**
+         * Email Validation Function
+         * Purpose: Validates email format and requirements
+         * @param {string} strEmail - Email address to validate
+         * @returns {object} Validation result with isValid boolean and message string
+         */
+        function validateEmail(strEmail) {
+            // Existence check
+            if (!strEmail || strEmail.trim().length === 0) {
+                return { isValid: false, message: 'Email is required' };
+            }
+            
+            // Range check - minimum length
+            if (strEmail.length < MIN_EMAIL_LENGTH) {
+                return { isValid: false, message: 'Email is too short' };
+            }
+            
+            // Range check - maximum length
+            if (strEmail.length > MAX_EMAIL_LENGTH) {
+                return { isValid: false, message: 'Email is too long' };
+            }
+            
+            // Format validation using regex
+            if (!EMAIL_REGEX.test(strEmail)) {
+                return { isValid: false, message: 'Please enter a valid email address' };
+            }
+            
+            return { isValid: true, message: '' };
+        }
+        
+        /**
+         * Password Validation Function
+         * Purpose: Validates password length requirements
+         * @param {string} strPassword - Password to validate
+         * @returns {object} Validation result with isValid boolean and message string
+         */
+        function validatePassword(strPassword) {
+            // Existence check
+            if (!strPassword || strPassword.trim().length === 0) {
+                return { isValid: false, message: 'Password is required' };
+            }
+            
+            // Range check - minimum length
+            if (strPassword.length < MIN_PASSWORD_LENGTH) {
+                return { isValid: false, message: 'Password must be at least 6 characters' };
+            }
+            
+            // Range check - maximum length
+            if (strPassword.length > MAX_PASSWORD_LENGTH) {
+                return { isValid: false, message: 'Password is too long' };
+            }
+            
+            return { isValid: true, message: '' };
+        }
+        
+        /**
+         * Display Field Error Function
+         * Purpose: Shows validation error message for specific field
+         * @param {HTMLElement} errorElement - Error message display element
+         * @param {string} strMessage - Error message to display
+         * @returns {void}
+         */
+        function showFieldError(errorElement, strMessage) {
+            if (errorElement) {
+                errorElement.textContent = strMessage;
+                errorElement.style.display = 'block';
+                errorElement.parentElement.classList.add('has-error');
+            }
+        }
+        
+        /**
+         * Clear Field Error Function
+         * Purpose: Hides validation error message for specific field
+         * @param {HTMLElement} errorElement - Error message display element
+         * @returns {void}
+         */
+        function clearFieldError(errorElement) {
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.style.display = 'none';
+                errorElement.parentElement.classList.remove('has-error');
+            }
+        }
+        
+        /**
+         * Form Validation Handler Function
+         * ================================
+         * Purpose: Validates entire login form before submission
+         * @returns {boolean} True if form is valid, false otherwise
+         */
+        function validateLoginForm() {
+            let boolIsFormValid = true;
+            
+            // Validate email field
+            const objEmailValidation = validateEmail(txtUserEmail.value);
+            if (!objEmailValidation.isValid) {
+                showFieldError(errEmailSpan, objEmailValidation.message);
+                boolIsFormValid = false;
+            } else {
+                clearFieldError(errEmailSpan);
+            }
+            
+            // Validate password field
+            const objPasswordValidation = validatePassword(pwdUserPassword.value);
+            if (!objPasswordValidation.isValid) {
+                showFieldError(errPasswordSpan, objPasswordValidation.message);
+                boolIsFormValid = false;
+            } else {
+                clearFieldError(errPasswordSpan);
+            }
+            
+            return boolIsFormValid;
+        }
+        
+        /**
+         * Flash Message Auto-Hide Function
+         * ================================
+         * Purpose: Automatically hides flash messages after timeout
+         * @returns {void}
+         */
+        function setupFlashMessageAutoHide() {
+            const arrFlashMessages = document.querySelectorAll('.flash-message');
+            arrFlashMessages.forEach(function(divMessage) {
+                setTimeout(function() {
+                    divMessage.style.opacity = '0';
+                    setTimeout(function() {
+                        divMessage.style.display = 'none';
+                    }, 300);
+                }, FLASH_MESSAGE_TIMEOUT);
+            });
+        }
+        
+        /**
+         * Event Listeners Setup
+         * ====================
+         * Purpose: Set up form interaction and validation events
+         */
+        
+        // Real-time validation on input blur
+        if (txtUserEmail) {
+            txtUserEmail.addEventListener('blur', function() {
+                const objValidation = validateEmail(this.value);
+                if (!objValidation.isValid) {
+                    showFieldError(errEmailSpan, objValidation.message);
+                } else {
+                    clearFieldError(errEmailSpan);
+                }
+            });
+        }
+        
+        if (pwdUserPassword) {
+            pwdUserPassword.addEventListener('blur', function() {
+                const objValidation = validatePassword(this.value);
+                if (!objValidation.isValid) {
+                    showFieldError(errPasswordSpan, objValidation.message);
+                } else {
+                    clearFieldError(errPasswordSpan);
+                }
+            });
+        }
+        
+        // Clear errors on input focus
+        if (txtUserEmail) {
+            txtUserEmail.addEventListener('focus', function() {
+                clearFieldError(errEmailSpan);
+            });
+        }
+        
+        if (pwdUserPassword) {
+            pwdUserPassword.addEventListener('focus', function() {
+                clearFieldError(errPasswordSpan);
+            });
+        }
+        
+        // Form submission validation
+        if (frmLoginForm) {
+            frmLoginForm.addEventListener('submit', function(eventObject) {
+                eventObject.preventDefault();
+                
+                if (validateLoginForm()) {
+                    // Disable submit button to prevent double submission
+                    if (btnSubmitLogin) {
+                        btnSubmitLogin.disabled = true;
+                        btnSubmitLogin.textContent = 'Logging in...';
+                    }
+                    
+                    // Submit form
+                    this.submit();
+                }
+            });
+        }
+        
+        // Initialize flash message auto-hide when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFlashMessageAutoHide();
+        });
+    </script>
 </body>
 </html>

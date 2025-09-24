@@ -218,13 +218,13 @@
                     <tr>
                         <td>{{ invoice[0] }}</td>
                         <td>{{ invoice[1] }}</td>
-                        <td>{{ invoice[2] }}</td>
-                        <td>{{ invoice[3] }}</td>
-                        <td>${{ "%.2f"|format(invoice[4]) }}</td>
-                        <td>${{ "%.2f"|format(invoice[5]) }}</td>
+                        <td>{{ invoice[2] if invoice[2] != 'none' else 'Custom' }}{% if invoice[8] %}<br><small>{{ invoice[8] }}</small>{% endif %}</td>
+                        <td>{{ "%.1f"|format(invoice[3]) if invoice[3] else 'N/A' }}</td>
                         <td>${{ "%.2f"|format(invoice[6]) }}</td>
-                        <td>{{ invoice[7] }}</td>
-                        <td>{{ invoice[8] }}</td>
+                        <td>${{ "%.2f"|format(invoice[5]) }}</td>
+                        <td>${{ "%.2f"|format(invoice[7]) }}</td>
+                        <td><span style="color: {% if invoice[4] == 'Paid' %}green{% else %}red{% endif %};">{{ invoice[4] }}</span></td>
+                        <td>{{ invoice[10][:10] if invoice[10] else 'N/A' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

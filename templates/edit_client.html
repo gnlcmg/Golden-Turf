@@ -22,7 +22,9 @@
             <input type="text" id="contact_name" name="contact_name" value="{{ client[1] }}" required />
 
             <label for="phone_number">Phone Number:</label>
-            <input type="text" id="phone_number" name="phone_number" value="{{ client[2] or '' }}" />
+            <input type="tel" id="phone_number" name="phone_number" 
+                   placeholder="e.g. +6141234678, 041234678, or 41234678"
+                   value="{{ client[2] or '' }}" />
 
             <label for="account_type">Account Type:</label>
             <select id="account_type" name="account_type" required>
