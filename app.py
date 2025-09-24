@@ -31,39 +31,38 @@ def has_permission(module):
     return user and module in (user[0] or '').split(',')
 
 def migrate_users_table():
+    # Migration has already been completed - just ensure columns exist
     try: db_exec('ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT "dashboard"')
     except: pass
     try: db_exec('ALTER TABLE users ADD COLUMN password_hash BLOB')
     except: pass
-    # Migrate existing password data to password_hash if needed
-    users_with_old_password = db_exec('SELECT id, password FROM users WHERE password IS NOT NULL AND password_hash IS NULL', fetch='all')
-    if users_with_old_password:
-        for user_id, old_password in users_with_old_password:
-            if old_password and old_password != '':
-                new_hash = bcrypt.hashpw(old_password.encode('utf-8'), bcrypt.gensalt())
-                db_exec('UPDATE users SET password_hash = ? WHERE id = ?', (new_hash, user_id))
+    # Ensure first user is admin
     first = db_exec('SELECT id FROM users ORDER BY id LIMIT 1', fetch='one')
     if first: db_exec("UPDATE users SET role = ?, permissions = ? WHERE id = ?", ('admin', 'dashboard,payments,clients,calendar,products,products_list,invoice,quotes,profiles', first[0]))
 
 def ensure_admin_exists():
-    if not db_exec('SELECT id FROM users WHERE role = "admin"', fetch='one'):
+    # Check if any admin exists
+    admin_exists = db_exec('SELECT id FROM users WHERE role = "admin"', fetch='one')
+    if not admin_exists:
+        # Get the first user by ID
         first_user = db_exec('SELECT id FROM users ORDER BY id LIMIT 1', fetch='one')
-        if first_user: db_exec('UPDATE users SET role = ?, permissions = ? WHERE id = ?', ('admin', 'dashboard,payments,clients,calendar,products,products_list,invoice,quotes,profiles', first_user[0]))
+        if first_user:
+            print(f"Setting user ID {first_user[0]} as admin...")
+            db_exec('UPDATE users SET role = ?, permissions = ? WHERE id = ?', 
+                   ('admin', 'dashboard,payments,clients,calendar,products,products_list,invoice,quotes,profiles', first_user[0]))
+            print("Admin role assigned successfully!")
         reorganize_user_ids()
+    else:
+        print(f"Admin already exists with ID: {admin_exists[0]}")
 
 def authenticate_user(email, password):
-    user = db_exec('SELECT id, name, password_hash, permissions, role, password FROM users WHERE email = ?', (email,), 'one')
+    user = db_exec('SELECT id, name, password_hash, permissions, role FROM users WHERE email = ?', (email,), 'one')
     if not user: return None
-    # Check password_hash first (new method)
+    # Check password_hash 
     if user[2] and bcrypt.checkpw(password.encode('utf-8'), user[2]):
         return user
-    # Fallback to old password column and migrate
-    elif user[5] and password == user[5]:
-        new_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        db_exec('UPDATE users SET password_hash = ? WHERE id = ?', (new_hash, user[0]))
-        return user
-    # Default password fallback
-    elif user[2] is None and user[5] is None and password == 'Password123':
+    # Default password fallback for users without password_hash
+    elif user[2] is None and password == 'Password123':
         new_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         db_exec('UPDATE users SET password_hash = ? WHERE id = ?', (new_hash, user[0]))
         return user
