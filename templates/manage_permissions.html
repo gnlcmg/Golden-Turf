@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<!--
+    File: manage_permissions.html
+    Purpose: Individual user permission management interface for Golden Turf
+    Dependencies: dashboard.css, FontAwesome 6.4.0, _sidebar.html
+-->
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Manage Permissions - Golden Turf</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        
+        <!-- Permission Management Styles -->
+        <style>
+            .main_content_container {
+                margin-left: 240px;
+                padding: 20px 40px;
+                max-width: calc(100vw - 260px);
+            }
+            
+            .permission_form {
+                background: #fff;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                max-width: 600px;
+            }
+            
+            .user_info {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                margin-bottom: 25px;
+                border-left: 4px solid #0074d9;
+            }
+            
+            .permissions_grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin: 20px 0;
+            }
+            
+            .permission_item {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                border: 2px solid #e9ecef;
+                transition: all 0.3s ease;
+            }
+            
+            .permission_item:hover {
+                border-color: #0074d9;
+                background: #e3f2fd;
+            }
+            
+            .permission_item.active {
+                border-color: #28a745;
+                background: #d4edda;
+            }
+            
+            .permission_checkbox {
+                margin-right: 10px;
+                transform: scale(1.2);
+            }
+            
+            .permission_label {
+                font-weight: 500;
+                color: #333;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+            }
+            
+            .permission_description {
+                font-size: 12px;
+                color: #666;
+                margin-top: 5px;
+                font-style: italic;
+            }
+            
+            .action_buttons {
+                display: flex;
+                gap: 15px;
+                margin-top: 30px;
+            }
+            
+            .btn_save {
+                background: #28a745;
+                color: white;
+                padding: 12px 25px;
+                border: none;
+                border-radius: 5px;
+                font-size: 16px;
+                cursor: pointer;
+                transition: background 0.3s ease;
+            }
+            
+            .btn_save:hover {
+                background: #218838;
+            }
+            
+            .btn_cancel {
+                background: #6c757d;
+                color: white;
+                padding: 12px 25px;
+                border: none;
+                border-radius: 5px;
+                font-size: 16px;
+                text-decoration: none;
+                display: inline-block;
+                text-align: center;
+                transition: background 0.3s ease;
+            }
+            
+            .btn_cancel:hover {
+                background: #5a6268;
+                text-decoration: none;
+                color: white;
+            }
+            
+            .required_notice {
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                padding: 10px;
+                border-radius: 5px;
+                margin-bottom: 20px;
+                color: #856404;
+            }
+        </style>
+    </head>
+    <body>
+
+        <!-- Main Content Container -->
+        <div id="main_content" class="main_content_container">
+            <!-- Page Header Section -->
+            <header id="page_header">
+                <h1>Manage User Permissions</h1>
+            </header>
+
+            <!-- Flash Messages Section -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div id="flash_messages_container">
+                        {% for category, message in messages %}
+                            <div class="{{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Permission Management Form -->
+            <form method="POST" action="{{ url_for('manage_permissions', user_id=user[0]) }}" id="frm_manage_permissions">
+                <div class="permission_form">
+                    <!-- User Information -->
+                    <div class="user_info">
+                        <h3><i class="fas fa-user"></i> User Details</h3>
+                        <p><strong>ID:</strong> {{ user[0] }}</p>
+                        <p><strong>Name:</strong> {{ user[1] }}</p>
+                        <p><strong>Email:</strong> {{ user[2] }}</p>
+                        <p><strong>Role:</strong> {{ user[3] }}</p>
+                    </div>
+
+                    <!-- Required Notice -->
+                    <div class="required_notice">
+                        <i class="fas fa-info-circle"></i> Note: Dashboard access is required for all users and will be automatically included.
+                    </div>
+
+                    <!-- Admin Notice -->
+                    {% if user[3] == 'admin' %}
+                    <div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 12px; border-radius: 5px; margin-bottom: 20px; color: #0c5460;">
+                        <i class="fas fa-crown" style="color: #ffd700; margin-right: 8px;"></i>
+                        <strong>Admin User:</strong> This user has full access to all modules automatically. All permissions are required and cannot be modified.
+                    </div>
+                    {% endif %}
+
+                    <!-- Permissions Grid -->
+                    <div class="permissions_grid" id="permissions_grid">
+                        <!-- Dashboard Permission (Always Required) -->
+                        <div class="permission_item active" id="permission_dashboard_item">
+                            <label class="permission_label" for="permission_dashboard">
+                                <input type="checkbox" 
+                                       id="permission_dashboard" 
+                                       name="permission_dashboard" 
+                                       class="permission_checkbox"
+                                       checked 
+                                       disabled />
+                                <span>
+                                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                                    <div class="permission_description">Access to main dashboard (Required)</div>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Payments Permission -->
+                        <div class="permission_item {{ 'active' if user[3] == 'admin' or 'payments' in current_permissions else '' }}" id="permission_payments_item">
+                            <label class="permission_label" for="permission_payments">
+                                <input type="checkbox" 
+                                       id="permission_payments" 
+                                       name="permission_payments" 
+                                       class="permission_checkbox"
+                                       {{ 'checked' if user[3] == 'admin' or 'payments' in current_permissions else '' }}
+                                       {{ 'disabled' if user[3] == 'admin' else '' }} />
+                                <span>
+                                    <i class="fas fa-credit-card"></i> Payments
+                                    <div class="permission_description">Manage payment records and transactions {{ '(Admin Required)' if user[3] == 'admin' else '' }}</div>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Clients Permission -->
+                        <div class="permission_item {{ 'active' if user[3] == 'admin' or 'clients' in current_permissions else '' }}" id="permission_clients_item">
+                            <label class="permission_label" for="permission_clients">
+                                <input type="checkbox" 
+                                       id="permission_clients" 
+                                       name="permission_clients" 
+                                       class="permission_checkbox"
+                                       {{ 'checked' if user[3] == 'admin' or 'clients' in current_permissions else '' }}
+                                       {{ 'disabled' if user[3] == 'admin' else '' }} />
+                                <span>
+                                    <i class="fas fa-users"></i> Clients
+                                    <div class="permission_description">Manage client information and records {{ '(Admin Required)' if user[3] == 'admin' else '' }}</div>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Calendar Permission -->
+                        <div class="permission_item {{ 'active' if user[3] == 'admin' or 'calendar' in current_permissions else '' }}" id="permission_calendar_item">
+                            <label class="permission_label" for="permission_calendar">
+                                <input type="checkbox" 
+                                       id="permission_calendar" 
+                                       name="permission_calendar" 
+                                       class="permission_checkbox"
+                                       {{ 'checked' if user[3] == 'admin' or 'calendar' in current_permissions else '' }}
+                                       {{ 'disabled' if user[3] == 'admin' else '' }} />
+                                <span>
+                                    <i class="fas fa-calendar-alt"></i> Calendar
+                                    <div class="permission_description">Access calendar and scheduling features {{ '(Admin Required)' if user[3] == 'admin' else '' }}</div>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Products Permission -->
+                        <div class="permission_item {{ 'active' if user[3] == 'admin' or 'products' in current_permissions else '' }}" id="permission_products_item">
+                            <label class="permission_label" for="permission_products">
+                                <input type="checkbox" 
+                                       id="permission_products" 
+                                       name="permission_products" 
+                                       class="permission_checkbox"
+                                       {{ 'checked' if user[3] == 'admin' or 'products' in current_permissions else '' }}
+                                       {{ 'disabled' if user[3] == 'admin' else '' }} />
+                                <span>
+                                    <i class="fas fa-box"></i> Products
+                                    <div class="permission_description">Manage product inventory and details {{ '(Admin Required)' if user[3] == 'admin' else '' }}</div>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Products List Permission -->
+                        <div class="permission_item {{ 'active' if user[3] == 'admin' or 'products_list' in current_permissions else '' }}" id="permission_products_list_item">
+                            <label class="permission_label" for="permission_products_list">
+                                <input type="checkbox" 
+                                       id="permission_products_list" 
+                                       name="permission_products_list" 
+                                       class="permission_checkbox"
+                                       {{ 'checked' if user[3] == 'admin' or 'products_list' in current_permissions else '' }}
+                                       {{ 'disabled' if user[3] == 'admin' else '' }} />
+                                <span>
+                                    <i class="fas fa-list"></i> Product Lists
+                                    <div class="permission_description">View and manage product lists {{ '(Admin Required)' if user[3] == 'admin' else '' }}</div>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Invoice Permission -->
+                        <div class="permission_item {{ 'active' if user[3] == 'admin' or 'invoice' in current_permissions else '' }}" id="permission_invoice_item">
+                            <label class="permission_label" for="permission_invoice">
+                                <input type="checkbox" 
+                                       id="permission_invoice" 
+                                       name="permission_invoice" 
+                                       class="permission_checkbox"
+                                       {{ 'checked' if user[3] == 'admin' or 'invoice' in current_permissions else '' }}
+                                       {{ 'disabled' if user[3] == 'admin' else '' }} />
+                                <span>
+                                    <i class="fas fa-file-invoice"></i> Invoices
+                                    <div class="permission_description">Create and manage invoices {{ '(Admin Required)' if user[3] == 'admin' else '' }}</div>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Quotes Permission -->
+                        <div class="permission_item {{ 'active' if user[3] == 'admin' or 'quotes' in current_permissions else '' }}" id="permission_quotes_item">
+                            <label class="permission_label" for="permission_quotes">
+                                <input type="checkbox" 
+                                       id="permission_quotes" 
+                                       name="permission_quotes" 
+                                       class="permission_checkbox"
+                                       {{ 'checked' if user[3] == 'admin' or 'quotes' in current_permissions else '' }}
+                                       {{ 'disabled' if user[3] == 'admin' else '' }} />
+                                <span>
+                                    <i class="fas fa-quote-left"></i> Quotes
+                                    <div class="permission_description">Create and manage quotes {{ '(Admin Required)' if user[3] == 'admin' else '' }}</div>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Profiles Permission -->
+                        <div class="permission_item {{ 'active' if user[3] == 'admin' or 'profiles' in current_permissions else '' }}" id="permission_profiles_item">
+                            <label class="permission_label" for="permission_profiles">
+                                <input type="checkbox" 
+                                       id="permission_profiles" 
+                                       name="permission_profiles" 
+                                       class="permission_checkbox"
+                                       {{ 'checked' if user[3] == 'admin' or 'profiles' in current_permissions else '' }}
+                                       {{ 'disabled' if user[3] == 'admin' else '' }} />
+                                <span>
+                                    <i class="fas fa-user-cog"></i> User Management
+                                    <div class="permission_description">Manage users and permissions {{ '(Admin Required)' if user[3] == 'admin' else '' }}</div>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action_buttons">
+                        <button type="submit" class="btn_save" id="btn_save_permissions">
+                            <i class="fas fa-save"></i> Save Permissions
+                        </button>
+                        <a href="{{ url_for('profiles') }}" class="btn_cancel" id="btn_cancel">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% include '_sidebar.html' %}
+        
+        <!-- Permission Management Script -->
+        <script>
+            /**
+             * Permission Management Module
+             * Purpose: Handle interactive permission selection
+             */
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                // Get all permission checkboxes and items
+                const permissionCheckboxes = document.querySelectorAll('.permission_checkbox:not([disabled])');
+                const permissionItems = document.querySelectorAll('.permission_item');
+                
+                // Add click handlers to permission items
+                permissionItems.forEach(item => {
+                    const checkbox = item.querySelector('.permission_checkbox');
+                    if (checkbox && !checkbox.disabled) {
+                        item.addEventListener('click', function(e) {
+                            // Don't trigger if the click was on the checkbox itself
+                            if (e.target !== checkbox) {
+                                checkbox.checked = !checkbox.checked;
+                                updateItemAppearance(item, checkbox);
+                            }
+                        });
+                        
+                        // Handle checkbox change
+                        checkbox.addEventListener('change', function() {
+                            updateItemAppearance(item, checkbox);
+                        });
+                    }
+                });
+                
+                /**
+                 * Update permission item appearance based on checkbox state
+                 */
+                function updateItemAppearance(item, checkbox) {
+                    if (checkbox.checked) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                }
+                
+                // Form submission validation
+                document.getElementById('frm_manage_permissions').addEventListener('submit', function(e) {
+                    const checkedBoxes = document.querySelectorAll('.permission_checkbox:checked:not([disabled])');
+                    
+                    if (checkedBoxes.length === 0) {
+                        e.preventDefault();
+                        alert('Please select at least one permission for this user.');
+                        return false;
+                    }
+                    
+                    // Confirm the changes
+                    const userName = "{{ user[1] }}";
+                    const permissions = Array.from(checkedBoxes).map(cb => cb.id.replace('permission_', '')).join(', ');
+                    
+                    if (!confirm(`Are you sure you want to update permissions for ${userName}?\n\nNew permissions: ${permissions}`)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

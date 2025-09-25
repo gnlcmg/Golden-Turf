@@ -76,7 +76,6 @@ body, html {
 }
 
 .input-group input::placeholder {
-    text-transform: uppercase;
     color: #999;
 }
 

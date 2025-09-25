@@ -119,31 +119,13 @@
             <small>There must always be at least one admin.</small>
             {% endif %}
 
-            <label for="permissions">Permissions:</label>
-            {% if user[3] == 'user' %}
-            <div style="margin-top: 6px;">
-                {% set modules = [
-                    ('dashboard', 'Dashboard'),
-                    ('products_list', 'Products List'),
-                    ('invoice', 'Invoice Form'),
-                    ('clients', 'Client Details Form'),
-                    ('quotes', 'Quotes'),
-                    ('payments', 'Clients & Invoices List'),
-                    ('calendar', 'Calendar'),
-                    ('profiles', 'Profiles')
-                ] %}
-                {% set user_permissions = user[4].split(',') if user[4] else [] %}
-                {% for module, label in modules %}
-                    <input type="checkbox" name="permissions" value="{{ module }}" id="perm_{{ module }}" style="margin-right: 8px; vertical-align: middle;" {% if module in user_permissions %}checked{% endif %}>
-                    <label for="perm_{{ module }}" style="margin: 0 0 4px 0; cursor: pointer; vertical-align: middle;">{{ label }}</label><br>
-                {% endfor %}
-                <span style="font-size: 12px; color: #888; margin-top: 4px;">(Tick to allow access. Unticked = blocked.)</span>
+            <!-- Note about permissions -->
+            <div style="background: #e3f2fd; padding: 12px; border-radius: 4px; margin-top: 15px; border-left: 4px solid #0074d9;">
+                <i class="fas fa-info-circle" style="color: #0074d9; margin-right: 8px;"></i>
+                <strong>Permissions:</strong> Use the "Permissions" button in the user list to manage detailed access controls.
             </div>
-            {% else %}
-            <div style="color: #888; font-size: 13px; margin-bottom: 10px;">Admin has full access to all modules.</div>
-            {% endif %}
 
-            <button type="submit">Save</button>
+            <button type="submit">Save User Details</button>
         </form>
     </div>
 

@@ -1026,10 +1026,25 @@ Naming Conventions:
                     return;
                 }
 
-                // Submit task creation request
-                const responseAddTask = await fetch('/add_task', {
+                // Convert FormData to JSON object
+                const taskData = {
+                    title: formDataAdd.get('title'),
+                    description: formDataAdd.get('description'),
+                    date: formDataAdd.get('task_date'),
+                    time: formDataAdd.get('task_time'),
+                    end_time: formDataAdd.get('task_end_time'),
+                    location: formDataAdd.get('location'),
+                    assigned_user_id: formDataAdd.get('assigned_user_id'),
+                    status: formDataAdd.get('status')
+                };
+
+                // Submit task creation request to correct API endpoint
+                const responseAddTask = await fetch('/api/tasks', {
                     method: 'POST',
-                    body: formDataAdd
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
                 });
 
                 // Existence check - validate response

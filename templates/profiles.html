@@ -322,8 +322,17 @@
                                        id="lnk_edit_user_{{ user[0] }}"
                                        data-validation="user-edit"
                                        data-user-id="{{ user[0] }}"
-                                       style="display:block; width:100%; padding:6px 0; background:#28a745; color:#fff; border:none; border-radius:4px; text-decoration:none; font-size:14px; text-align:center;">
+                                       style="display:block; width:100%; padding:6px 0; background:#28a745; color:#fff; border:none; border-radius:4px; text-decoration:none; font-size:14px; text-align:center; margin-bottom: 4px;">
                                         Edit
+                                    </a>
+                                    
+                                    <!-- Permission Management Link -->
+                                    <a href="{{ url_for('manage_permissions', user_id=user[0]) }}" 
+                                       id="lnk_manage_permissions_{{ user[0] }}"
+                                       data-validation="permission-manage"
+                                       data-user-id="{{ user[0] }}"
+                                       style="display:block; width:100%; padding:6px 0; background:#6f42c1; color:#fff; border:none; border-radius:4px; text-decoration:none; font-size:14px; text-align:center;">
+                                        Permissions
                                     </a>
                                 </div>
                                 {% endif %}

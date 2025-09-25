@@ -96,10 +96,12 @@ Features:
         </div>
         {% endif %}
 
-        <!-- Admin Action Buttons Section -->
-        <div id="admin_buttons" class="admin-buttons" style="margin-bottom: 20px;">
-            {% if user_role == 'admin' or user_role == 'owner' %}
+        <!-- Action Buttons Section -->
+        <div id="action_buttons" class="admin-buttons" style="margin-bottom: 20px;">
+            {% if user_has_permission('quotes') %}
             <button id="btn_generate_quote" type="button" onclick="window.location.href='/quotes';">Generate Quote</button>
+            {% endif %}
+            {% if user_has_permission('calendar') %}
             <button id="btn_view_calendar" type="button" onclick="window.location.href='/calendar';">View Calendar</button>
             {% endif %}
         </div>

@@ -3,8 +3,67 @@ import sqlite3, bcrypt, os
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'
+app.secret_key = 'your-secret-key-for-golden-turf-2024'
 
+# Template helper function for permission checking
+@app.template_global()
+def user_has_permission(module):
+    if 'user_id' not in session: return False
+    if session['user_id'] == 1: return True  # ID 1 always has access
+    user_permissions = session.get('user_permissions', '')
+    return module in (user_permissions or '').split(',')
+
+# Helper function to determine if user should see all data or just their own
+def should_see_all_data():
+    if 'user_id' not in session: return False
+    if session['user_id'] == 1: return True  # ID 1 sees all data
+    user_role = session.get('user_role', '')
+    return user_role == 'admin'  # Admin users see all data
+
+# Helper function to determine if user should see all data for a specific module
+def should_see_all_data_for_module(module):
+    if 'user_id' not in session: return False
+    if session['user_id'] == 1: return True  # ID 1 sees all data
+    user_role = session.get('user_role', '')
+    if user_role == 'admin': return True  # Admin users see all data
+    # Users with specific permissions see all data for that module
+    user_permissions = session.get('user_permissions', '')
+    return module in (user_permissions or '').split(',')
+
+# Helper function to get data query based on user permissions for specific module
+def get_data_filter_for_module(module):
+    if should_see_all_data_for_module(module):
+        return ('', ())  # No owner filter - see all data
+    else:
+        return ('WHERE owner_id = ?', (session['user_id'],))  # Filter by owner
+
+# Helper function to get data query based on user permissions (general)
+def get_data_filter():
+    if should_see_all_data():
+        return ('', ())  # No owner filter - see all data
+    else:
+        return ('WHERE owner_id = ?', (session['user_id'],))  # Filter by owner
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        name, email, password = request.form.get('name', '').strip(), request.form.get('email', '').strip(), request.form.get('password', '').strip()
+        if db_exec('SELECT id FROM users WHERE email = ?', (email,), 'one'):
+            flash('Email already registered')
+        else:
+            hash_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            db_exec('INSERT INTO users (name, email, password_hash, role, permissions) VALUES (?, ?, ?, ?, ?)', (name, email, hash_pw, 'user', 'dashboard'))
+            
+            # Check if this user got ID 1 - if so, make them admin automatically
+            new_user = db_exec('SELECT id FROM users WHERE email = ?', (email,), 'one')
+            if new_user and new_user[0] == 1:
+                db_exec('UPDATE users SET role = ?, permissions = ? WHERE id = ?', 
+                       ('admin', 'dashboard,payments,clients,calendar,products,products_list,invoice,quotes,profiles', 1))
+                flash('Registration successful! You have been granted admin access as the first user.')
+            else:
+                flash('Registration successful')
+            return redirect(url_for('login'))
+    return render_template('register.html')
 # Database utilities
 def db_exec(query, params=(), fetch=None):
     conn = sqlite3.connect('users.db')
@@ -25,8 +84,37 @@ def reorganize_user_ids():
     db_exec("DELETE FROM sqlite_sequence WHERE name='users'")
     if users: db_exec("INSERT INTO sqlite_sequence (name, seq) VALUES ('users', ?)", (len(users),))
 
+def reset_clients_ids():
+    """Reset client IDs to start from 1 and fill gaps"""
+    clients = db_exec('SELECT id FROM clients ORDER BY id', fetch='all')
+    for new_id, (old_id,) in enumerate(clients, 1):
+        if new_id != old_id:
+            db_exec('UPDATE clients SET id = ? WHERE id = ?', (new_id, old_id))
+    db_exec("DELETE FROM sqlite_sequence WHERE name='clients'")
+    if clients: 
+        db_exec("INSERT INTO sqlite_sequence (name, seq) VALUES ('clients', ?)", (len(clients),))
+    else:
+        db_exec("INSERT INTO sqlite_sequence (name, seq) VALUES ('clients', 0)")
+
+def reset_invoices_ids():
+    """Reset invoice IDs to start from 1 and fill gaps"""
+    invoices = db_exec('SELECT id FROM invoices ORDER BY id', fetch='all')
+    for new_id, (old_id,) in enumerate(invoices, 1):
+        if new_id != old_id:
+            db_exec('UPDATE invoices SET id = ? WHERE id = ?', (new_id, old_id))
+    db_exec("DELETE FROM sqlite_sequence WHERE name='invoices'")
+    if invoices: 
+        db_exec("INSERT INTO sqlite_sequence (name, seq) VALUES ('invoices', ?)", (len(invoices),))
+    else:
+        db_exec("INSERT INTO sqlite_sequence (name, seq) VALUES ('invoices', 0)")
+
 def has_permission(module):
     if 'user_id' not in session: return False
+    
+    # ID 1 users always have full access to everything
+    if session['user_id'] == 1:
+        return True
+    
     user = db_exec('SELECT permissions FROM users WHERE id = ?', (session['user_id'],), 'one')
     return user and module in (user[0] or '').split(',')
 
@@ -41,19 +129,28 @@ def migrate_users_table():
     if first: db_exec("UPDATE users SET role = ?, permissions = ? WHERE id = ?", ('admin', 'dashboard,payments,clients,calendar,products,products_list,invoice,quotes,profiles', first[0]))
 
 def ensure_admin_exists():
-    # Check if any admin exists
-    admin_exists = db_exec('SELECT id FROM users WHERE role = "admin"', fetch='one')
-    if not admin_exists:
-        # Get the first user by ID
-        first_user = db_exec('SELECT id FROM users ORDER BY id LIMIT 1', fetch='one')
-        if first_user:
-            print(f"Setting user ID {first_user[0]} as admin...")
-            db_exec('UPDATE users SET role = ?, permissions = ? WHERE id = ?', 
-                   ('admin', 'dashboard,payments,clients,calendar,products,products_list,invoice,quotes,profiles', first_user[0]))
-            print("Admin role assigned successfully!")
-        reorganize_user_ids()
+    # Always ensure ID 1 is admin if it exists
+    user_id_1 = db_exec('SELECT id, role FROM users WHERE id = 1', fetch='one')
+    if user_id_1:
+        if user_id_1[1] != 'admin':
+            print("Making user ID 1 admin (required for system security)...")
+            db_exec('UPDATE users SET role = ?, permissions = ? WHERE id = 1', 
+                   ('admin', 'dashboard,payments,clients,calendar,products,products_list,invoice,quotes,profiles'))
+            print("User ID 1 granted admin access!")
+        else:
+            print("User ID 1 already has admin access")
     else:
-        print(f"Admin already exists with ID: {admin_exists[0]}")
+        # If no user ID 1 exists, check if any admin exists
+        admin_exists = db_exec('SELECT id FROM users WHERE role = "admin"', fetch='one')
+        if not admin_exists:
+            # Get the first user by ID and make them admin
+            first_user = db_exec('SELECT id FROM users ORDER BY id LIMIT 1', fetch='one')
+            if first_user:
+                print(f"Setting user ID {first_user[0]} as admin...")
+                db_exec('UPDATE users SET role = ?, permissions = ? WHERE id = ?', 
+                       ('admin', 'dashboard,payments,clients,calendar,products,products_list,invoice,quotes,profiles', first_user[0]))
+                print("Admin role assigned successfully!")
+            reorganize_user_ids()
 
 def authenticate_user(email, password):
     user = db_exec('SELECT id, name, password_hash, permissions, role FROM users WHERE email = ?', (email,), 'one')
@@ -69,7 +166,20 @@ def authenticate_user(email, password):
     return None
 
 def create_tasks_table():
-    try: db_exec('''CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT, task_date DATE, task_time TIME, end_time TIME, location TEXT, status TEXT DEFAULT 'pending', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, assigned_user_id INTEGER)''')
+    try: 
+        db_exec('''CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            title TEXT NOT NULL, 
+            description TEXT, 
+            task_date TEXT NOT NULL, 
+            task_time TEXT, 
+            task_end_time TEXT, 
+            location TEXT, 
+            status TEXT DEFAULT 'Not completed', 
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            owner_id INTEGER,
+            assigned_user_id INTEGER
+        )''')
     except: pass
 
 def create_clients_table():
@@ -138,8 +248,19 @@ def migrate_tasks_table():
     except: pass
 
 def get_all_tasks(user_id=None):
-    query = 'SELECT * FROM tasks' + (' WHERE assigned_user_id = ?' if user_id else '') + ' ORDER BY task_date, task_time'
-    params = (user_id,) if user_id else ()
+    # Get tasks owned by the current session user
+    session_user_id = session.get('user_id')
+    if not session_user_id:
+        return []
+    
+    if user_id:
+        # Filter by assigned user but still respect ownership
+        query = 'SELECT * FROM tasks WHERE owner_id = ? AND assigned_user_id = ? ORDER BY task_date, task_time'
+        params = (session_user_id, user_id)
+    else:
+        # Get all tasks owned by the current session user
+        query = 'SELECT * FROM tasks WHERE owner_id = ? ORDER BY task_date, task_time'
+        params = (session_user_id,)
     return db_exec(query, params, 'all') or []
 
 # Initialize database
@@ -150,6 +271,9 @@ create_clients_table()
 create_invoices_table()
 fix_clients_table_constraints()
 migrate_tasks_table()
+# Reset ID sequences to start from 1 and fill gaps
+reset_clients_ids()
+reset_invoices_ids()
 
 # Routes
 @app.route('/')
@@ -161,30 +285,23 @@ def login():
         email, password = request.form.get('email', '').strip(), request.form.get('password', '').strip()
         user = authenticate_user(email, password)
         if user:
-            session.update({'user_id': user[0], 'user_name': user[1], 'user_email': email})
+            session.update({'user_id': user[0], 'user_name': user[1], 'user_email': email, 'user_role': user[4], 'user_permissions': user[3]})
             return redirect(url_for('dashboard'))
         flash('Invalid credentials')
     return render_template('login.html')
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        name, email, password = request.form.get('name', '').strip(), request.form.get('email', '').strip(), request.form.get('password', '').strip()
-        if db_exec('SELECT id FROM users WHERE email = ?', (email,), 'one'):
-            flash('Email already registered')
-        else:
-            hash_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-            db_exec('INSERT INTO users (name, email, password_hash, role, permissions) VALUES (?, ?, ?, ?, ?)', (name, email, hash_pw, 'user', 'dashboard'))
-            flash('Registration successful')
-            return redirect(url_for('login'))
-    return render_template('register.html')
 
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session: return redirect(url_for('login'))
     
+    # Get data filter based on user permissions for clients
+    client_filter_clause, client_params = get_data_filter_for_module('clients')
+    
     # Get total clients
-    total_clients_result = db_exec('SELECT COUNT(*) FROM clients WHERE owner_id = ?', (session['user_id'],), fetch='one')
+    if client_filter_clause:
+        total_clients_result = db_exec(f'SELECT COUNT(*) FROM clients {client_filter_clause}', client_params, fetch='one')
+    else:
+        total_clients_result = db_exec('SELECT COUNT(*) FROM clients', fetch='one')
     total_clients = total_clients_result[0] if total_clients_result else 0
     
     # Get admin users
@@ -196,20 +313,35 @@ def dashboard():
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
     
-    # Today's sales (only paid invoices)
-    today_sales_result = db_exec('SELECT SUM(total) FROM invoices WHERE owner_id = ? AND DATE(created_date) = ? AND payment_status = "Paid"', (session['user_id'], today), fetch='one')
+    # Get data filter for payments/invoices
+    payment_filter_clause, payment_params = get_data_filter_for_module('payments')
+    
+    # Today's sales (only paid invoices)  
+    if payment_filter_clause:
+        today_sales_result = db_exec(f'SELECT SUM(total) FROM invoices {payment_filter_clause} AND DATE(created_date) = ? AND payment_status = "Paid"', payment_params + (today,), fetch='one')
+    else:
+        today_sales_result = db_exec('SELECT SUM(total) FROM invoices WHERE DATE(created_date) = ? AND payment_status = "Paid"', (today,), fetch='one')
     today_sales = today_sales_result[0] if today_sales_result and today_sales_result[0] else 0
     
     # Yesterday's sales (only paid invoices)
-    yesterday_sales_result = db_exec('SELECT SUM(total) FROM invoices WHERE owner_id = ? AND DATE(created_date) = ? AND payment_status = "Paid"', (session['user_id'], yesterday), fetch='one')
+    if payment_filter_clause:
+        yesterday_sales_result = db_exec(f'SELECT SUM(total) FROM invoices {payment_filter_clause} AND DATE(created_date) = ? AND payment_status = "Paid"', payment_params + (yesterday,), fetch='one')
+    else:
+        yesterday_sales_result = db_exec('SELECT SUM(total) FROM invoices WHERE DATE(created_date) = ? AND payment_status = "Paid"', (yesterday,), fetch='one')
     yesterday_sales = yesterday_sales_result[0] if yesterday_sales_result and yesterday_sales_result[0] else 0
     
     # Last 7 days sales (only paid invoices)
-    last_7_days_sales_result = db_exec('SELECT SUM(total) FROM invoices WHERE owner_id = ? AND DATE(created_date) >= ? AND payment_status = "Paid"', (session['user_id'], week_ago), fetch='one')
+    if payment_filter_clause:
+        last_7_days_sales_result = db_exec(f'SELECT SUM(total) FROM invoices {payment_filter_clause} AND DATE(created_date) >= ? AND payment_status = "Paid"', payment_params + (week_ago,), fetch='one')
+    else:
+        last_7_days_sales_result = db_exec('SELECT SUM(total) FROM invoices WHERE DATE(created_date) >= ? AND payment_status = "Paid"', (week_ago,), fetch='one')
     last_7_days_sales = last_7_days_sales_result[0] if last_7_days_sales_result and last_7_days_sales_result[0] else 0
     
     # Total sales (only paid invoices)
-    total_sales_result = db_exec('SELECT SUM(total) FROM invoices WHERE owner_id = ? AND payment_status = "Paid"', (session['user_id'],), fetch='one')
+    if payment_filter_clause:
+        total_sales_result = db_exec(f'SELECT SUM(total) FROM invoices {payment_filter_clause} AND payment_status = "Paid"', payment_params, fetch='one')
+    else:
+        total_sales_result = db_exec('SELECT SUM(total) FROM invoices WHERE payment_status = "Paid"', fetch='one')
     total_sales = total_sales_result[0] if total_sales_result and total_sales_result[0] else 0
     
     return render_template('dashboard.html', 
@@ -243,7 +375,12 @@ def clients():
                     db_exec('INSERT INTO clients (client_name, email, phone, account_type, company_name, actions, created_date, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (contact_name, email, phone_number, account_type, company_name, actions, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), session['user_id']))
                     success = f'Client "{contact_name}" saved successfully.'
             except Exception as e: error = f'Failed to save client: {str(e)}'
-    client_list = db_exec('SELECT * FROM clients WHERE owner_id = ? ORDER BY id DESC', (session['user_id'],), 'all') or []
+    # Get data based on user permissions for clients
+    where_clause, params = get_data_filter_for_module('clients')
+    if where_clause:
+        client_list = db_exec(f'SELECT * FROM clients {where_clause} ORDER BY id DESC', params, 'all') or []
+    else:
+        client_list = db_exec('SELECT * FROM clients ORDER BY id DESC', 'all') or []
     return render_template('clients.html', clients=client_list, error=error, success=success)
 
 @app.route('/clients/edit/<int:client_id>', methods=['GET', 'POST'])
@@ -280,6 +417,8 @@ def delete_client(client_id):
             db_exec('DELETE FROM invoices WHERE client_name = ? AND owner_id = ?', (client_name, session['user_id']))
         except:
             pass  # Invoices table might not exist yet
+        # Reset client IDs to start from 1 and fill gaps
+        reset_clients_ids()
         flash(f'Client "{client_name}" deleted successfully.')
     else:
         flash('Client not found or access denied.')
@@ -289,8 +428,12 @@ def delete_client(client_id):
 def payments():
     if 'user_id' not in session: return redirect(url_for('login'))
     if not has_permission('payments'): return render_template('access_restricted.html')
-    # Get all clients for the current user
-    clients_data = db_exec('SELECT * FROM clients WHERE owner_id = ? ORDER BY client_name', (session['user_id'],), 'all') or []
+    # Get data based on user permissions for clients
+    clients_where_clause, clients_params = get_data_filter_for_module('clients')
+    if clients_where_clause:
+        clients_data = db_exec(f'SELECT * FROM clients {clients_where_clause} ORDER BY client_name', clients_params, 'all') or []
+    else:
+        clients_data = db_exec('SELECT * FROM clients ORDER BY client_name', 'all') or []
     # Convert to objects for easier template access
     clients = []
     for client in clients_data:
@@ -305,8 +448,12 @@ def payments():
             'created_date': client[7]
         })
     
-    # Get invoices for the current user
-    invoices_data = db_exec('SELECT * FROM invoices WHERE owner_id = ? ORDER BY created_date DESC', (session['user_id'],), 'all') or []
+    # Get invoices based on user permissions for payments
+    invoices_where_clause, invoices_params = get_data_filter_for_module('payments')
+    if invoices_where_clause:
+        invoices_data = db_exec(f'SELECT * FROM invoices {invoices_where_clause} ORDER BY created_date DESC', invoices_params, 'all') or []
+    else:
+        invoices_data = db_exec('SELECT * FROM invoices ORDER BY created_date DESC', 'all') or []
     
     return render_template('payments.html', clients=clients, invoices=invoices_data)
 
@@ -321,8 +468,8 @@ def calendar():
     current_year, current_month, current_day = request.args.get('year', actual_today.year, type=int), request.args.get('month', actual_today.month, type=int), request.args.get('day', actual_today.day, type=int)
     view, current_date = request.args.get('view', 'month'), datetime(current_year, current_month, current_day)
     
-    # Get tasks for the user
-    tasks = get_all_tasks(session['user_id'])
+    # Get all tasks owned by the user (not filtered by assigned user)
+    tasks = get_all_tasks()
     
     # Build tasks by date dictionary
     tasks_by_date = {}
@@ -391,6 +538,10 @@ def calendar():
     else:
         header_text = f"{current_date.strftime('%B %d, %Y')}"
     
+    # Get all users for task assignment
+    users_data = db_exec('SELECT id, name, email, role FROM users ORDER BY role DESC, name', fetch='all') or []
+    users = [{'id': user[0], 'name': user[1], 'email': user[2], 'role': user[3]} for user in users_data]
+    
     return render_template('calendar.html', 
                          tasks=tasks, 
                          calendar_data=calendar_data,
@@ -400,7 +551,7 @@ def calendar():
                          current_day=current_day, 
                          view=view, 
                          today=actual_today, 
-                         users=[])
+                         users=users)
 
 @app.route('/products')
 def products():
@@ -476,13 +627,47 @@ def edit_user(user_id):
                 if existing: flash('Email already exists')
                 else:
                     user_role = 'admin' if request.form.get('role') == 'admin' else 'user'
-                    permissions = 'dashboard,payments,clients,calendar,products,products_list,invoice,quotes,profiles' if user_role == 'admin' else 'dashboard'
-                    db_exec('UPDATE users SET name = ?, email = ?, role = ?, permissions = ? WHERE id = ?', (name, email, user_role, permissions, user_id))
+                    db_exec('UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?', (name, email, user_role, user_id))
                     ensure_admin_exists()
-                    flash('User updated successfully')
+                    flash('User updated successfully - use Permissions button to manage access')
                     return redirect(url_for('profiles'))
         except Exception as e: flash(f'Error updating user: {str(e)}')
     return render_template('edit_user.html', user=user)
+
+@app.route('/manage_permissions/<int:user_id>', methods=['GET', 'POST'])
+def manage_permissions(user_id):
+    if 'user_id' not in session: return redirect(url_for('login'))
+    if not has_permission('profiles'): return render_template('access_restricted.html')
+    user = db_exec('SELECT id, name, email, role, permissions FROM users WHERE id = ?', (user_id,), 'one')
+    if not user: flash('User not found'); return redirect(url_for('profiles'))
+    
+    if request.method == 'POST':
+        try:
+            # Get all available permissions
+            available_permissions = ['dashboard', 'payments', 'clients', 'calendar', 'products', 'products_list', 'invoice', 'quotes', 'profiles']
+            selected_permissions = []
+            
+            # Check which permissions were selected
+            for permission in available_permissions:
+                if request.form.get(f'permission_{permission}'):
+                    selected_permissions.append(permission)
+            
+            # Ensure at least dashboard permission
+            if 'dashboard' not in selected_permissions:
+                selected_permissions.append('dashboard')
+            
+            # Save permissions to database
+            permissions_string = ','.join(selected_permissions)
+            db_exec('UPDATE users SET permissions = ? WHERE id = ?', (permissions_string, user_id))
+            
+            flash(f'Permissions updated successfully for {user[1]}')
+            return redirect(url_for('profiles'))
+        except Exception as e: 
+            flash(f'Error updating permissions: {str(e)}')
+    
+    # Parse current permissions
+    current_permissions = (user[4] or '').split(',') if user[4] else []
+    return render_template('manage_permissions.html', user=user, current_permissions=current_permissions)
 
 @app.route('/forgotpassword', methods=['GET', 'POST'])
 def forgotpassword():
@@ -505,10 +690,24 @@ def forgotpassword():
             flash('Email address not found.')
     return render_template('forgotpassword.html')
 
-@app.route('/quotes')
+@app.route('/quotes', methods=['GET', 'POST'])
 def quotes():
     if 'user_id' not in session: return redirect(url_for('login'))
     if not has_permission('quotes'): return render_template('access_restricted.html')
+    if request.method == 'POST':
+        # Process quote form data
+        client_name = request.form.get('client_name', '').strip()
+        turf_type = request.form.get('turf_type', '')
+        area_str = request.form.get('area_in_sqm', '0')
+        area = float(area_str) if area_str else 0
+        other_products = request.form.get('other_products', '')
+        # Calculate total price (simplified calculation)
+        turf_prices = {'Golden Imperial Lush': 15, 'Golden Green Lush': 19, 'Golden Natural 40mm': 17, 'Golden Golf Turf': 22, 'Golden Premium Turf': 20}
+        turf_price = turf_prices.get(turf_type, 0)
+        total_price = area * turf_price
+        summary = {'client_name': client_name, 'turf_type': turf_type, 'area_in_sqm': area, 'other_products': other_products, 'total_price': total_price}
+        flash('Quote generated successfully!')
+        return render_template('quotes.html', summary=summary)
     return render_template('quotes.html')
 
 @app.route('/invoice', methods=['GET', 'POST'])
@@ -668,8 +867,53 @@ def add_task():
     if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
     try:
         data = request.get_json()
-        db_exec('INSERT INTO tasks (title, description, task_date, task_time, end_time, location, status, assigned_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (data.get('title'), data.get('description'), data.get('date'), data.get('time'), data.get('end_time'), data.get('location'), data.get('status', 'pending'), data.get('assigned_user_id')))
+        print(f"DEBUG: Task creation data: {data}")  # Debug line
+        
+        # Validate required fields
+        if not data.get('title'):
+            raise ValueError('Title is required')
+        if not data.get('date'):
+            raise ValueError('Date is required')
+        
+        # Use correct column names and include owner_id
+        db_exec('INSERT INTO tasks (title, description, task_date, task_time, task_end_time, location, status, assigned_user_id, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                (data.get('title'), 
+                 data.get('description'), 
+                 data.get('date'), 
+                 data.get('time'), 
+                 data.get('end_time'), 
+                 data.get('location'), 
+                 data.get('status', 'Not completed'), 
+                 data.get('assigned_user_id'), 
+                 session['user_id']))
+        
         return jsonify({'success': True, 'message': 'Task created successfully'})
+    except Exception as e: 
+        print(f"DEBUG: Task creation error: {str(e)}")  # Debug line
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tasks/<int:task_id>', methods=['GET'])
+def get_task(task_id):
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    task = db_exec('SELECT * FROM tasks WHERE id = ? AND owner_id = ?', (task_id, session['user_id']), 'one')
+    if not task: return jsonify({'error': 'Task not found'}), 404
+    return jsonify({'id': task[0], 'title': task[1], 'description': task[2], 'date': task[3], 'time': task[4], 'end_time': task[8], 'location': task[5], 'status': task[6], 'created_at': task[7], 'assigned_user_id': task[10] if len(task) > 10 else None})
+
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+def update_task(task_id):
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    data = request.get_json()
+    try:
+        db_exec('UPDATE tasks SET title=?, description=?, task_date=?, task_time=?, task_end_time=?, location=?, status=?, assigned_user_id=? WHERE id=? AND owner_id=?', (data.get('title'), data.get('description'), data.get('date'), data.get('time'), data.get('end_time'), data.get('location'), data.get('status'), data.get('assigned_user_id'), task_id, session['user_id']))
+        return jsonify({'success': True, 'message': 'Task updated successfully'})
+    except Exception as e: return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    if 'user_id' not in session: return jsonify({'error': 'Unauthorized'}), 401
+    try:
+        db_exec('DELETE FROM tasks WHERE id = ? AND owner_id = ?', (task_id, session['user_id']))
+        return jsonify({'success': True, 'message': 'Task deleted successfully'})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin-users', methods=['GET'])
@@ -723,7 +967,16 @@ def edit_invoice(invoice_id):
     clients_data = db_exec('SELECT client_name FROM clients WHERE owner_id = ? ORDER BY client_name', (session['user_id'],), 'all') or []
     clients = [client[0] for client in clients_data]
     
-    return render_template('edit_invoice.html', invoice=invoice, clients=clients)
+    # Price table for the template
+    price_table = {
+        'Golden Imperial Lush': 15.00,
+        'Golden Green Lush': 19.00,
+        'Golden Natural 40mm': 17.00,
+        'Golden Golf Turf': 22.00,
+        'Golden Premium Turf': 20.00
+    }
+    
+    return render_template('edit_invoice.html', invoice=invoice, clients=clients, price_table=price_table)
 
 @app.route('/delete_invoice/<int:invoice_id>', methods=['POST'])
 def delete_invoice(invoice_id):
@@ -739,6 +992,8 @@ def delete_invoice(invoice_id):
         
         # Delete the invoice
         db_exec('DELETE FROM invoices WHERE id = ? AND owner_id = ?', (invoice_id, session['user_id']))
+        # Reset invoice IDs to start from 1 and fill gaps
+        reset_invoices_ids()
         flash('Invoice deleted successfully.')
     except Exception as e:
         flash(f'Error deleting invoice: {str(e)}')
