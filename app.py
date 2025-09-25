@@ -380,7 +380,7 @@ def clients():
     if where_clause:
         client_list = db_exec(f'SELECT * FROM clients {where_clause} ORDER BY id DESC', params, 'all') or []
     else:
-        client_list = db_exec('SELECT * FROM clients ORDER BY id DESC', 'all') or []
+        client_list = db_exec('SELECT * FROM clients ORDER BY id DESC', (), 'all') or []
     return render_template('clients.html', clients=client_list, error=error, success=success)
 
 @app.route('/clients/edit/<int:client_id>', methods=['GET', 'POST'])
@@ -433,7 +433,7 @@ def payments():
     if clients_where_clause:
         clients_data = db_exec(f'SELECT * FROM clients {clients_where_clause} ORDER BY client_name', clients_params, 'all') or []
     else:
-        clients_data = db_exec('SELECT * FROM clients ORDER BY client_name', 'all') or []
+        clients_data = db_exec('SELECT * FROM clients ORDER BY client_name', (), 'all') or []
     # Convert to objects for easier template access
     clients = []
     for client in clients_data:
@@ -453,7 +453,7 @@ def payments():
     if invoices_where_clause:
         invoices_data = db_exec(f'SELECT * FROM invoices {invoices_where_clause} ORDER BY created_date DESC', invoices_params, 'all') or []
     else:
-        invoices_data = db_exec('SELECT * FROM invoices ORDER BY created_date DESC', 'all') or []
+        invoices_data = db_exec('SELECT * FROM invoices ORDER BY created_date DESC', (), 'all') or []
     
     return render_template('payments.html', clients=clients, invoices=invoices_data)
 
